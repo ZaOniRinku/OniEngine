@@ -77,9 +77,9 @@ class SGNode;
 class Object {
 public:
 	Object();
-	Object(std::string mPath, std::string tPath, glm::vec3 oPos, float mScale);
-	Object(std::string mPath, std::string tPath, float x, float y, float z, float mScale);
-	Object(std::string mPath, std::string tPath, float x, float y, float z, float mScale, float xRot, float yRot, float zRot);
+	Object(std::string mPath, std::string dtPath, glm::vec3 oPos, float mScale);
+	Object(std::string mPath, std::string dtPath, float x, float y, float z, float mScale);
+	Object(std::string mPath, std::string dtPath, float x, float y, float z, float mScale, float xRot, float yRot, float zRot);
 	void move(glm::vec3 movePosition);
 	void move(float x, float y, float z);
 	void rescale(float newScale);
@@ -95,7 +95,10 @@ public:
 	SGNode* getNode();
 	void setNode(SGNode* newNode);
 	std::string getModelPath();
-	std::string getTexturePath();
+	std::string getDiffuseTexturePath();
+	void setDiffuseTexturePath(std::string newDiffuseTexturePath);
+	std::string getNormalTexturePath();
+	void setNormalTexturePath(std::string newNormalTexturePath);
 	std::string getName();
 	void setName(std::string newName);
 	std::vector<Vertex>* getModelVertices();
@@ -104,16 +107,26 @@ public:
 	VkDeviceMemory* getVertexBufferMemory();
 	VkBuffer* getIndexBuffer();
 	VkDeviceMemory* getIndexBufferMemory();
-	uint32_t getMipLevel();
-	void setMipLevel(uint32_t newMipLevel);
-	VkImage* getTextureImage();
-	void setTextureImage(VkImage newTextureImage);
-	VkDeviceMemory* getTextureImageMemory();
-	void setTextureImageMemory(VkDeviceMemory newTextureImageMemory);
-	VkImageView* getTextureImageView();
-	void setTextureImageView(VkImageView newTextureImageView);
-	VkSampler* getTextureSampler();
-	void setTextureSampler(VkSampler newTextureSampler);
+	uint32_t getDiffuseMipLevel();
+	void setDiffuseMipLevel(uint32_t newDiffuseMipLevel);
+	uint32_t getNormalMipLevel();
+	void setNormalMipLevel(uint32_t newNormalMipLevel);
+	VkImage* getDiffuseTextureImage();
+	void setDiffuseTextureImage(VkImage newDiffuseTextureImage);
+	VkDeviceMemory* getDiffuseTextureImageMemory();
+	void setDiffuseTextureImageMemory(VkDeviceMemory newDiffuseTextureImageMemory);
+	VkImageView* getDiffuseTextureImageView();
+	void setDiffuseTextureImageView(VkImageView newDiffuseTextureImageView);
+	VkSampler* getDiffuseTextureSampler();
+	void setDiffuseTextureSampler(VkSampler newDiffuseTextureSampler);
+	VkImage* getNormalTextureImage();
+	void setNormalTextureImage(VkImage newNormalTextureImage);
+	VkDeviceMemory* getNormalTextureImageMemory();
+	void setNormalTextureImageMemory(VkDeviceMemory newNormalTextureImageMemory);
+	VkImageView* getNormalTextureImageView();
+	void setNormalTextureImageView(VkImageView newNormalTextureImageView);
+	VkSampler* getNormalTextureSampler();
+	void setNormalTextureSampler(VkSampler newNormalTextureSampler);
 	VkDescriptorSet* getDescriptorSet(int index);
 	void addDescriptorSet(VkDescriptorSet* newDescriptorSet);
 	VkBuffer* getUniformBuffer(int index);
@@ -123,7 +136,8 @@ public:
 private:
 	// Object's attributes
 	std::string modelPath;
-	std::string texturePath;
+	std::string diffuseTexturePath;
+	std::string normalTexturePath;
 	glm::vec3 pos;
 	float scale;
 	glm::vec3 rot;
@@ -140,12 +154,18 @@ private:
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
-	// Texture attributes
-	VkImage textureImage;
-	VkDeviceMemory textureImageMemory;
-	VkImageView textureImageView;
-	VkSampler textureSampler;
-	uint32_t mipLevel;
+	// Textures attributes
+	VkImage diffuseTextureImage;
+	VkDeviceMemory diffuseTextureImageMemory;
+	VkImageView diffuseTextureImageView;
+	VkSampler diffuseTextureSampler;
+	uint32_t diffuseMipLevel;
+
+	VkImage normalTextureImage;
+	VkDeviceMemory normalTextureImageMemory;
+	VkImageView normalTextureImageView;
+	VkSampler normalTextureSampler;
+	uint32_t normalMipLevel;
 
 	std::vector<VkDescriptorSet*> descriptorSets;
 

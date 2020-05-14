@@ -2,9 +2,10 @@
 
 Object::Object() {}
 
-Object::Object(std::string mPath, std::string tPath, glm::vec3 oPos, float mScale) {
+Object::Object(std::string mPath, std::string dtPath, glm::vec3 oPos, float mScale) {
 	modelPath = mPath;
-	texturePath = tPath;
+	diffuseTexturePath = dtPath;
+	normalTexturePath = dtPath;
 	pos = oPos;
 	scale = mScale;
 	//loadModel();
@@ -12,9 +13,10 @@ Object::Object(std::string mPath, std::string tPath, glm::vec3 oPos, float mScal
 	rot = { 0.0f, 0.0f, 0.0f };
 }
 
-Object::Object(std::string mPath, std::string tPath, float x, float y, float z, float mScale) {
+Object::Object(std::string mPath, std::string dtPath, float x, float y, float z, float mScale) {
 	modelPath = mPath;
-	texturePath = tPath;
+	diffuseTexturePath = dtPath;
+	normalTexturePath = dtPath;
 	pos = { x, y, z };
 	scale = mScale;
 	//loadModel();
@@ -22,9 +24,10 @@ Object::Object(std::string mPath, std::string tPath, float x, float y, float z, 
 	rot = { 0.0f, 0.0f, 0.0f };
 }
 
-Object::Object(std::string mPath, std::string tPath, float x, float y, float z, float mScale, float xRot, float yRot, float zRot) {
+Object::Object(std::string mPath, std::string dtPath, float x, float y, float z, float mScale, float xRot, float yRot, float zRot) {
 	modelPath = mPath;
-	texturePath = tPath;
+	diffuseTexturePath = dtPath;
+	normalTexturePath = dtPath;
 	pos = { x, y, z };
 	scale = mScale;
 	//loadModel();
@@ -100,8 +103,22 @@ std::string Object::getModelPath() {
 	return modelPath;
 }
 
-std::string Object::getTexturePath() {
-	return texturePath;
+std::string Object::getDiffuseTexturePath() {
+	return diffuseTexturePath;
+}
+
+void Object::setDiffuseTexturePath(std::string newDiffuseTexturePath)
+{
+	diffuseTexturePath = newDiffuseTexturePath;
+}
+
+std::string Object::getNormalTexturePath() {
+	return normalTexturePath;
+}
+
+void Object::setNormalTexturePath(std::string newNormalTexturePath)
+{
+	normalTexturePath = newNormalTexturePath;
 }
 
 std::string Object::getName() {
@@ -136,44 +153,84 @@ VkDeviceMemory* Object::getIndexBufferMemory() {
 	return &indexBufferMemory;
 }
 
-uint32_t Object::getMipLevel() {
-	return mipLevel;
+uint32_t Object::getDiffuseMipLevel() {
+	return diffuseMipLevel;
 }
 
-void Object::setMipLevel(uint32_t newMipLevel) {
-	mipLevel = newMipLevel;
+void Object::setDiffuseMipLevel(uint32_t newDiffuseMipLevel) {
+	normalMipLevel = newDiffuseMipLevel;
 }
 
-VkImage* Object::getTextureImage() {
-	return &textureImage;
+uint32_t Object::getNormalMipLevel() {
+	return normalMipLevel;
 }
 
-void Object::setTextureImage(VkImage newTextureImage) {
-	textureImage = newTextureImage;
+void Object::setNormalMipLevel(uint32_t newNormalMipLevel) {
+	normalMipLevel = newNormalMipLevel;
 }
 
-VkDeviceMemory* Object::getTextureImageMemory() {
-	return &textureImageMemory;
+VkImage* Object::getDiffuseTextureImage() {
+	return &diffuseTextureImage;
 }
 
-void Object::setTextureImageMemory(VkDeviceMemory newTextureImageMemory) {
-	textureImageMemory = newTextureImageMemory;
+void Object::setDiffuseTextureImage(VkImage newDiffuseTextureImage) {
+	diffuseTextureImage = newDiffuseTextureImage;
 }
 
-VkImageView* Object::getTextureImageView() {
-	return &textureImageView;
+VkDeviceMemory* Object::getDiffuseTextureImageMemory() {
+	return &diffuseTextureImageMemory;
 }
 
-void Object::setTextureImageView(VkImageView newTextureImageView) {
-	textureImageView = newTextureImageView;
+void Object::setDiffuseTextureImageMemory(VkDeviceMemory newDiffuseTextureImageMemory) {
+	diffuseTextureImageMemory = newDiffuseTextureImageMemory;
 }
 
-VkSampler* Object::getTextureSampler() {
-	return &textureSampler;
+VkImageView* Object::getDiffuseTextureImageView() {
+	return &diffuseTextureImageView;
 }
 
-void Object::setTextureSampler(VkSampler newTextureSampler) {
-	textureSampler = newTextureSampler;
+void Object::setDiffuseTextureImageView(VkImageView newDiffuseTextureImageView) {
+	diffuseTextureImageView = newDiffuseTextureImageView;
+}
+
+VkSampler* Object::getDiffuseTextureSampler() {
+	return &diffuseTextureSampler;
+}
+
+void Object::setDiffuseTextureSampler(VkSampler newDiffuseTextureSampler) {
+	diffuseTextureSampler = newDiffuseTextureSampler;
+}
+
+VkImage* Object::getNormalTextureImage() {
+	return &normalTextureImage;
+}
+
+void Object::setNormalTextureImage(VkImage newNormalTextureImage) {
+	normalTextureImage = newNormalTextureImage;
+}
+
+VkDeviceMemory* Object::getNormalTextureImageMemory() {
+	return &normalTextureImageMemory;
+}
+
+void Object::setNormalTextureImageMemory(VkDeviceMemory newNormalTextureImageMemory) {
+	normalTextureImageMemory = newNormalTextureImageMemory;
+}
+
+VkImageView* Object::getNormalTextureImageView() {
+	return &normalTextureImageView;
+}
+
+void Object::setNormalTextureImageView(VkImageView newNormalTextureImageView) {
+	normalTextureImageView = newNormalTextureImageView;
+}
+
+VkSampler* Object::getNormalTextureSampler() {
+	return &normalTextureSampler;
+}
+
+void Object::setNormalTextureSampler(VkSampler newNormalTextureSampler) {
+	normalTextureSampler = newNormalTextureSampler;
 }
 
 VkDescriptorSet* Object::getDescriptorSet(int index) {
