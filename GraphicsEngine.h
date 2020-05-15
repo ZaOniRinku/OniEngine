@@ -208,8 +208,10 @@ private:
 	VkRenderPass renderPass;
 	VkRenderPass shadowRenderPass;
 	VkDescriptorSetLayout descriptorSetLayout;
-	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
+	VkPipeline skyboxGraphicsPipeline;
+	VkPipelineLayout pipelineLayout;
+	VkPipelineLayout skyboxPipelineLayout;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<VkFramebuffer> shadowFramebuffers;
 	VkCommandPool commandPool;

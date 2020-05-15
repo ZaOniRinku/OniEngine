@@ -381,7 +381,10 @@ void GraphicsEngine::cleanupSwapChain() {
 
 	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-	vkDestroyPipeline(device, graphicsPipeline, nullptr);
+	// Destroy pipelines
+	vkDestroyPipeline(device, *scene->getSkybox()->getGraphicsPipeline(), nullptr);
+	vkDestroyPipeline(device, *scene->getRoot()->getObject()->getGraphicsPipeline(), nullptr);
+
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(device, renderPass, nullptr);
 	for (auto imageView : swapChainImageViews) {
@@ -766,8 +769,169 @@ void GraphicsEngine::createGraphicsPipeline() {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 
+	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
+	while (!elements.empty()) {
+		Object *obj = elements.front()->getObject();
+		obj->setGraphicsPipeline(&graphicsPipeline);
+		for (SGNode* child : elements.front()->getChildren()) {
+			elements.insert(elements.end(), child);
+		}
+		elements.erase(elements.begin());
+	}
+
 	vkDestroyShaderModule(device, vertShaderModule, nullptr);
 	vkDestroyShaderModule(device, fragShaderModule, nullptr);
+
+	// Skybox pipeline
+
+	auto skyboxVertShaderCode = readFile("vert.spv");
+	auto skyboxFragShaderCode = readFile("skyboxfrag.spv");
+
+	VkShaderModule skyboxVertShaderModule = createShaderModule(skyboxVertShaderCode);
+	VkShaderModule skyboxFragShaderModule = createShaderModule(skyboxFragShaderCode);
+
+	VkPipelineShaderStageCreateInfo skyboxVertShaderStageInfo = {};
+	skyboxVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	skyboxVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	skyboxVertShaderStageInfo.module = skyboxVertShaderModule;
+	skyboxVertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo skyboxFragShaderStageInfo = {};
+	skyboxFragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	skyboxFragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	skyboxFragShaderStageInfo.module = skyboxFragShaderModule;
+	skyboxFragShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo skyboxShaderStages[] = { skyboxVertShaderStageInfo, skyboxFragShaderStageInfo };
+
+	VkPipelineVertexInputStateCreateInfo skyboxVertexInputInfo = {};
+	auto skyboxBindingDescription = Vertex::getBindingDescription();
+	auto skyboxAttributeDescriptions = Vertex::getAttributeDescriptions();
+	skyboxVertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	skyboxVertexInputInfo.vertexBindingDescriptionCount = 1;
+	skyboxVertexInputInfo.pVertexBindingDescriptions = &skyboxBindingDescription;
+	skyboxVertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(skyboxAttributeDescriptions.size());
+	skyboxVertexInputInfo.pVertexAttributeDescriptions = skyboxAttributeDescriptions.data();
+
+	VkPipelineInputAssemblyStateCreateInfo skyboxInputAssembly = {};
+	skyboxInputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	skyboxInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	skyboxInputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	VkViewport skyboxViewport = {};
+	skyboxViewport.x = 0.0f;
+	skyboxViewport.y = 0.0f;
+	skyboxViewport.width = (float)swapChainExtent.width;
+	skyboxViewport.height = (float)swapChainExtent.height;
+	skyboxViewport.minDepth = 0.0f;
+	skyboxViewport.maxDepth = 1.0f;
+
+	VkRect2D skyboxScissor = {};
+	skyboxScissor.offset = { 0, 0 };
+	skyboxScissor.extent = swapChainExtent;
+
+	VkPipelineViewportStateCreateInfo skyboxViewportState = {};
+	skyboxViewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	skyboxViewportState.viewportCount = 1;
+	skyboxViewportState.pViewports = &skyboxViewport;
+	skyboxViewportState.scissorCount = 1;
+	skyboxViewportState.pScissors = &skyboxScissor;
+
+	VkPipelineRasterizationStateCreateInfo skyboxRasterizer = {};
+	skyboxRasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	skyboxRasterizer.depthClampEnable = VK_FALSE;
+	skyboxRasterizer.rasterizerDiscardEnable = VK_FALSE;
+	skyboxRasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	skyboxRasterizer.lineWidth = 1.0f;
+	skyboxRasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	skyboxRasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	skyboxRasterizer.depthBiasEnable = VK_FALSE;
+	skyboxRasterizer.depthBiasConstantFactor = 0.0f;
+	skyboxRasterizer.depthBiasClamp = 0.0f;
+	skyboxRasterizer.depthBiasSlopeFactor = 0.0f;
+
+	VkPipelineMultisampleStateCreateInfo skyboxMultisampling = {};
+	skyboxMultisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	skyboxMultisampling.sampleShadingEnable = VK_TRUE;
+	skyboxMultisampling.rasterizationSamples = msaaSamples;
+	skyboxMultisampling.minSampleShading = 0.1f;
+	skyboxMultisampling.pSampleMask = nullptr;
+	skyboxMultisampling.alphaToCoverageEnable = VK_FALSE;
+	skyboxMultisampling.alphaToOneEnable = VK_FALSE;
+
+	VkPipelineDepthStencilStateCreateInfo skyboxDepthStencil = {};
+	skyboxDepthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	skyboxDepthStencil.depthTestEnable = VK_TRUE;
+	skyboxDepthStencil.depthWriteEnable = VK_TRUE;
+	skyboxDepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	skyboxDepthStencil.depthBoundsTestEnable = VK_FALSE;
+	skyboxDepthStencil.minDepthBounds = 0.0f;
+	skyboxDepthStencil.maxDepthBounds = 1.0f;
+	skyboxDepthStencil.stencilTestEnable = VK_FALSE;
+	skyboxDepthStencil.front = {};
+	skyboxDepthStencil.back = {};
+
+	VkPipelineColorBlendAttachmentState skyboxColorBlendAttachment = {};
+	skyboxColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
+		| VK_COLOR_COMPONENT_G_BIT
+		| VK_COLOR_COMPONENT_B_BIT
+		| VK_COLOR_COMPONENT_A_BIT;
+	skyboxColorBlendAttachment.blendEnable = VK_FALSE;
+	skyboxColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	skyboxColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	skyboxColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+	skyboxColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	skyboxColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	skyboxColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+	VkPipelineColorBlendStateCreateInfo skyboxColorBlending = {};
+	skyboxColorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	skyboxColorBlending.logicOpEnable = VK_FALSE;
+	skyboxColorBlending.logicOp = VK_LOGIC_OP_COPY;
+	skyboxColorBlending.attachmentCount = 1;
+	skyboxColorBlending.pAttachments = &skyboxColorBlendAttachment;
+	skyboxColorBlending.blendConstants[0] = 0.0f;
+	skyboxColorBlending.blendConstants[1] = 0.0f;
+	skyboxColorBlending.blendConstants[2] = 0.0f;
+	skyboxColorBlending.blendConstants[3] = 0.0f;
+
+	VkPipelineLayoutCreateInfo skyboxPipelineLayoutInfo = {};
+	skyboxPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	skyboxPipelineLayoutInfo.setLayoutCount = 1;
+	skyboxPipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+	skyboxPipelineLayoutInfo.pushConstantRangeCount = 0;
+	skyboxPipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+	if (vkCreatePipelineLayout(device, &skyboxPipelineLayoutInfo, nullptr, &skyboxPipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	VkGraphicsPipelineCreateInfo skyboxPipelineInfo = {};
+	skyboxPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	skyboxPipelineInfo.stageCount = 2;
+	skyboxPipelineInfo.pStages = skyboxShaderStages;
+	skyboxPipelineInfo.pVertexInputState = &skyboxVertexInputInfo;
+	skyboxPipelineInfo.pInputAssemblyState = &skyboxInputAssembly;
+	skyboxPipelineInfo.pViewportState = &skyboxViewportState;
+	skyboxPipelineInfo.pRasterizationState = &skyboxRasterizer;
+	skyboxPipelineInfo.pMultisampleState = &skyboxMultisampling;
+	skyboxPipelineInfo.pDepthStencilState = &skyboxDepthStencil;
+	skyboxPipelineInfo.pColorBlendState = &skyboxColorBlending;
+	skyboxPipelineInfo.pDynamicState = nullptr;
+	skyboxPipelineInfo.layout = skyboxPipelineLayout;
+	skyboxPipelineInfo.renderPass = renderPass;
+	skyboxPipelineInfo.subpass = 0;
+	skyboxPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	skyboxPipelineInfo.basePipelineIndex = -1;
+
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &skyboxPipelineInfo, nullptr, &skyboxGraphicsPipeline) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
+
+	scene->getSkybox()->setGraphicsPipeline(&skyboxGraphicsPipeline);
+	
+	vkDestroyShaderModule(device, skyboxVertShaderModule, nullptr);
+	vkDestroyShaderModule(device, skyboxFragShaderModule, nullptr);
 }
 
 void GraphicsEngine::createFramebuffers() {
@@ -1007,13 +1171,22 @@ void GraphicsEngine::createCommandBuffers() {
 		renderPassInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
+		
 		VkDeviceSize offsets[] = { 0 };
+
+		// Skybox
+		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *scene->getSkybox()->getGraphicsPipeline());
+		VkBuffer skyboxVertexCmdBuffers[] = { *scene->getSkybox()->getVertexBuffer() };
+		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, skyboxVertexCmdBuffers, offsets);
+		vkCmdBindIndexBuffer(commandBuffers[i], *scene->getSkybox()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, scene->getSkybox()->getDescriptorSet(i), 0, nullptr);
+		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(scene->getSkybox()->getModelIndices()->size()), 1, 0, 0, 0);
+
 		// For each 3D model, bind its vertex and indices and the right descriptor set for its texture
 		std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 		while (!elements.empty()) {
 			Object* obj = elements.front()->getObject();
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *obj->getGraphicsPipeline());
 			VkBuffer vertexCmdBuffers[] = { *obj->getVertexBuffer() };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffers[i], *obj->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
@@ -1024,12 +1197,6 @@ void GraphicsEngine::createCommandBuffers() {
 			}
 			elements.erase(elements.begin());
 		}
-
-		VkBuffer vertexCmdBuffers[] = { *scene->getSkybox()->getVertexBuffer() };
-		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffers[i], *scene->getSkybox()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, scene->getSkybox()->getDescriptorSet(i), 0, nullptr);
-		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(scene->getSkybox()->getModelIndices()->size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 

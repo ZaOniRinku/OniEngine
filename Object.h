@@ -131,6 +131,8 @@ public:
 	void addUniformBuffer(VkBuffer* newUniformBuffer);
 	VkDeviceMemory* getUniformBufferMemory(int index);
 	void addUniformBufferMemory(VkDeviceMemory* newUniformBufferMemory);
+	VkPipeline* getGraphicsPipeline();
+	void setGraphicsPipeline(VkPipeline* newGraphicsPipeline);
 private:
 	// Object's attributes
 	std::string modelPath;
@@ -169,4 +171,6 @@ private:
 
 	std::vector<VkBuffer*> uniformBuffers;
 	std::vector<VkDeviceMemory*> uniformBuffersMemory;
+
+	VkPipeline* graphicsPipeline;
 };

@@ -256,3 +256,10 @@ VkDeviceMemory* Object::getUniformBufferMemory(int index) {
 void Object::addUniformBufferMemory(VkDeviceMemory* newUniformBufferMemory) {
 	uniformBuffersMemory.push_back(newUniformBufferMemory);
 }
+
+VkPipeline* Object::getGraphicsPipeline() {
+	return graphicsPipeline;
+}
+void Object::setGraphicsPipeline(VkPipeline* newGraphicsPipeline) {
+	graphicsPipeline = newGraphicsPipeline;
+}
