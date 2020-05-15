@@ -2,6 +2,17 @@
 #include <iostream>
 #include "SGNode.h"
 #include "Camera.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+
+struct LightsBufferObject {
+	alignas(16) int numDirLights;
+	alignas(16) glm::vec3 dirLights[10];
+	alignas(16) glm::vec3 dirLightsColor[10];
+	alignas(16) int numPointLights;
+	alignas(16) glm::vec3 pointLights[10];
+	alignas(16) glm::vec3 pointLightsColor[10];
+};
 
 class Scene {
 public:
@@ -15,25 +26,18 @@ public:
 	void setSkybox(Object *newSkybox);
 	void viewSceneGraph();
 	int nbElements();
-	float getAmbientLightValue();
-	void setAmbientLightValue(float newAmbientLightValue);
-	float getAmbientLightColorR();
-	float getAmbientLightColorG();
-	float getAmbientLightColorB();
-	void setAmbientLightColor(float newR, float newG, float newB);
-	float getLightPositionX();
-	float getLightPositionY();
-	float getLightPositionZ();
-	void setLightPosition(float newX, float newY, float newZ);
+	std::vector<DirectionalLight*>* getDirectionalLights();
+	void addDirectionalLight(DirectionalLight* newDirectionalLight);
+	std::vector<PointLight*>* getPointLights();
+	void addPointLight(PointLight* newPointLight);
 private:
 	SGNode sceneRoot;
 	Camera camera;
 	Object *skybox;
 
-	// Ambient Light
-	float ambientLightValue;
-	glm::vec3 ambientLightColor;
+	// Lights
+	std::vector<DirectionalLight*> dirLights;
+	std::vector<PointLight*> pointLights;
 
-	// Directional Light
-	glm::vec3 lightPosition;
+	LightsBufferObject lbo;
 };

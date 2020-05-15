@@ -1,15 +1,26 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(binding = 1) uniform sampler2D diffuseTexSampler;
-layout(binding = 2) uniform sampler2D normalTexSampler;
+#define MAX_DIR_LIGHTS 10
+#define MAX_POINT_LIGHTS 10
+
+layout(binding = 1) uniform Lights {
+	int fragNumDirLights;
+	vec3 fragDirLights[MAX_DIR_LIGHTS];
+	vec3 fragDirLightsColor[MAX_DIR_LIGHTS];
+	int fragNumPointLights;
+	vec3 fragPointLights[MAX_POINT_LIGHTS];
+	vec3 fragPointLightsColor[MAX_POINT_LIGHTS];
+} lights;
+
+layout(binding = 2) uniform sampler2D diffuseTexSampler;
+layout(binding = 3) uniform sampler2D normalTexSampler;
 
 layout(location = 0) in vec3 fragNormal;
 layout(location = 1) in vec3 fragEye;
-layout(location = 2) in vec3 fragLightDir;
-layout(location = 3) in vec2 fragTexCoord;
-layout(location = 4) in vec3 fragAmbient;
-layout(location = 5) in float fragDistance;
+layout(location = 2) in vec2 fragTexCoord;
+layout(location = 3) in vec4 fragPos;
+layout(location = 4) in vec3 fragCamPos;
 
 layout(location = 0) out vec4 outColor;
 
@@ -72,11 +83,11 @@ float RDM_Smith(float LdotH, float LdotN, float VdotH, float VdotN, float alpha)
 }
 
 vec3 RDM_bsdf_s(float LdotH, float NdotH, float VdotH, float LdotN, float VdotN) {
-	float d = RDM_Beckmann(NdotH, 0.5);
+	float d = RDM_Beckmann(NdotH, 0.50);
 	float f = RDM_Fresnel(LdotH, 1.f, 1.329);
-	float g = RDM_Smith(LdotH, LdotN, VdotH, VdotN, 0.5);
+	float g = RDM_Smith(LdotH, LdotN, VdotH, VdotN, 0.50);
 
-	return vec3(255, 255, 255)*((d*f*g)/(4.f*LdotN*VdotN));
+	return vec3(255)*((d*f*g)/(4.f*LdotN*VdotN));
 }
 
 vec3 RDM_bsdf_d() {
@@ -104,31 +115,27 @@ vec3 shade(vec3 n, vec3 v, vec3 l, vec3 lc) {
 }
 
 void main() {
+	vec4 diffuse = texture(diffuseTexSampler, fragTexCoord);
 	vec4 normal = texture(normalTexSampler, fragTexCoord);
 	vec3 n = vec3(normalize(normal * 2.0 - 1.0));
-	vec3 e = normalize(fragEye);
-	vec3 l = normalize(fragLightDir);
-	vec4 diffuse = texture(diffuseTexSampler, fragTexCoord);
-
-	if (fragDistance > 10.0) {
-		outColor =  vec4(fragAmbient, 0.0) * diffuse;
-	} else {
-		outColor = vec4(shade(n, e, l, vec3(1.f)), 0.0);
+	vec3 v = normalize(fragCamPos - vec3(fragPos));
+	vec3 l;
+	
+	vec3 color = vec3(0.0);
+	for (int i = 0; i < lights.fragNumDirLights; i++) {
+		l = normalize(lights.fragDirLights[i]);
+		color += shade(n, v, l, lights.fragDirLightsColor[i]);
+	}
+	for (int i = 0; i < lights.fragNumPointLights; i++) {
+		l = normalize(lights.fragPointLights[i] - vec3(fragPos));
+		float distance = length(lights.fragPointLights[i] - vec3(fragPos));
+		float attenuation = 1.0 / (distance * distance);
+		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
+		color += shade(n, v, l, radiance);
 	}
 
-  /*
-  vec3 n = normalize(fragNormal);
-  vec3 e = normalize(fragEye);
-  vec3 l = normalize(fragLightDir);
-	
-  vec4 normal = texture(normalTexSampler, fragTexCoord);
-  n = vec3(normalize(normal * 2.0 - 1.0));
-  vec4 diffuse = texture(diffuseTexSampler, fragTexCoord);
-  float intensity = max(dot(n, l), 0.0);
-  if (fragDistance > 10.0) {
-    outColor = vec4(fragAmbient, 0.0) * diffuse;
-  }
-  else {
-    outColor = max(intensity * diffuse, vec4(fragAmbient, 0.0) * diffuse);
-  }*/
+	// HDR
+	color = color / (color + vec3(1.0));
+	color = pow(color, vec3(1.0/2.2));
+	outColor = vec4(color, 1.0);
 }

@@ -3,17 +3,11 @@
 Scene::Scene() {
 	sceneRoot = SGNode();
 	camera = Camera();
-	ambientLightValue = 1.0f;
-	ambientLightColor = { 0.0f, 0.0f, 1.0f };
-	lightPosition = { 0.0f, 0.0f, 0.0f };
 }
 
 Scene::Scene(Camera sceneCamera) {
 	sceneRoot = SGNode();
 	camera = sceneCamera;
-	ambientLightValue = 1.0f;
-	ambientLightColor = { 1.0f, 1.0f, 1.0f };
-	lightPosition = { 0.0f, 0.0f, 0.0f };
 }
 
 SGNode* Scene::getRoot() {
@@ -51,42 +45,23 @@ int Scene::nbElements() {
 	return sceneRoot.nbElements()+1;
 }
 
-float Scene::getAmbientLightValue() {
-	return ambientLightValue;
+std::vector<DirectionalLight*>* Scene::getDirectionalLights()
+{
+	return &dirLights;
 }
 
-void Scene::setAmbientLightValue(float newAmbientLightValue) {
-	ambientLightValue = newAmbientLightValue;
+void Scene::addDirectionalLight(DirectionalLight* newDirectionalLight)
+{
+	dirLights.push_back(newDirectionalLight);
 }
 
-float Scene::getAmbientLightColorR() {
-	return ambientLightColor.x;
+std::vector<PointLight*>* Scene::getPointLights()
+{
+	return &pointLights;
 }
 
-float Scene::getAmbientLightColorG() {
-	return ambientLightColor.y;
-}
-
-float Scene::getAmbientLightColorB() {
-	return ambientLightColor.z;
-}
-
-void Scene::setAmbientLightColor(float newR, float newG, float newB) {
-	ambientLightColor = { newR, newG, newB };
-}
-
-float Scene::getLightPositionX() {
-	return lightPosition.x;
-}
-
-float Scene::getLightPositionY() {
-	return lightPosition.y;
-}
-
-float Scene::getLightPositionZ() {
-	return lightPosition.z;
-}
-
-void Scene::setLightPosition(float newX, float newY, float newZ) {
-	lightPosition = { newX, newY, newZ };
+void Scene::addPointLight(PointLight* newPointLight)
+{
+	pointLights.push_back(newPointLight);
+	
 }

@@ -24,6 +24,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const int WIDTH = 1280;
 const int HEIGHT = 720;
+const int SHADOW_WIDTH = 1024;
+const int SHADOW_HEIGHT = 1024;
 
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_LUNARG_standard_validation"
@@ -204,10 +206,12 @@ private:
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
 	VkRenderPass renderPass;
+	VkRenderPass shadowRenderPass;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
+	std::vector<VkFramebuffer> shadowFramebuffers;
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -220,6 +224,9 @@ private:
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
+	VkImage shadowImage;
+	VkDeviceMemory shadowImageMemory;
+	VkImageView shadowImageView;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImage colorImage;
 	VkDeviceMemory colorImageMemory;
@@ -227,6 +234,8 @@ private:
 
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	std::vector<VkBuffer> lightsBuffers;
+	std::vector <VkDeviceMemory> lightsBuffersMemory;
 
 	// Game scene
 	Scene* scene;
