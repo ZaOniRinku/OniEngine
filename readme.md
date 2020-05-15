@@ -12,13 +12,16 @@ Cette version du projet est étendue.
  - Créer un fichier qui servira de **main** (main.cpp par exemple)
  - Inclure le moteur
  ```C++
- #include "GraphicsEngine.h" ```
+ #include "GraphicsEngine.h"
+```
  - Créer une fonction main
  ```C++
- int main() { }```
+ int main() { }
+ ```
  - Dans le main, créer une scène
  ```C++
- Scene scene = Scene();```
+ Scene scene = Scene();
+ ```
  - Y ajouter des lumières
  ```C++
  DirectionalLight dirLight = DirectionalLight(0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -26,22 +29,25 @@ Cette version du projet est étendue.
  PointLight point2 = PointLight(14.0f, 20.0f, 1.0f, 1.0f, 0.0f, 0.0f);
  scene.addDirectionalLight(&dirLight);
  scene.addPointLight(&point);
- scene.addPointLight(&point2);```
+ scene.addPointLight(&point2);
+ ```
  - Y ajouter des objets et construire le graphe de scène
  ```C++
  Object ground = Object("ground_model.obj", "ground_diffuse_texture.jpg", 0.0f, 0.0f, -0.1f, 30.0f);
  ground.setNormalTexturePath("ground_normal_texture.jpg");
  SGNode groundNode = SGNode(&ground);
- scene.getRoot()->addChild(&groundNode);```
- 
+ scene.getRoot()->addChild(&groundNode);
+ ```
  ```C++
  Object anotherObject = Object("object_model.obj", "object_diffuse_texture.jpg", 0.0f, 0.1f, 0.0f, 0.5f);
  anotherObject.setName("Another Object");
  anotherObject.setNormalTexturePath("object_normal_texture.jpg");
  SGNode anotherObjectNode = SGNode(&anotherObject);
- groundNode.addChild(&anotherObjectNode);```
+ groundNode.addChild(&anotherObjectNode);
+ ```
  - Lancer l'application
  ```C++
  GraphicsEngine app;
  app.setScene(&scene);
- app.start();```
+ app.start();
+ ```
