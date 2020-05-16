@@ -33,18 +33,23 @@ Cette version du projet est étendue.
  ```
  - Y ajouter des objets et construire le graphe de scène
  ```C++
- Object ground = Object("ground_model.obj", "ground_diffuse_texture.jpg", 0.0f, 0.0f, -0.1f, 30.0f);
- ground.setNormalTexturePath("ground_normal_texture.jpg");
+ Object ground = Object("ground_model.obj", 0.0f, 0.0f, -0.1f, 30.0f);
  SGNode groundNode = SGNode(&ground);
  scene.getRoot()->addChild(&groundNode);
  ```
+ 
  ```C++
- Object anotherObject = Object("object_model.obj", "object_diffuse_texture.jpg", 0.0f, 0.1f, 0.0f, 0.5f);
+ Object anotherObject = Object("object_model.obj", 0.0f, 0.1f, 0.0f, 0.5f);
  anotherObject.setName("Another Object");
- anotherObject.setNormalTexturePath("object_normal_texture.jpg");
  SGNode anotherObjectNode = SGNode(&anotherObject);
  groundNode.addChild(&anotherObjectNode);
  ```
+ - Créer les matériaux et les attacher aux objets
+ ```C++
+ Material mat = Material("diffuse_texture.jpg", "normal_texture.jpg", "metallic_texture.jpg", "roughness_texture.jpg", "ao_texture.jpg");
+ anotherObject.setMaterial(&mat);
+ ```
+ 
  - Lancer l'application
  ```C++
  GraphicsEngine app;
