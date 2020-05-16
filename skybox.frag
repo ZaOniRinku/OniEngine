@@ -26,5 +26,8 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
 	vec4 diffuse = texture(diffuseTexSampler, fragTexCoord);
-	outColor = diffuse;
+	vec3 color = vec3(diffuse);
+	color = color / (color + vec3(1.0));
+	color = pow(color, vec3(1.0/2.2));
+	outColor = vec4(color, 1.0);
 }
