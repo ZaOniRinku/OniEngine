@@ -612,7 +612,28 @@ void GraphicsEngine::createDescriptorSetLayout() {
 	normalSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	normalSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 4> bindings = { uboLayoutBinding, lboLayoutBinding, diffuseSamplerLayoutBinding, normalSamplerLayoutBinding };
+	VkDescriptorSetLayoutBinding metallicSamplerLayoutBinding = {};
+	metallicSamplerLayoutBinding.binding = 4;
+	metallicSamplerLayoutBinding.descriptorCount = 1;
+	metallicSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	metallicSamplerLayoutBinding.pImmutableSamplers = nullptr;
+	metallicSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutBinding roughnessSamplerLayoutBinding = {};
+	roughnessSamplerLayoutBinding.binding = 5;
+	roughnessSamplerLayoutBinding.descriptorCount = 1;
+	roughnessSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	roughnessSamplerLayoutBinding.pImmutableSamplers = nullptr;
+	roughnessSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutBinding AOSamplerLayoutBinding = {};
+	AOSamplerLayoutBinding.binding = 6;
+	AOSamplerLayoutBinding.descriptorCount = 1;
+	AOSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	AOSamplerLayoutBinding.pImmutableSamplers = nullptr;
+	AOSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	std::array<VkDescriptorSetLayoutBinding, 7> bindings = { uboLayoutBinding, lboLayoutBinding, diffuseSamplerLayoutBinding, normalSamplerLayoutBinding, metallicSamplerLayoutBinding, roughnessSamplerLayoutBinding, AOSamplerLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1016,17 +1037,23 @@ void GraphicsEngine::createTextures() {
 	// Create textures for all elements
 	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
-		createTextureImage(elements.front()->getObject());
-		createTextureImageView(elements.front()->getObject());
-		createTextureSampler(elements.front()->getObject());
+		if (!elements.front()->getObject()->getMaterial()->isConstructed()) {
+			elements.front()->getObject()->getMaterial()->constructedTrue();
+			createTextureImage(elements.front()->getObject());
+			createTextureImageView(elements.front()->getObject());
+			createTextureSampler(elements.front()->getObject());
+		}
 		for (SGNode* child : elements.front()->getChildren()) {
 			elements.insert(elements.end(), child);
 		}
 		elements.erase(elements.begin());
 	}
-	createTextureImage(scene->getSkybox());
-	createTextureImageView(scene->getSkybox());
-	createTextureSampler(scene->getSkybox());
+	if (!scene->getSkybox()->getMaterial()->isConstructed()) {
+		scene->getSkybox()->getMaterial()->constructedTrue();
+		createTextureImage(scene->getSkybox());
+		createTextureImageView(scene->getSkybox());
+		createTextureSampler(scene->getSkybox());
+	}
 }
 
 void GraphicsEngine::createModels() {
@@ -1755,14 +1782,13 @@ VkSampleCountFlagBits GraphicsEngine::getMaxUsableSampleCount() {
 }
 
 void GraphicsEngine::createTextureImage(Object* obj) {
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-
 	// Diffuse Texture
+	VkBuffer diffuseStagingBuffer;
+	VkDeviceMemory diffuseStagingBufferMemory;
 
 	int diffuseTexWidth, diffuseTexHeight, diffuseTexChannels;
-	stbi_uc* dPixels = stbi_load(obj->getDiffuseTexturePath().c_str(), &diffuseTexWidth, &diffuseTexHeight, &diffuseTexChannels, STBI_rgb_alpha);
-	obj->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
+	stbi_uc* dPixels = stbi_load(obj->getMaterial()->getDiffusePath().c_str(), &diffuseTexWidth, &diffuseTexHeight, &diffuseTexChannels, STBI_rgb_alpha);
+	obj->getMaterial()->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
 	VkDeviceSize diffuseImageSize = diffuseTexWidth * diffuseTexHeight * 4;
 
 	if (!dPixels) {
@@ -1770,22 +1796,28 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	}
 
 	createBuffer(diffuseImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, diffuseStagingBuffer, diffuseStagingBufferMemory);
 	void *ddata;
-	vkMapMemory(device, stagingBufferMemory, 0, diffuseImageSize, 0, &ddata);
+	vkMapMemory(device, diffuseStagingBufferMemory, 0, diffuseImageSize, 0, &ddata);
 	memcpy(ddata, dPixels, static_cast<size_t>(diffuseImageSize));
-	vkUnmapMemory(device, stagingBufferMemory);
+	vkUnmapMemory(device, diffuseStagingBufferMemory);
 	stbi_image_free(dPixels);
-	createImage(diffuseTexWidth, diffuseTexHeight, obj->getDiffuseMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getDiffuseTextureImage(), *obj->getDiffuseTextureImageMemory());
+	createImage(diffuseTexWidth, diffuseTexHeight, obj->getMaterial()->getDiffuseMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getDiffuseTextureImage(), *obj->getMaterial()->getDiffuseTextureImageMemory());
 
-	transitionImageLayout(*obj->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getDiffuseMipLevel());
-	copyBufferToImage(stagingBuffer, *obj->getDiffuseTextureImage(), static_cast<uint32_t>(diffuseTexWidth), static_cast<uint32_t>(diffuseTexHeight));
-	generateMipmaps(*obj->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, diffuseTexWidth, diffuseTexHeight, obj->getDiffuseMipLevel());
+	transitionImageLayout(*obj->getMaterial()->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getDiffuseMipLevel());
+	copyBufferToImage(diffuseStagingBuffer, *obj->getMaterial()->getDiffuseTextureImage(), static_cast<uint32_t>(diffuseTexWidth), static_cast<uint32_t>(diffuseTexHeight));
+	generateMipmaps(*obj->getMaterial()->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, diffuseTexWidth, diffuseTexHeight, obj->getMaterial()->getDiffuseMipLevel());
+
+	vkDestroyBuffer(device, diffuseStagingBuffer, nullptr);
+	vkFreeMemory(device, diffuseStagingBufferMemory, nullptr);
 
 	// Normal Texture
+	VkBuffer normalStagingBuffer;
+	VkDeviceMemory normalStagingBufferMemory;
+
 	int normalTexWidth, normalTexHeight, normalTexChannels;
-	stbi_uc* nPixels = stbi_load(obj->getNormalTexturePath().c_str(), &normalTexWidth, &normalTexHeight, &normalTexChannels, STBI_rgb_alpha);
-	obj->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
+	stbi_uc* nPixels = stbi_load(obj->getMaterial()->getNormalPath().c_str(), &normalTexWidth, &normalTexHeight, &normalTexChannels, STBI_rgb_alpha);
+	obj->getMaterial()->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
 	VkDeviceSize normalImageSize = normalTexWidth * normalTexHeight * 4;
 
 	if (!nPixels) {
@@ -1793,29 +1825,125 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	}
 
 	createBuffer(normalImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, normalStagingBuffer, normalStagingBufferMemory);
 	void *ndata;
-	vkMapMemory(device, stagingBufferMemory, 0, normalImageSize, 0, &ndata);
+	vkMapMemory(device, normalStagingBufferMemory, 0, normalImageSize, 0, &ndata);
 	memcpy(ndata, nPixels, static_cast<size_t>(normalImageSize));
-	vkUnmapMemory(device, stagingBufferMemory);
+	vkUnmapMemory(device, normalStagingBufferMemory);
 	stbi_image_free(nPixels);
-	createImage(normalTexWidth, normalTexHeight, obj->getNormalMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getNormalTextureImage(), *obj->getNormalTextureImageMemory());
+	createImage(normalTexWidth, normalTexHeight, obj->getMaterial()->getNormalMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getNormalTextureImage(), *obj->getMaterial()->getNormalTextureImageMemory());
 
-	transitionImageLayout(*obj->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getNormalMipLevel());
-	copyBufferToImage(stagingBuffer, *obj->getNormalTextureImage(), static_cast<uint32_t>(normalTexWidth), static_cast<uint32_t>(normalTexHeight));
-	generateMipmaps(*obj->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, normalTexWidth, normalTexHeight, obj->getNormalMipLevel());
+	transitionImageLayout(*obj->getMaterial()->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getNormalMipLevel());
+	copyBufferToImage(normalStagingBuffer, *obj->getMaterial()->getNormalTextureImage(), static_cast<uint32_t>(normalTexWidth), static_cast<uint32_t>(normalTexHeight));
+	generateMipmaps(*obj->getMaterial()->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, normalTexWidth, normalTexHeight, obj->getMaterial()->getNormalMipLevel());
 
-	// Free
-	vkDestroyBuffer(device, stagingBuffer, nullptr);
-	vkFreeMemory(device,stagingBufferMemory, nullptr);
+	vkDestroyBuffer(device, normalStagingBuffer, nullptr);
+	vkFreeMemory(device, normalStagingBufferMemory, nullptr);
+
+	// Metallic Texture
+	VkBuffer metallicStagingBuffer;
+	VkDeviceMemory metallicStagingBufferMemory;
+
+	int metallicTexWidth, metallicTexHeight, metallicTexChannels;
+	stbi_uc* mPixels = stbi_load(obj->getMaterial()->getMetallicPath().c_str(), &metallicTexWidth, &metallicTexHeight, &metallicTexChannels, STBI_rgb_alpha);
+	obj->getMaterial()->setMetallicMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(metallicTexWidth, metallicTexHeight)))) + 1);
+	VkDeviceSize metallicImageSize = metallicTexWidth * metallicTexHeight * 4;
+
+
+	if (!mPixels) {
+		throw std::runtime_error("failed to load metallic texture image!");
+	}
+
+	createBuffer(metallicImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, metallicStagingBuffer, metallicStagingBufferMemory);
+	void *mdata;
+	vkMapMemory(device, metallicStagingBufferMemory, 0, metallicImageSize, 0, &mdata);
+	memcpy(mdata, mPixels, static_cast<size_t>(metallicImageSize));
+	vkUnmapMemory(device, metallicStagingBufferMemory);
+	stbi_image_free(mPixels);
+	createImage(metallicTexWidth, metallicTexHeight, obj->getMaterial()->getMetallicMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getMetallicTextureImage(), *obj->getMaterial()->getMetallicTextureImageMemory());
+
+	transitionImageLayout(*obj->getMaterial()->getMetallicTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getMetallicMipLevel());
+	copyBufferToImage(metallicStagingBuffer, *obj->getMaterial()->getMetallicTextureImage(), static_cast<uint32_t>(metallicTexWidth), static_cast<uint32_t>(metallicTexHeight));
+	generateMipmaps(*obj->getMaterial()->getMetallicTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, metallicTexWidth, metallicTexHeight, obj->getMaterial()->getMetallicMipLevel());
+
+	vkDestroyBuffer(device, metallicStagingBuffer, nullptr);
+	vkFreeMemory(device, metallicStagingBufferMemory, nullptr);
+
+	// Roughness Texture
+	VkBuffer roughnessStagingBuffer;
+	VkDeviceMemory roughnessStagingBufferMemory;
+
+	int roughnessTexWidth, roughnessTexHeight, roughnessTexChannels;
+	stbi_uc* rPixels = stbi_load(obj->getMaterial()->getRoughnessPath().c_str(), &roughnessTexWidth, &roughnessTexHeight, &roughnessTexChannels, STBI_rgb_alpha);
+	obj->getMaterial()->setRoughnessMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(roughnessTexWidth, roughnessTexHeight)))) + 1);
+	VkDeviceSize roughnessImageSize = roughnessTexWidth * roughnessTexHeight * 4;
+
+	if (!rPixels) {
+		throw std::runtime_error("failed to load roughness texture image!");
+	}
+
+	createBuffer(roughnessImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, roughnessStagingBuffer, roughnessStagingBufferMemory);
+	void *rdata;
+	vkMapMemory(device, roughnessStagingBufferMemory, 0, roughnessImageSize, 0, &rdata);
+	memcpy(rdata, rPixels, static_cast<size_t>(roughnessImageSize));
+	vkUnmapMemory(device, roughnessStagingBufferMemory);
+	stbi_image_free(rPixels);
+	createImage(roughnessTexWidth, roughnessTexHeight, obj->getMaterial()->getRoughnessMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getRoughnessTextureImage(), *obj->getMaterial()->getRoughnessTextureImageMemory());
+
+	transitionImageLayout(*obj->getMaterial()->getRoughnessTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getRoughnessMipLevel());
+	copyBufferToImage(roughnessStagingBuffer, *obj->getMaterial()->getRoughnessTextureImage(), static_cast<uint32_t>(roughnessTexWidth), static_cast<uint32_t>(roughnessTexHeight));
+	generateMipmaps(*obj->getMaterial()->getRoughnessTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, roughnessTexWidth, roughnessTexHeight, obj->getMaterial()->getRoughnessMipLevel());
+
+	vkDestroyBuffer(device, roughnessStagingBuffer, nullptr);
+	vkFreeMemory(device, roughnessStagingBufferMemory, nullptr);
+
+	// AO Texture
+	VkBuffer AOStagingBuffer;
+	VkDeviceMemory AOStagingBufferMemory;
+
+	int AOTexWidth, AOTexHeight, AOTexChannels;
+	stbi_uc* aPixels = stbi_load(obj->getMaterial()->getAOPath().c_str(), &AOTexWidth, &AOTexHeight, &AOTexChannels, STBI_rgb_alpha);
+	obj->getMaterial()->setAOMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(AOTexWidth, AOTexHeight)))) + 1);
+	VkDeviceSize AOImageSize = AOTexWidth * AOTexHeight * 4;
+
+	if (!aPixels) {
+		throw std::runtime_error("failed to load AO texture image!");
+	}
+
+	createBuffer(AOImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, AOStagingBuffer, AOStagingBufferMemory);
+	void *adata;
+	vkMapMemory(device, AOStagingBufferMemory, 0, AOImageSize, 0, &adata);
+	memcpy(adata, aPixels, static_cast<size_t>(AOImageSize));
+	vkUnmapMemory(device, AOStagingBufferMemory);
+	stbi_image_free(aPixels);
+	createImage(AOTexWidth, AOTexHeight, obj->getMaterial()->getAOMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getAOTextureImage(), *obj->getMaterial()->getAOTextureImageMemory());
+
+	transitionImageLayout(*obj->getMaterial()->getAOTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getAOMipLevel());
+	copyBufferToImage(AOStagingBuffer, *obj->getMaterial()->getAOTextureImage(), static_cast<uint32_t>(AOTexWidth), static_cast<uint32_t>(AOTexHeight));
+	generateMipmaps(*obj->getMaterial()->getAOTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, AOTexWidth, AOTexHeight, obj->getMaterial()->getAOMipLevel());
+
+	vkDestroyBuffer(device, AOStagingBuffer, nullptr);
+	vkFreeMemory(device, AOStagingBufferMemory, nullptr);
 }
 
 void GraphicsEngine::createTextureImageView(Object* obj) {
 	// Diffuse Texture
-	obj->setDiffuseTextureImageView(createImageView(*obj->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, obj->getDiffuseMipLevel()));
+	obj->getMaterial()->setDiffuseTextureImageView(createImageView(*obj->getMaterial()->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, obj->getMaterial()->getDiffuseMipLevel()));
 
 	// Normal Texture
-	obj->setNormalTextureImageView(createImageView(*obj->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, obj->getNormalMipLevel()));
+	obj->getMaterial()->setNormalTextureImageView(createImageView(*obj->getMaterial()->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, obj->getMaterial()->getNormalMipLevel()));
+
+	// Metallic Texture
+	obj->getMaterial()->setMetallicTextureImageView(createImageView(*obj->getMaterial()->getMetallicTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, obj->getMaterial()->getMetallicMipLevel()));
+
+	// Roughness Texture
+	obj->getMaterial()->setRoughnessTextureImageView(createImageView(*obj->getMaterial()->getRoughnessTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, obj->getMaterial()->getRoughnessMipLevel()));
+
+	// AO Texture
+	obj->getMaterial()->setAOTextureImageView(createImageView(*obj->getMaterial()->getAOTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, obj->getMaterial()->getAOMipLevel()));
 }
 
 void GraphicsEngine::createTextureSampler(Object* obj) {
@@ -1834,21 +1962,45 @@ void GraphicsEngine::createTextureSampler(Object* obj) {
 	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	samplerInfo.minLod = 0;
-	samplerInfo.maxLod = static_cast<float> (obj->getDiffuseMipLevel());
+	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getDiffuseMipLevel());
 	samplerInfo.mipLodBias = 0.0f;
 
 	// Diffuse Texture
 
-	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getDiffuseTextureSampler()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create texture sampler!");
+	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getDiffuseTextureSampler()) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create diffuse texture sampler!");
 	}
 
 	// Normal Texture (Lod update)
 
-	samplerInfo.maxLod = static_cast<float> (obj->getNormalMipLevel());
+	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getNormalMipLevel());
 
-	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getNormalTextureSampler()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create texture sampler!");
+	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getNormalTextureSampler()) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create normal texture sampler!");
+	}
+
+	// Metallic Texture (Lod update)
+
+	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getMetallicMipLevel());
+
+	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getMetallicTextureSampler()) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create metallic texture sampler!");
+	}
+
+	// Roughness Texture (Lod update)
+
+	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getRoughnessMipLevel());
+
+	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getRoughnessTextureSampler()) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create roughness texture sampler!");
+	}
+
+	// AO Texture (Lod update)
+
+	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getAOMipLevel());
+
+	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getAOTextureSampler()) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create AO texture sampler!");
 	}
 }
 
@@ -1948,15 +2100,30 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 
 	VkDescriptorImageInfo diffuseImageInfo = {};
 	diffuseImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	diffuseImageInfo.imageView = *obj->getDiffuseTextureImageView();
-	diffuseImageInfo.sampler = *obj->getDiffuseTextureSampler();
+	diffuseImageInfo.imageView = *obj->getMaterial()->getDiffuseTextureImageView();
+	diffuseImageInfo.sampler = *obj->getMaterial()->getDiffuseTextureSampler();
 
 	VkDescriptorImageInfo normalImageInfo = {};
 	normalImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	normalImageInfo.imageView = *obj->getNormalTextureImageView();
-	normalImageInfo.sampler = *obj->getNormalTextureSampler();
+	normalImageInfo.imageView = *obj->getMaterial()->getNormalTextureImageView();
+	normalImageInfo.sampler = *obj->getMaterial()->getNormalTextureSampler();
 
-	std::array<VkWriteDescriptorSet, 4> descriptorWrites = {};
+	VkDescriptorImageInfo metallicImageInfo = {};
+	metallicImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	metallicImageInfo.imageView = *obj->getMaterial()->getMetallicTextureImageView();
+	metallicImageInfo.sampler = *obj->getMaterial()->getMetallicTextureSampler();
+
+	VkDescriptorImageInfo roughnessImageInfo = {};
+	roughnessImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	roughnessImageInfo.imageView = *obj->getMaterial()->getRoughnessTextureImageView();
+	roughnessImageInfo.sampler = *obj->getMaterial()->getRoughnessTextureSampler();
+
+	VkDescriptorImageInfo AOImageInfo = {};
+	AOImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	AOImageInfo.imageView = *obj->getMaterial()->getAOTextureImageView();
+	AOImageInfo.sampler = *obj->getMaterial()->getAOTextureSampler();
+
+	std::array<VkWriteDescriptorSet, 7> descriptorWrites = {};
 	descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[0].dstSet = descriptorSets[nbDesc];
 	descriptorWrites[0].dstBinding = 0;
@@ -1988,6 +2155,30 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrites[3].descriptorCount = 1;
 	descriptorWrites[3].pImageInfo = &normalImageInfo;
+
+	descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrites[4].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[4].dstBinding = 4;
+	descriptorWrites[4].dstArrayElement = 0;
+	descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrites[4].descriptorCount = 1;
+	descriptorWrites[4].pImageInfo = &metallicImageInfo;
+
+	descriptorWrites[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrites[5].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[5].dstBinding = 5;
+	descriptorWrites[5].dstArrayElement = 0;
+	descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrites[5].descriptorCount = 1;
+	descriptorWrites[5].pImageInfo = &roughnessImageInfo;
+
+	descriptorWrites[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrites[6].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[6].dstBinding = 6;
+	descriptorWrites[6].dstArrayElement = 0;
+	descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrites[6].descriptorCount = 1;
+	descriptorWrites[6].pImageInfo = &AOImageInfo;
 
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
@@ -2078,15 +2269,30 @@ void GraphicsEngine::cleanup() {
 
 	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
-		vkDestroySampler(device, *elements.front()->getObject()->getDiffuseTextureSampler(), nullptr);
-		vkDestroyImageView(device, *elements.front()->getObject()->getDiffuseTextureImageView(), nullptr);
-		vkDestroyImage(device, *elements.front()->getObject()->getDiffuseTextureImage(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getDiffuseTextureImageMemory(), nullptr);
+		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getDiffuseTextureSampler(), nullptr);
+		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getDiffuseTextureImageView(), nullptr);
+		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getDiffuseTextureImage(), nullptr);
+		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getDiffuseTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *elements.front()->getObject()->getNormalTextureSampler(), nullptr);
-		vkDestroyImageView(device, *elements.front()->getObject()->getNormalTextureImageView(), nullptr);
-		vkDestroyImage(device, *elements.front()->getObject()->getNormalTextureImage(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getNormalTextureImageMemory(), nullptr);
+		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getNormalTextureSampler(), nullptr);
+		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getNormalTextureImageView(), nullptr);
+		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getNormalTextureImage(), nullptr);
+		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getNormalTextureImageMemory(), nullptr);
+
+		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getMetallicTextureSampler(), nullptr);
+		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getMetallicTextureImageView(), nullptr);
+		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getMetallicTextureImage(), nullptr);
+		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getMetallicTextureImageMemory(), nullptr);
+
+		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getRoughnessTextureSampler(), nullptr);
+		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getRoughnessTextureImageView(), nullptr);
+		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getRoughnessTextureImage(), nullptr);
+		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getRoughnessTextureImageMemory(), nullptr);
+
+		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getAOTextureSampler(), nullptr);
+		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getAOTextureImageView(), nullptr);
+		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getAOTextureImage(), nullptr);
+		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getAOTextureImageMemory(), nullptr);
 
 		for (SGNode* child : elements.front()->getChildren()) {
 			elements.insert(elements.end(), child);
@@ -2094,15 +2300,30 @@ void GraphicsEngine::cleanup() {
 		elements.erase(elements.begin());
 	}
 
-	vkDestroySampler(device, *scene->getSkybox()->getDiffuseTextureSampler(), nullptr);
-	vkDestroyImageView(device, *scene->getSkybox()->getDiffuseTextureImageView(), nullptr);
-	vkDestroyImage(device, *scene->getSkybox()->getDiffuseTextureImage(), nullptr);
-	vkFreeMemory(device, *scene->getSkybox()->getDiffuseTextureImageMemory(), nullptr);
+	vkDestroySampler(device, *scene->getSkybox()->getMaterial()->getDiffuseTextureSampler(), nullptr);
+	vkDestroyImageView(device, *scene->getSkybox()->getMaterial()->getDiffuseTextureImageView(), nullptr);
+	vkDestroyImage(device, *scene->getSkybox()->getMaterial()->getDiffuseTextureImage(), nullptr);
+	vkFreeMemory(device, *scene->getSkybox()->getMaterial()->getDiffuseTextureImageMemory(), nullptr);
 
-	vkDestroySampler(device, *scene->getSkybox()->getNormalTextureSampler(), nullptr);
-	vkDestroyImageView(device, *scene->getSkybox()->getNormalTextureImageView(), nullptr);
-	vkDestroyImage(device, *scene->getSkybox()->getNormalTextureImage(), nullptr);
-	vkFreeMemory(device, *scene->getSkybox()->getNormalTextureImageMemory(), nullptr);
+	vkDestroySampler(device, *scene->getSkybox()->getMaterial()->getNormalTextureSampler(), nullptr);
+	vkDestroyImageView(device, *scene->getSkybox()->getMaterial()->getNormalTextureImageView(), nullptr);
+	vkDestroyImage(device, *scene->getSkybox()->getMaterial()->getNormalTextureImage(), nullptr);
+	vkFreeMemory(device, *scene->getSkybox()->getMaterial()->getNormalTextureImageMemory(), nullptr);
+
+	vkDestroySampler(device, *scene->getSkybox()->getMaterial()->getMetallicTextureSampler(), nullptr);
+	vkDestroyImageView(device, *scene->getSkybox()->getMaterial()->getMetallicTextureImageView(), nullptr);
+	vkDestroyImage(device, *scene->getSkybox()->getMaterial()->getMetallicTextureImage(), nullptr);
+	vkFreeMemory(device, *scene->getSkybox()->getMaterial()->getMetallicTextureImageMemory(), nullptr);
+
+	vkDestroySampler(device, *scene->getSkybox()->getMaterial()->getRoughnessTextureSampler(), nullptr);
+	vkDestroyImageView(device, *scene->getSkybox()->getMaterial()->getRoughnessTextureImageView(), nullptr);
+	vkDestroyImage(device, *scene->getSkybox()->getMaterial()->getRoughnessTextureImage(), nullptr);
+	vkFreeMemory(device, *scene->getSkybox()->getMaterial()->getRoughnessTextureImageMemory(), nullptr);
+
+	vkDestroySampler(device, *scene->getSkybox()->getMaterial()->getAOTextureSampler(), nullptr);
+	vkDestroyImageView(device, *scene->getSkybox()->getMaterial()->getAOTextureImageView(), nullptr);
+	vkDestroyImage(device, *scene->getSkybox()->getMaterial()->getAOTextureImage(), nullptr);
+	vkFreeMemory(device, *scene->getSkybox()->getMaterial()->getAOTextureImageMemory(), nullptr);
 
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 

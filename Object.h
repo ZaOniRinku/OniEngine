@@ -1,10 +1,9 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
-#include <iostream>
 #include <glm/glm.hpp>
 #include <unordered_map>
 #include <glm/gtx/hash.hpp>
 #include "SGNode.h"
+#include "Material.h"
 #define GLM_ENABLE_EXPERIMENTAL
 
 struct Vertex {
@@ -75,9 +74,9 @@ class SGNode;
 class Object {
 public:
 	Object();
-	Object(std::string mPath, std::string dtPath, glm::vec3 oPos, float mScale);
-	Object(std::string mPath, std::string dtPath, float x, float y, float z, float mScale);
-	Object(std::string mPath, std::string dtPath, float x, float y, float z, float mScale, float xRot, float yRot, float zRot);
+	Object(std::string mPath, glm::vec3 oPos, float mScale);
+	Object(std::string mPath, float x, float y, float z, float mScale);
+	Object(std::string mPath, float x, float y, float z, float mScale, float xRot, float yRot, float zRot);
 	void move(glm::vec3 movePosition);
 	void move(float x, float y, float z);
 	void rescale(float newScale);
@@ -93,10 +92,8 @@ public:
 	SGNode* getNode();
 	void setNode(SGNode* newNode);
 	std::string getModelPath();
-	std::string getDiffuseTexturePath();
-	void setDiffuseTexturePath(std::string newDiffuseTexturePath);
-	std::string getNormalTexturePath();
-	void setNormalTexturePath(std::string newNormalTexturePath);
+	Material* getMaterial();
+	void setMaterial(Material* newMaterial);
 	std::string getName();
 	void setName(std::string newName);
 	std::vector<Vertex>* getModelVertices();
@@ -105,26 +102,6 @@ public:
 	VkDeviceMemory* getVertexBufferMemory();
 	VkBuffer* getIndexBuffer();
 	VkDeviceMemory* getIndexBufferMemory();
-	uint32_t getDiffuseMipLevel();
-	void setDiffuseMipLevel(uint32_t newDiffuseMipLevel);
-	uint32_t getNormalMipLevel();
-	void setNormalMipLevel(uint32_t newNormalMipLevel);
-	VkImage* getDiffuseTextureImage();
-	void setDiffuseTextureImage(VkImage newDiffuseTextureImage);
-	VkDeviceMemory* getDiffuseTextureImageMemory();
-	void setDiffuseTextureImageMemory(VkDeviceMemory newDiffuseTextureImageMemory);
-	VkImageView* getDiffuseTextureImageView();
-	void setDiffuseTextureImageView(VkImageView newDiffuseTextureImageView);
-	VkSampler* getDiffuseTextureSampler();
-	void setDiffuseTextureSampler(VkSampler newDiffuseTextureSampler);
-	VkImage* getNormalTextureImage();
-	void setNormalTextureImage(VkImage newNormalTextureImage);
-	VkDeviceMemory* getNormalTextureImageMemory();
-	void setNormalTextureImageMemory(VkDeviceMemory newNormalTextureImageMemory);
-	VkImageView* getNormalTextureImageView();
-	void setNormalTextureImageView(VkImageView newNormalTextureImageView);
-	VkSampler* getNormalTextureSampler();
-	void setNormalTextureSampler(VkSampler newNormalTextureSampler);
 	VkDescriptorSet* getDescriptorSet(int index);
 	void addDescriptorSet(VkDescriptorSet* newDescriptorSet);
 	VkBuffer* getUniformBuffer(int index);
@@ -136,8 +113,7 @@ public:
 private:
 	// Object's attributes
 	std::string modelPath;
-	std::string diffuseTexturePath;
-	std::string normalTexturePath;
+	Material *material;
 	glm::vec3 pos;
 	float scale;
 	glm::vec3 rot;
@@ -153,19 +129,6 @@ private:
 	VkDeviceMemory vertexBufferMemory;
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
-
-	// Textures attributes
-	VkImage diffuseTextureImage;
-	VkDeviceMemory diffuseTextureImageMemory;
-	VkImageView diffuseTextureImageView;
-	VkSampler diffuseTextureSampler;
-	uint32_t diffuseMipLevel;
-
-	VkImage normalTextureImage;
-	VkDeviceMemory normalTextureImageMemory;
-	VkImageView normalTextureImageView;
-	VkSampler normalTextureSampler;
-	uint32_t normalMipLevel;
 
 	std::vector<VkDescriptorSet*> descriptorSets;
 

@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include "SGNode.h"
 #include "Camera.h"
 #include "DirectionalLight.h"
