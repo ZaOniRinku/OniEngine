@@ -1341,12 +1341,18 @@ void GraphicsEngine::createCommandBuffers() {
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
 
+		std::array<VkClearValue, 2> clearValues = {};
+		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = renderPass;
 		renderPassInfo.framebuffer = swapChainFramebuffers[i];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = swapChainExtent;
+		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassInfo.pClearValues = clearValues.data();
 
 		VkRenderPassBeginInfo shadowRenderPassInfo = {};
 		shadowRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1354,27 +1360,25 @@ void GraphicsEngine::createCommandBuffers() {
 		shadowRenderPassInfo.framebuffer = shadowFramebuffers[i];
 		shadowRenderPassInfo.renderArea.offset = { 0, 0 };
 		shadowRenderPassInfo.renderArea.extent = shadowExtent;
-
-		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
+		shadowRenderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		shadowRenderPassInfo.pClearValues = clearValues.data();
 
 		VkDeviceSize offsets[] = { 0 };
+
+		std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 
 		// Shadows
 
 		vkCmdBeginRenderPass(commandBuffers[i], &shadowRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowGraphicsPipeline);
 
-		std::vector<SGNode*> elements = scene->getRoot()->getChildren();
+		elements = scene->getRoot()->getChildren();
 		while (!elements.empty()) {
 			Object* obj = elements.front()->getObject();
 			VkBuffer vertexCmdBuffers[] = { *obj->getVertexBuffer() };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffers[i], *obj->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, obj->getDescriptorSet(i), 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipelineLayout, 0, 1, obj->getDescriptorSet(i), 0, nullptr);
 			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getModelIndices()->size()), 1, 0, 0, 0);
 			for (SGNode* child : elements.front()->getChildren()) {
 				elements.insert(elements.end(), child);
@@ -1393,7 +1397,7 @@ void GraphicsEngine::createCommandBuffers() {
 		VkBuffer skyboxVertexCmdBuffers[] = { *scene->getSkybox()->getVertexBuffer() };
 		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, skyboxVertexCmdBuffers, offsets);
 		vkCmdBindIndexBuffer(commandBuffers[i], *scene->getSkybox()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, scene->getSkybox()->getDescriptorSet(i), 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipelineLayout, 0, 1, scene->getSkybox()->getDescriptorSet(i), 0, nullptr);
 		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(scene->getSkybox()->getModelIndices()->size()), 1, 0, 0, 0);
 
 		// For each 3D model, bind its vertex and indices and the right descriptor set for its texture
