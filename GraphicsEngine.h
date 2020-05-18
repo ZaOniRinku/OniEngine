@@ -205,14 +205,17 @@ private:
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
+	VkExtent2D shadowExtent;
 	std::vector<VkImageView> swapChainImageViews;
 	VkRenderPass renderPass;
 	VkRenderPass shadowRenderPass;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipeline graphicsPipeline;
 	VkPipeline skyboxGraphicsPipeline;
+	VkPipeline shadowGraphicsPipeline;
 	VkPipelineLayout pipelineLayout;
 	VkPipelineLayout skyboxPipelineLayout;
+	VkPipelineLayout shadowPipelineLayout;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<VkFramebuffer> shadowFramebuffers;
 	VkCommandPool commandPool;
@@ -239,6 +242,8 @@ private:
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	std::vector<VkBuffer> lightsBuffers;
 	std::vector <VkDeviceMemory> lightsBuffersMemory;
+	std::vector<VkBuffer> shadowBuffers;
+	std::vector<VkDeviceMemory> shadowBuffersMemory;
 
 	// Game scene
 	Scene* scene;

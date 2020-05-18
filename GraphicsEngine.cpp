@@ -86,16 +86,22 @@ void GraphicsEngine::inputsManagement(GLFWwindow* window) {
 		scene->getSkybox()->setPosition(newPos.x, newPos.y, newPos.z);
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren().front()->getObject()->move(movementObject, 0.0f, 0.0f);
+		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(movementObject, 0.0f, 0.0f);
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren().front()->getObject()->move(-movementObject, 0.0f, 0.0f);
+		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(-movementObject, 0.0f, 0.0f);
 	}
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren().front()->getObject()->move(0.0f, -movementObject, 0.0f);
+		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(0.0f, -movementObject, 0.0f);
 	}
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren().front()->getObject()->move(0.0f, movementObject, 0.0f);
+		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(0.0f, movementObject, 0.0f);
+	}
+	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(0.0f, 0.0f, movementObject);
+	}
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(0.0f, 0.0f, -movementObject);
 	}
 	// Lock z axis
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
@@ -196,9 +202,9 @@ void GraphicsEngine::createInstance() {
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "Vulkan";
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName = "No Engine";
+	appInfo.pEngineName = "ONIEngine";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.apiVersion = VK_API_VERSION_1_2;
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -217,7 +223,7 @@ void GraphicsEngine::createInstance() {
 	}
 
 	if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to creatextensionNamee instance !");
+		throw std::runtime_error("Failed to create instance !");
 	}
 
 	// List extensions
@@ -375,6 +381,10 @@ void GraphicsEngine::cleanupSwapChain() {
 	vkDestroyImage(device, depthImage, nullptr);
 	vkFreeMemory(device, depthImageMemory, nullptr);
 
+	vkDestroyImageView(device, shadowImageView, nullptr);
+	vkDestroyImage(device, shadowImage, nullptr);
+	vkFreeMemory(device, shadowImageMemory, nullptr);
+
 	for (auto framebuffer : swapChainFramebuffers) {
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
 	}
@@ -384,9 +394,13 @@ void GraphicsEngine::cleanupSwapChain() {
 	// Destroy pipelines
 	vkDestroyPipeline(device, *scene->getSkybox()->getGraphicsPipeline(), nullptr);
 	vkDestroyPipeline(device, *scene->getRoot()->getObject()->getGraphicsPipeline(), nullptr);
+	vkDestroyPipeline(device, shadowGraphicsPipeline, nullptr);
 
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(device, renderPass, nullptr);
+	vkDestroyPipelineLayout(device, shadowPipelineLayout, nullptr);
+	vkDestroyRenderPass(device, shadowRenderPass, nullptr);
+
 	for (auto imageView : swapChainImageViews) {
 		vkDestroyImageView(device, imageView, nullptr);
 	}
@@ -395,8 +409,13 @@ void GraphicsEngine::cleanupSwapChain() {
 	for (size_t i = 0; i < swapChainImages.size()*scene->nbElements(); i++) {
 		vkDestroyBuffer(device, uniformBuffers[i], nullptr);
 		vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+	}
+	
+	for (size_t i = 0; i < swapChainImages.size(); i++) {
 		vkDestroyBuffer(device, lightsBuffers[i], nullptr);
 		vkFreeMemory(device, lightsBuffersMemory[i], nullptr);
+		vkDestroyBuffer(device, shadowBuffers[i], nullptr);
+		vkFreeMemory(device, shadowBuffersMemory[i], nullptr);
 	}
 
 	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
@@ -538,47 +557,55 @@ void GraphicsEngine::createRenderPass() {
 
 	// Shadows
 
-	depthAttachment = {};
-	depthAttachment.format = findDepthFormat();
-	depthAttachment.samples = msaaSamples;
-	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	VkAttachmentDescription shadowDepthAttachment = {};
+	shadowDepthAttachment.format = findDepthFormat();
+	shadowDepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	shadowDepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	shadowDepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	shadowDepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	shadowDepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	shadowDepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	shadowDepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
-	depthAttachmentRef = {};
-	depthAttachmentRef.attachment = 1;
-	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	VkAttachmentReference shadowDepthAttachmentRef = {};
+	shadowDepthAttachmentRef.attachment = 0;
+	shadowDepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	subpass = {};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 0;
-	subpass.pColorAttachments = nullptr;
-	subpass.pDepthStencilAttachment = &depthAttachmentRef;
-	subpass.pResolveAttachments = nullptr;
+	VkSubpassDescription shadowSubpass = {};
+	shadowSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	shadowSubpass.colorAttachmentCount = 0;
+	shadowSubpass.pColorAttachments = nullptr;
+	shadowSubpass.pDepthStencilAttachment = &shadowDepthAttachmentRef;
+	shadowSubpass.pResolveAttachments = nullptr;
 
-	dependency = {};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
-		| VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	std::array<VkSubpassDependency, 2> shadowDependencies;
+	shadowDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	shadowDependencies[0].dstSubpass = 0;
+	shadowDependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	shadowDependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	shadowDependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	shadowDependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	shadowDependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-	std::array<VkAttachmentDescription, 1> shadowAttachment = { depthAttachment };
-	renderPassInfo = {};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = static_cast<uint32_t>(shadowAttachment.size());
-	renderPassInfo.pAttachments = shadowAttachment.data();
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
+	shadowDependencies[1].srcSubpass = 0;
+	shadowDependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	shadowDependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+	shadowDependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	shadowDependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	shadowDependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	shadowDependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-	if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &shadowRenderPass) != VK_SUCCESS) {
+	std::array<VkAttachmentDescription, 1> shadowAttachments = { shadowDepthAttachment };
+	VkRenderPassCreateInfo shadowRenderPassInfo = {};
+	shadowRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	shadowRenderPassInfo.attachmentCount = static_cast<uint32_t>(shadowAttachments.size());
+	shadowRenderPassInfo.pAttachments = shadowAttachments.data();
+	shadowRenderPassInfo.subpassCount = 1;
+	shadowRenderPassInfo.pSubpasses = &shadowSubpass;
+	shadowRenderPassInfo.dependencyCount = static_cast<uint32_t>(shadowDependencies.size());
+	shadowRenderPassInfo.pDependencies = shadowDependencies.data();
+
+	if (vkCreateRenderPass(device, &shadowRenderPassInfo, nullptr, &shadowRenderPass) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create shadow render pass!");
 	}
 }
@@ -946,13 +973,129 @@ void GraphicsEngine::createGraphicsPipeline() {
 	skyboxPipelineInfo.basePipelineIndex = -1;
 
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &skyboxPipelineInfo, nullptr, &skyboxGraphicsPipeline) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create graphics pipeline!");
+		throw std::runtime_error("failed to create skybox graphics pipeline!");
 	}
 
 	scene->getSkybox()->setGraphicsPipeline(&skyboxGraphicsPipeline);
 	
 	vkDestroyShaderModule(device, skyboxVertShaderModule, nullptr);
 	vkDestroyShaderModule(device, skyboxFragShaderModule, nullptr);
+
+	// Shadows pipeline
+
+	auto shadowVertShaderCode = readFile("shadowvert.spv");
+
+	VkShaderModule shadowVertShaderModule = createShaderModule(shadowVertShaderCode);
+
+	VkPipelineShaderStageCreateInfo shadowVertShaderStageInfo = {};
+	shadowVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shadowVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	shadowVertShaderStageInfo.module = shadowVertShaderModule;
+	shadowVertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shadowShaderStages[] = { shadowVertShaderStageInfo };
+
+	VkPipelineVertexInputStateCreateInfo shadowVertexInputInfo = {};
+	auto shadowBindingDescription = Vertex::getBindingDescription();
+	auto shadowAttributeDescriptions = Vertex::getAttributeDescriptions();
+	shadowVertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	shadowVertexInputInfo.vertexBindingDescriptionCount = 1;
+	shadowVertexInputInfo.pVertexBindingDescriptions = &shadowBindingDescription;
+	shadowVertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(shadowAttributeDescriptions.size());
+	shadowVertexInputInfo.pVertexAttributeDescriptions = shadowAttributeDescriptions.data();
+
+	VkPipelineInputAssemblyStateCreateInfo shadowInputAssembly = {};
+	shadowInputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	shadowInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	shadowInputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	VkViewport shadowViewport = {};
+	shadowViewport.x = 0.0f;
+	shadowViewport.y = 0.0f;
+	shadowViewport.width = SHADOW_WIDTH;
+	shadowViewport.height = SHADOW_HEIGHT;
+	shadowViewport.minDepth = 0.0f;
+	shadowViewport.maxDepth = 1.0f;
+
+	VkRect2D shadowScissor = {};
+	shadowScissor.offset = { 0, 0 };
+	shadowScissor.extent = shadowExtent;
+
+	VkPipelineViewportStateCreateInfo shadowViewportState = {};
+	shadowViewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	shadowViewportState.viewportCount = 1;
+	shadowViewportState.pViewports = &shadowViewport;
+	shadowViewportState.scissorCount = 1;
+	shadowViewportState.pScissors = &shadowScissor;
+
+	VkPipelineRasterizationStateCreateInfo shadowRasterizer = {};
+	shadowRasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	shadowRasterizer.depthClampEnable = VK_FALSE;
+	shadowRasterizer.rasterizerDiscardEnable = VK_FALSE;
+	shadowRasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	shadowRasterizer.lineWidth = 1.0f;
+	shadowRasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	shadowRasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	shadowRasterizer.depthBiasEnable = VK_FALSE;
+	shadowRasterizer.depthBiasConstantFactor = 0.0f;
+	shadowRasterizer.depthBiasClamp = 0.0f;
+	shadowRasterizer.depthBiasSlopeFactor = 0.0f;
+
+	VkPipelineMultisampleStateCreateInfo shadowMultisampling = {};
+	shadowMultisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	shadowMultisampling.sampleShadingEnable = VK_TRUE;
+	shadowMultisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	shadowMultisampling.minSampleShading = 0.1f;
+	shadowMultisampling.pSampleMask = nullptr;
+	shadowMultisampling.alphaToCoverageEnable = VK_FALSE;
+	shadowMultisampling.alphaToOneEnable = VK_FALSE;
+
+	VkPipelineDepthStencilStateCreateInfo shadowDepthStencil = {};
+	shadowDepthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	shadowDepthStencil.depthTestEnable = VK_TRUE;
+	shadowDepthStencil.depthWriteEnable = VK_TRUE;
+	shadowDepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	shadowDepthStencil.depthBoundsTestEnable = VK_FALSE;
+	shadowDepthStencil.minDepthBounds = 0.0f;
+	shadowDepthStencil.maxDepthBounds = 1.0f;
+	shadowDepthStencil.stencilTestEnable = VK_FALSE;
+	shadowDepthStencil.front = {};
+	shadowDepthStencil.back = {};
+
+	VkPipelineLayoutCreateInfo shadowPipelineLayoutInfo = {};
+	shadowPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	shadowPipelineLayoutInfo.setLayoutCount = 1;
+	shadowPipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+	shadowPipelineLayoutInfo.pushConstantRangeCount = 0;
+	shadowPipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+	if (vkCreatePipelineLayout(device, &shadowPipelineLayoutInfo, nullptr, &shadowPipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create shadows pipeline layout!");
+	}
+
+	VkGraphicsPipelineCreateInfo shadowPipelineInfo = {};
+	shadowPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	shadowPipelineInfo.stageCount = 1;
+	shadowPipelineInfo.pStages = shadowShaderStages;
+	shadowPipelineInfo.pVertexInputState = &shadowVertexInputInfo;
+	shadowPipelineInfo.pInputAssemblyState = &shadowInputAssembly;
+	shadowPipelineInfo.pViewportState = &shadowViewportState;
+	shadowPipelineInfo.pRasterizationState = &shadowRasterizer;
+	shadowPipelineInfo.pMultisampleState = &shadowMultisampling;
+	shadowPipelineInfo.pDepthStencilState = &shadowDepthStencil;
+	shadowPipelineInfo.pColorBlendState = nullptr;
+	shadowPipelineInfo.pDynamicState = nullptr;
+	shadowPipelineInfo.layout = shadowPipelineLayout;
+	shadowPipelineInfo.renderPass = shadowRenderPass;
+	shadowPipelineInfo.subpass = 0;
+	shadowPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	shadowPipelineInfo.basePipelineIndex = -1;
+
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &shadowPipelineInfo, nullptr, &shadowGraphicsPipeline) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create shadows graphics pipeline!");
+	}
+
+	vkDestroyShaderModule(device, shadowVertShaderModule, nullptr);
 }
 
 void GraphicsEngine::createFramebuffers() {
@@ -994,6 +1137,9 @@ void GraphicsEngine::createFramebuffers() {
 		shadowFramebufferInfo.height = SHADOW_HEIGHT;
 		shadowFramebufferInfo.layers = 1;
 
+		shadowExtent.width = SHADOW_WIDTH;
+		shadowExtent.height = SHADOW_HEIGHT;
+
 		if (vkCreateFramebuffer(device, &shadowFramebufferInfo, nullptr, &shadowFramebuffers[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create shadow framebuffer!");
 		}
@@ -1028,7 +1174,7 @@ void GraphicsEngine::createDepthResources() {
 
 	// Shadows
 
-	createImage(SHADOW_WIDTH, SHADOW_HEIGHT, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowImage, shadowImageMemory);
+	createImage(SHADOW_WIDTH, SHADOW_HEIGHT, 1, VK_SAMPLE_COUNT_1_BIT, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowImage, shadowImageMemory);
 	shadowImageView = createImageView(shadowImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	transitionImageLayout(shadowImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
@@ -1103,12 +1249,23 @@ void GraphicsEngine::createUniformBuffers() {
 		nbBuffer++;
 	}
 
+	// Lights
+
 	lightsBuffers.resize(swapChainImages.size());
 	lightsBuffersMemory.resize(swapChainImages.size());
-
+	bufferSize = sizeof(LightsBufferObject);
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
-		bufferSize = sizeof(LightsBufferObject);
 		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, lightsBuffers[i], lightsBuffersMemory[i]);
+	}
+
+	// Shadows
+
+	shadowBuffers.resize(swapChainImages.size());
+	shadowBuffersMemory.resize(swapChainImages.size());
+
+	bufferSize = sizeof(UniformBufferObject);
+	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, shadowBuffers[i], shadowBuffersMemory[i]);
 	}
 }
 
@@ -1191,15 +1348,45 @@ void GraphicsEngine::createCommandBuffers() {
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
+		VkRenderPassBeginInfo shadowRenderPassInfo = {};
+		shadowRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		shadowRenderPassInfo.renderPass = shadowRenderPass;
+		shadowRenderPassInfo.framebuffer = shadowFramebuffers[i];
+		shadowRenderPassInfo.renderArea.offset = { 0, 0 };
+		shadowRenderPassInfo.renderArea.extent = shadowExtent;
+
 		std::array<VkClearValue, 2> clearValues = {};
 		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
 
-		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		
 		VkDeviceSize offsets[] = { 0 };
+
+		// Shadows
+
+		vkCmdBeginRenderPass(commandBuffers[i], &shadowRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowGraphicsPipeline);
+
+		std::vector<SGNode*> elements = scene->getRoot()->getChildren();
+		while (!elements.empty()) {
+			Object* obj = elements.front()->getObject();
+			VkBuffer vertexCmdBuffers[] = { *obj->getVertexBuffer() };
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
+			vkCmdBindIndexBuffer(commandBuffers[i], *obj->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, obj->getDescriptorSet(i), 0, nullptr);
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getModelIndices()->size()), 1, 0, 0, 0);
+			for (SGNode* child : elements.front()->getChildren()) {
+				elements.insert(elements.end(), child);
+			}
+			elements.erase(elements.begin());
+		}
+
+		vkCmdEndRenderPass(commandBuffers[i]);
+
+		// Objects
+
+		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		// Skybox
 		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *scene->getSkybox()->getGraphicsPipeline());
@@ -1210,7 +1397,7 @@ void GraphicsEngine::createCommandBuffers() {
 		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(scene->getSkybox()->getModelIndices()->size()), 1, 0, 0, 0);
 
 		// For each 3D model, bind its vertex and indices and the right descriptor set for its texture
-		std::vector<SGNode*> elements = scene->getRoot()->getChildren();
+		elements = scene->getRoot()->getChildren();
 		while (!elements.empty()) {
 			Object* obj = elements.front()->getObject();
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *obj->getGraphicsPipeline());
@@ -1504,7 +1691,7 @@ void GraphicsEngine::updateUniformBuffer(Object* obj, uint32_t currentImage) {
 	// Using T * R * S transformation for models, default rotate is 90� on the X-axis so models got the angle they have on 3D modeling softwares
 	ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ())) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX() + 90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
 	ubo.view = glm::lookAt(camPos, camPos + camFront, camUp);
-	ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+	ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
 	// Render the right way (openGL standards -> Vulkan standards)
 	ubo.proj[1][1] *= -1;
 	ubo.camPos = camPos;
@@ -1513,6 +1700,8 @@ void GraphicsEngine::updateUniformBuffer(Object* obj, uint32_t currentImage) {
 	vkMapMemory(device, *obj->getUniformBufferMemory(currentImage), 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
 	vkUnmapMemory(device, *obj->getUniformBufferMemory(currentImage));
+
+	// Lights
 
 	LightsBufferObject lbo = {};
 	lbo.numDirLights = scene->getDirectionalLights()->size();
@@ -1529,6 +1718,18 @@ void GraphicsEngine::updateUniformBuffer(Object* obj, uint32_t currentImage) {
 	vkMapMemory(device, lightsBuffersMemory[currentImage], 0, sizeof(lbo), 0, &data);
 	memcpy(data, &lbo, sizeof(lbo));
 	vkUnmapMemory(device, lightsBuffersMemory[currentImage]);
+
+	// Shadows
+
+	UniformBufferObject sbo = {};
+	sbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ())) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX() + 90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
+	sbo.view = glm::lookAt(glm::vec3(scene->getDirectionalLights()->at(0)->getDirectionX(), scene->getDirectionalLights()->at(0)->getDirectionY(), scene->getDirectionalLights()->at(0)->getDirectionZ()), glm::vec3(), glm::vec3(0.0f, 0.0f, 1.0f));
+	sbo.proj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+	sbo.camPos = glm::vec3(0.0f);
+
+	vkMapMemory(device, shadowBuffersMemory[currentImage], 0, sizeof(sbo), 0, &data);
+	memcpy(data, &sbo, sizeof(sbo));
+	vkUnmapMemory(device, shadowBuffersMemory[currentImage]);
 }
 
 VkCommandBuffer GraphicsEngine::beginSingleTimeCommands() {
