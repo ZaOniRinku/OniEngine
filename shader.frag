@@ -20,10 +20,10 @@ layout(binding = 5) uniform sampler2D roughnessTexSampler;
 layout(binding = 6) uniform sampler2D AOTexSampler;
 
 layout(location = 0) in vec3 fragNormal;
-layout(location = 1) in vec3 fragEye;
-layout(location = 2) in vec2 fragTexCoord;
-layout(location = 3) in vec3 fragPos;
-layout(location = 4) in vec3 fragCamPos;
+layout(location = 1) in vec2 fragTexCoord;
+layout(location = 2) in vec3 fragPos;
+layout(location = 3) in vec3 fragCamPos;
+layout(location = 4) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
@@ -88,7 +88,8 @@ void main() {
 	float ao = texture(AOTexSampler, fragTexCoord).x;
 
 	vec3 d = vec3(diffuse);
-	vec3 n = normalize(vec3(normal) * 2.0 - 1.0);
+	vec3 n = vec3(normal) * 2.0 - 1.0;
+	n = normalize(fragTBN * n);
 	vec3 v = normalize(fragCamPos - fragPos);
 	vec3 l;
 	
@@ -98,7 +99,7 @@ void main() {
 		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
 	}
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
-		l = normalize(lights.fragPointLights[i] - vec3(fragPos));
+		l = normalize(lights.fragPointLights[i] - fragPos);
 		float distance = length(lights.fragPointLights[i] - fragPos);
 		float attenuation = 1.0 / (distance * distance);
 		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;

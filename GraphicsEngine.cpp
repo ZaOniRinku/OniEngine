@@ -2243,6 +2243,16 @@ void GraphicsEngine::loadModel(Object* obj) {
 				1.0f,
 				1.0f
 			};
+			vertex.tangent = {
+				0.0f,
+				0.0f,
+				0.0f
+			};
+			vertex.bitangent = {
+				0.0f,
+				0.0f,
+				0.0f
+			};
 
 			if (uniqueVertices.count(vertex) == 0) {
 				uniqueVertices[vertex] = static_cast<uint32_t>(obj->getModelVertices()->size());
@@ -2250,6 +2260,39 @@ void GraphicsEngine::loadModel(Object* obj) {
 			}
 			obj->getModelIndices()->push_back(uniqueVertices[vertex]);
 		}
+	}
+
+	// Tangents and bitangents for normal mapping
+	for (int i = 0; i < obj->getModelIndices()->size(); i += 3) {
+		Vertex* vertex0 = &obj->getModelVertices()->at(obj->getModelIndices()->at(i + 0));
+		Vertex* vertex1 = &obj->getModelVertices()->at(obj->getModelIndices()->at(i + 1));
+		Vertex* vertex2 = &obj->getModelVertices()->at(obj->getModelIndices()->at(i + 2));
+		
+		glm::vec3 dPos1 = vertex1->pos - vertex0->pos;
+		glm::vec3 dPos2 = vertex2->pos - vertex0->pos;
+
+		glm::vec2 dUV1 = vertex1->texCoord - vertex0->texCoord;
+		glm::vec2 dUV2 = vertex2->texCoord - vertex0->texCoord;
+
+		float r = 1.0f / (dUV1.x * dUV2.y - dUV1.y * dUV2.x);
+		glm::vec3 tangent = (dPos1 * dUV2.y - dPos2 * dUV1.y) * r;
+		glm::vec3 bitangent = (dPos2 * dUV1.x - dPos1 * dUV2.x) * r;
+
+		vertex0->tangent += tangent;
+		vertex1->tangent += tangent;
+		vertex2->tangent += tangent;
+
+		vertex0->bitangent += bitangent;
+		vertex1->bitangent += bitangent;
+		vertex2->bitangent += bitangent;
+	}
+
+	// Average tangents and bitangents
+	for (int i = 0; i < obj->getModelVertices()->size(); i++) {
+		Vertex* vert = &obj->getModelVertices()->at(i);
+		uint32_t c = std::count(obj->getModelIndices()->begin(), obj->getModelIndices()->end(), i);
+		vert->tangent = vert->tangent / static_cast<float>(c);
+		vert->bitangent = vert->bitangent / static_cast<float>(c);
 	}
 }
 
