@@ -82,13 +82,13 @@ vec3 shade(vec3 n, vec3 v, vec3 l, vec3 lc, vec3 diffuse, float metallic, float 
 
 void main() {
 	vec4 diffuse = texture(diffuseTexSampler, fragTexCoord);
-	vec4 normal = texture(normalTexSampler, fragTexCoord);
+	vec3 normal = texture(normalTexSampler, fragTexCoord).xyz;
 	float metallic = texture(metallicTexSampler, fragTexCoord).x;
 	float roughness = texture(roughnessTexSampler, fragTexCoord).x;
 	float ao = texture(AOTexSampler, fragTexCoord).x;
 
 	vec3 d = vec3(diffuse);
-	vec3 n = vec3(normal) * 2.0 - 1.0;
+	vec3 n = normal * 2.0 - 1.0;
 	n = normalize(fragTBN * n);
 	vec3 v = normalize(fragCamPos - fragPos);
 	vec3 l;
