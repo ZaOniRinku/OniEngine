@@ -2290,9 +2290,8 @@ void GraphicsEngine::loadModel(Object* obj) {
 	// Average tangents and bitangents
 	for (int i = 0; i < obj->getModelVertices()->size(); i++) {
 		Vertex* vert = &obj->getModelVertices()->at(i);
-		uint32_t c = std::count(obj->getModelIndices()->begin(), obj->getModelIndices()->end(), i);
-		vert->tangent = vert->tangent / static_cast<float>(c);
-		vert->bitangent = vert->bitangent / static_cast<float>(c);
+		vert->tangent = glm::normalize(vert->tangent);
+		vert->bitangent = glm::normalize(vert->bitangent);
 	}
 }
 

@@ -31,11 +31,11 @@ layout(location = 0) out vec4 outColor;
 
 float RDM_Distribution(float NdotH, float roughness) {
 	float a = roughness * roughness;
-	float acarre = a * a;
+	float asquare = a * a;
 	float NdotHcarre = NdotH * NdotH;
-	float denominateur = NdotHcarre * (acarre - 1.0) + 1.0;
+	float denom = NdotHcarre * (asquare - 1.0) + 1.0;
 
-	return acarre / (M_PI * denominateur * denominateur);
+	return asquare / (M_PI * denom * denom);
 }
 
 vec3 RDM_Fresnel(float costheta, vec3 f0) {
@@ -45,9 +45,9 @@ vec3 RDM_Fresnel(float costheta, vec3 f0) {
 float RDM_G1(float NdotV, float roughness) {
 	float r = roughness + 1.0;
 	float k = (r * r) / 8.0;
-	float denominateur = NdotV * (1.0 - k) + k;
+	float denom = NdotV * (1.0 - k) + k;
 
-	return NdotV / denominateur;
+	return NdotV / denom;
 }
 
 float RDM_Smith(float LdotN, float VdotN, float roughness) {
