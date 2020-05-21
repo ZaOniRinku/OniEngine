@@ -42,7 +42,7 @@ void SGNode::viewSceneNode(int level) {
 				std::cout << " " << child->object->getName() << std::endl;
 			}
 			else {
-				std::cout << " " << child->object->getModelPath() << std::endl;
+				std::cout << " " << child->object->getMesh()->getModelPath() << std::endl;
 			}
 		}
 		child->viewSceneNode(level + 1);

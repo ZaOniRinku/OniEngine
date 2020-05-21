@@ -11,6 +11,11 @@ layout(binding = 0) uniform UniformBufferObject {
   vec3 camPos;
 } ubo;
 
+layout(binding = 2) uniform ShadowBufferObject {
+  mat4 view;
+  mat4 proj;
+} sbo;
+
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec2 inTexCoord;
@@ -22,7 +27,8 @@ layout(location = 0) out vec3 fragNormal;
 layout(location = 1) out vec2 fragTexCoord;
 layout(location = 2) out vec3 fragPos;
 layout(location = 3) out vec3 fragCamPos;
-layout(location = 4) out mat3 fragTBN;
+layout(location = 4) out vec4 fragLightSpace;
+layout(location = 5) out mat3 fragTBN;
 
 void main() {
   mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
@@ -30,9 +36,10 @@ void main() {
   fragPos = vec3(ubo.model * vec4(inPosition, 1.0));
   fragTexCoord = inTexCoord;
   fragCamPos = ubo.camPos;
+  fragLightSpace = sbo.proj * sbo.view * ubo.model * vec4(inPosition, 1.0);
   vec3 T = normalize(vec3(ubo.model * vec4(inTangent, 0.0)));
   vec3 B = normalize(vec3(ubo.model * vec4(inBitangent, 0.0)));
   vec3 N = normalize(vec3(ubo.model * vec4(inNormal, 0.0)));
   fragTBN = mat3(T, B, N);
-  gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+  gl_Position = ubo.proj * ubo.view * vec4(fragPos, 1.0);
 }

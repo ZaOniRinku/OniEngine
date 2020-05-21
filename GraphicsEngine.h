@@ -19,14 +19,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
 #include <array>
+#include <unordered_map>
 #include "Scene.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const int WIDTH = 1280;
 const int HEIGHT = 720;
-const int SHADOW_WIDTH = 1024;
-const int SHADOW_HEIGHT = 1024;
+const int SHADOW_WIDTH = 2048;
+const int SHADOW_HEIGHT = 2048;
 
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_LUNARG_standard_validation"
@@ -41,6 +42,11 @@ const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
 #endif
+
+struct ShadowBufferObject {
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+};
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
@@ -205,16 +211,14 @@ private:
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
-	VkExtent2D shadowExtent;
 	std::vector<VkImageView> swapChainImageViews;
+	VkSampler shadowSampler;
 	VkRenderPass renderPass;
 	VkRenderPass shadowRenderPass;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipeline graphicsPipeline;
-	VkPipeline skyboxGraphicsPipeline;
 	VkPipeline shadowGraphicsPipeline;
 	VkPipelineLayout pipelineLayout;
-	VkPipelineLayout skyboxPipelineLayout;
 	VkPipelineLayout shadowPipelineLayout;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<VkFramebuffer> shadowFramebuffers;

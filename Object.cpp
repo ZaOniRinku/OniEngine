@@ -2,51 +2,27 @@
 
 Object::Object() {}
 
-Object::Object(std::string mPath, glm::vec3 oPos, float mScale) {
-	modelPath = mPath;
-	pos = oPos;
+Object::Object(float x, float y, float z, float mScale) {
+	pos = { x, y, z };
 	scale = mScale;
-	//loadModel();
 	node = nullptr;
 	rot = { 0.0f, 0.0f, 0.0f };
 }
 
-Object::Object(std::string mPath, float x, float y, float z, float mScale) {
-	modelPath = mPath;
+Object::Object(float x, float y, float z, float mScale, float xRot, float yRot, float zRot) {
 	pos = { x, y, z };
 	scale = mScale;
-	//loadModel();
-	node = nullptr;
-	rot = { 0.0f, 0.0f, 0.0f };
-}
-
-Object::Object(std::string mPath, float x, float y, float z, float mScale, float xRot, float yRot, float zRot) {
-	modelPath = mPath;
-	pos = { x, y, z };
-	scale = mScale;
-	//loadModel();
 	node = nullptr;
 	rot = { xRot, yRot, zRot };
 }
 
-void Object::move(glm::vec3 movePosition) {
-	for (SGNode* child : node->getChildren()) {
-		child->getObject()->move(movePosition);
-	}
-	pos = pos + movePosition;
-}
-
 void Object::move(float x, float y, float z) {
-	for (SGNode* child : node->getChildren()) {
-		child->getObject()->move(x, y, z);
+	if (node) {
+		for (SGNode* child : node->getChildren()) {
+			child->getObject()->move(x, y, z);
+		}
 	}
 	pos = { pos.x + x, pos.y + y, pos.z + z };
-}
-
-void Object::rescale(float newScale) {
-	for (Vertex vertex : modelVertices) {
-		vertex.pos = (vertex.pos / scale) * newScale;
-	}
 }
 
 float Object::getPositionX() {
@@ -93,8 +69,12 @@ void Object::setNode(SGNode* newNode) {
 	node = newNode;
 }
 
-std::string Object::getModelPath() {
-	return modelPath;
+Mesh* Object::getMesh() {
+	return mesh;
+}
+
+void Object::setMesh(Mesh *newMesh) {
+	mesh = newMesh;
 }
 
 Material* Object::getMaterial() {
@@ -111,30 +91,6 @@ std::string Object::getName() {
 
 void Object::setName(std::string newName) {
 	name = newName;
-}
-
-std::vector<Vertex>* Object::getModelVertices() {
-	return &modelVertices;
-}
-
-std::vector<uint32_t>* Object::getModelIndices() {
-	return &modelIndices;
-}
-
-VkBuffer* Object::getVertexBuffer() {
-	return &vertexBuffer;
-}
-
-VkDeviceMemory* Object::getVertexBufferMemory() {
-	return &vertexBufferMemory;
-}
-
-VkBuffer* Object::getIndexBuffer() {
-	return &indexBuffer;
-}
-
-VkDeviceMemory* Object::getIndexBufferMemory() {
-	return &indexBufferMemory;
 }
 
 VkDescriptorSet* Object::getDescriptorSet(int index) {

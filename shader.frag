@@ -13,17 +13,19 @@ layout(binding = 1) uniform Lights {
 	vec3 fragPointLightsColor[MAX_POINT_LIGHTS];
 } lights;
 
-layout(binding = 2) uniform sampler2D diffuseTexSampler;
-layout(binding = 3) uniform sampler2D normalTexSampler;
-layout(binding = 4) uniform sampler2D metallicTexSampler;
-layout(binding = 5) uniform sampler2D roughnessTexSampler;
-layout(binding = 6) uniform sampler2D AOTexSampler;
+layout(binding = 3) uniform sampler2D shadowTexSampler;
+layout(binding = 4) uniform sampler2D diffuseTexSampler;
+layout(binding = 5) uniform sampler2D normalTexSampler;
+layout(binding = 6) uniform sampler2D metallicTexSampler;
+layout(binding = 7) uniform sampler2D roughnessTexSampler;
+layout(binding = 8) uniform sampler2D AOTexSampler;
 
 layout(location = 0) in vec3 fragNormal;
 layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 fragPos;
 layout(location = 3) in vec3 fragCamPos;
-layout(location = 4) in mat3 fragTBN;
+layout(location = 4) in vec4 fragLightSpace;
+layout(location = 5) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
@@ -80,6 +82,25 @@ vec3 shade(vec3 n, vec3 v, vec3 l, vec3 lc, vec3 diffuse, float metallic, float 
 	return ret;
 }
 
+float shadowValue(float bias) {
+	vec3 proj = fragLightSpace.xyz / fragLightSpace.w;
+	if (proj.z > 1.0) {
+		return 0.0;
+	}
+	proj = proj * 0.5 + 0.5;
+	float curr = proj.z;
+	float shadow = 0.0;
+	vec2 texelSize = 1.0 / textureSize(shadowTexSampler, 0);
+	for (int x = -1; x <= 1; x++) {
+		for (int y = -1; y <= 1; y++) {
+			float pcf = texture(shadowTexSampler, proj.xy + vec2(x, y) * texelSize).x;
+			shadow += curr - bias > pcf ? 1.0 : 0.0;
+		}
+	}
+
+	return shadow / 9.0;
+}
+
 void main() {
 	vec4 diffuse = texture(diffuseTexSampler, fragTexCoord);
 	vec3 normal = texture(normalTexSampler, fragTexCoord).xyz;
@@ -94,6 +115,10 @@ void main() {
 	vec3 l;
 	
 	vec3 color = vec3(0.0);
+	float shadow = 0.0;
+	float bias = max(0.05 * (1.0 - dot(fragNormal, normalize(-lights.fragDirLights[0]))), 0.005);
+	shadow = shadowValue(bias);
+
 	for (int i = 0; i < lights.fragNumDirLights; i++) {
 		l = normalize(-lights.fragDirLights[i]);
 		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
@@ -105,8 +130,7 @@ void main() {
 		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
 	}
-
-	vec3 ambient = vec3(0.03) * d * ao;
+	vec3 ambient = vec3(0.03) * (d * (1.0 - shadow)) * ao;
 	color += ambient;
 
 	// HDR

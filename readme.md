@@ -32,23 +32,30 @@ Cette version du projet est étendue.
  scene.addPointLight(&point);
  scene.addPointLight(&point2);
  ```
+ - Ajouter des Meshes
+ ```C++
+ Mesh objetMesh = Mesh("models/objet.obj");
+ ```
+ - Ajouter des Matériaux
+ ```C++
+  Material mat = Material("diffuse_texture.jpg", "normal_texture.jpg", "metallic_texture.jpg", "roughness_texture.jpg", "ao_texture.jpg");
+ ```
  - Y ajouter des objets et construire le graphe de scène
  ```C++
- Object ground = Object("ground_model.obj", 0.0f, 0.0f, -0.1f, 30.0f);
+ Object ground = Object(0.0f, 0.0f, -0.1f, 30.0f);
+ ground.setMesh(&objetMesh);
+ ground.setMaterial(&mat);
  SGNode groundNode = SGNode(&ground);
  scene.getRoot()->addChild(&groundNode);
  ```
  
  ```C++
- Object anotherObject = Object("object_model.obj", 0.0f, 0.1f, 0.0f, 0.5f);
+ Object anotherObject = Object(0.0f, 0.1f, 0.0f, 0.5f);
+ anotherObject.setMesh(&anotherMesh);
+ anotherObject.setMaterial(&mat);
  anotherObject.setName("Another Object");
  SGNode anotherObjectNode = SGNode(&anotherObject);
  groundNode.addChild(&anotherObjectNode);
- ```
- - Créer les matériaux et les attacher aux objets
- ```C++
- Material mat = Material("diffuse_texture.jpg", "normal_texture.jpg", "metallic_texture.jpg", "roughness_texture.jpg", "ao_texture.jpg");
- anotherObject.setMaterial(&mat);
  ```
  
  - Lancer l'application
