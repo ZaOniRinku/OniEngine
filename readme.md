@@ -34,7 +34,7 @@ Cette version du projet est étendue.
  ```
  - Ajouter des Meshes
  ```C++
- Mesh objetMesh = Mesh("models/objet.obj");
+ Mesh objetMesh = Mesh("objet.obj");
  ```
  - Ajouter des Matériaux
  ```C++
