@@ -677,8 +677,8 @@ void GraphicsEngine::createDescriptorSetLayout() {
 }
 
 void GraphicsEngine::createGraphicsPipeline() {
-	auto vertShaderCode = readFile("vert.spv");
-	auto fragShaderCode = readFile("frag.spv");
+	auto vertShaderCode = readFile("shaders/vert.spv");
+	auto fragShaderCode = readFile("shaders/frag.spv");
 
 	VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 	VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -836,7 +836,7 @@ void GraphicsEngine::createGraphicsPipeline() {
 
 	// Shadows pipeline
 
-	auto shadowVertShaderCode = readFile("shadowvert.spv");
+	auto shadowVertShaderCode = readFile("shaders/shadowvert.spv");
 
 	VkShaderModule shadowVertShaderModule = createShaderModule(shadowVertShaderCode);
 
