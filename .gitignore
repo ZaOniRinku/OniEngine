@@ -363,7 +363,6 @@ models/
 textures/
 main.cpp
 *.bin
-*.spv
 *.sln
 *.vcxproj
 *.vcxproj.filters
