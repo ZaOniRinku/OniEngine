@@ -367,3 +367,4 @@ main.cpp
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+compile.bat
