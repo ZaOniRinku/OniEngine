@@ -116,12 +116,12 @@ void main() {
 	
 	vec3 color = vec3(0.0);
 	float shadow = 0.0;
-	float bias = max(0.05 * (1.0 - dot(fragNormal, normalize(-lights.fragDirLights[0]))), 0.005);
-	shadow = shadowValue(bias);
 
 	for (int i = 0; i < lights.fragNumDirLights; i++) {
 		l = normalize(-lights.fragDirLights[i]);
 		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
+		float bias = max(0.05 * (1.0 - dot(fragNormal, normalize(-lights.fragDirLights[i]))), 0.005);
+		shadow += shadowValue(0.0);
 	}
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
 		l = normalize(lights.fragPointLights[i] - fragPos);

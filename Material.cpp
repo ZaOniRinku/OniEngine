@@ -54,7 +54,7 @@ uint32_t Material::getDiffuseMipLevel() {
 }
 
 void Material::setDiffuseMipLevel(uint32_t newDiffuseMipLevel) {
-	normalMipLevel = newDiffuseMipLevel;
+	diffuseMipLevel = newDiffuseMipLevel;
 }
 
 uint32_t Material::getNormalMipLevel() {

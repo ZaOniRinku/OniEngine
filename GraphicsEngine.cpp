@@ -80,22 +80,22 @@ void GraphicsEngine::inputsManagement(GLFWwindow* window) {
 		camera->setPosition(newPos.x, newPos.y, newPos.z);
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(movementObject, 0.0f, 0.0f);
+		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(movementObject, 0.0f, 0.0f);
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(-movementObject, 0.0f, 0.0f);
+		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(-movementObject, 0.0f, 0.0f);
 	}
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(0.0f, -movementObject, 0.0f);
+		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(0.0f, -movementObject, 0.0f);
 	}
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(0.0f, movementObject, 0.0f);
+		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(0.0f, movementObject, 0.0f);
 	}
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(0.0f, 0.0f, movementObject);
+		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(0.0f, 0.0f, movementObject);
 	}
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[1]->getObject()->move(0.0f, 0.0f, -movementObject);
+		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(0.0f, 0.0f, -movementObject);
 	}
 	// Lock z axis
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
@@ -1820,11 +1820,11 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	memcpy(ddata, dPixels, static_cast<size_t>(diffuseImageSize));
 	vkUnmapMemory(device, diffuseStagingBufferMemory);
 	stbi_image_free(dPixels);
-	createImage(diffuseTexWidth, diffuseTexHeight, obj->getMaterial()->getDiffuseMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getDiffuseTextureImage(), *obj->getMaterial()->getDiffuseTextureImageMemory());
+	createImage(diffuseTexWidth, diffuseTexHeight, obj->getMaterial()->getDiffuseMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getDiffuseTextureImage(), *obj->getMaterial()->getDiffuseTextureImageMemory());
 
-	transitionImageLayout(*obj->getMaterial()->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getDiffuseMipLevel());
+	transitionImageLayout(*obj->getMaterial()->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getDiffuseMipLevel());
 	copyBufferToImage(diffuseStagingBuffer, *obj->getMaterial()->getDiffuseTextureImage(), static_cast<uint32_t>(diffuseTexWidth), static_cast<uint32_t>(diffuseTexHeight));
-	generateMipmaps(*obj->getMaterial()->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, diffuseTexWidth, diffuseTexHeight, obj->getMaterial()->getDiffuseMipLevel());
+	generateMipmaps(*obj->getMaterial()->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, diffuseTexWidth, diffuseTexHeight, obj->getMaterial()->getDiffuseMipLevel());
 
 	vkDestroyBuffer(device, diffuseStagingBuffer, nullptr);
 	vkFreeMemory(device, diffuseStagingBufferMemory, nullptr);
@@ -2165,7 +2165,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	shadowInfo.range = sizeof(ShadowBufferObject);
 
 	VkDescriptorImageInfo shadowImageInfo = {};
-	shadowImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	shadowImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 	shadowImageInfo.imageView = shadowImageView;
 	shadowImageInfo.sampler = shadowSampler;
 
@@ -2306,7 +2306,6 @@ void GraphicsEngine::drawFrame() {
 	void *data;
 
 	// Lights
-
 	LightsBufferObject lbo = {};
 	lbo.numDirLights = scene->getDirectionalLights()->size();
 	lbo.numPointLights = scene->getPointLights()->size();
