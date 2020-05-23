@@ -4,6 +4,8 @@ ONIEngine est un moteur graphique développé en C++ avec l'API Vulkan.
 Projet réalisé à la base dans le cadre du Bureau d'étude de la troisième année de Licence à l'Université Paul Sabatier de Toulouse.
 Cette version du projet est étendue.
 
+![ONIEngine](https://i.imgur.com/aKYHC22.png)
+
 # Requirements
  - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
  - [glfw](https://www.glfw.org/)
