@@ -21,7 +21,7 @@ public:
 	float getUpZ();
 	float getMovementSpeed();
 	void setMovementSpeed(float newMS);
-	void(*controls)(Camera *obj, GLFWwindow* window, double currentTime, double lastFrame);
+	void(*controls)(Camera *obj, GLFWwindow* window, double deltaTime);
 private:
 	glm::vec3 pos;
 	glm::vec3 front;

@@ -41,12 +41,13 @@ void GraphicsEngine::run() {
 
 void GraphicsEngine::inputsManagement(GLFWwindow* window) {
 	// Time management
-	currentTime = glfwGetTime();
+	double currentTime = glfwGetTime();
+	double deltaTime = currentTime - lastFrame;
 
 	// Inputs for camera
 	Camera* camera = scene->getCamera();
 	if (camera->controls) {
-		camera->controls(camera, window, currentTime, lastFrame);
+		camera->controls(camera, window, deltaTime);
 	}
 
 	// Inputs per object
@@ -54,7 +55,7 @@ void GraphicsEngine::inputsManagement(GLFWwindow* window) {
 	while (!elements.empty()) {
 		Object *obj = elements.front()->getObject();
 		if (obj->controls) {
-			obj->controls(obj, window, currentTime, lastFrame);
+			obj->controls(obj, window, deltaTime);
 		}
 		for (SGNode* child : elements.front()->getChildren()) {
 			if (child->getObject()->controls) {

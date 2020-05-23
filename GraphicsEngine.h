@@ -259,7 +259,6 @@ private:
 	float savedZAxis = 0.3f;
 
 	// Movement speed
-	double currentTime = 0.0f;
 	double lastFrame = 0.0f;
 
 	// Mouse movement
