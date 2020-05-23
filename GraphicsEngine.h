@@ -252,11 +252,16 @@ private:
 	// Game scene
 	Scene* scene;
 
+	// Inputs
+	void (*inputs)(GLFWwindow* window);
+
 	// Camera
 	float savedZAxis = 0.3f;
+
 	// Movement speed
-	double deltaTime = 0.0f;
+	double currentTime = 0.0f;
 	double lastFrame = 0.0f;
+
 	// Mouse movement
 	float firstMouse = true;
 	float sensitivity = 0.05f;

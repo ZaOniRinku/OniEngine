@@ -40,7 +40,8 @@ Cette version du projet est étendue.
  ```
  - Ajouter des Matériaux
  ```C++
-  Material mat = Material("diffuse_texture.jpg", "normal_texture.jpg", "metallic_texture.jpg", "roughness_texture.jpg", "ao_texture.jpg");
+ // Nécessite 5 textures (PBR) : Diffuse Map, Normal Map, Metallic Map, Roughness Map et Ambient Occlusion Map.
+ Material mat = Material("diffuse_texture.jpg", "normal_texture.jpg", "metallic_texture.jpg", "roughness_texture.jpg", "ao_texture.jpg");
  ```
  - Y ajouter des objets et construire le graphe de scène
  ```C++
@@ -59,7 +60,53 @@ Cette version du projet est étendue.
  SGNode anotherObjectNode = SGNode(&anotherObject);
  groundNode.addChild(&anotherObjectNode);
  ```
+ - Configurer les contrôles
+ ```C++
+ // Fonction de contrôle pour la caméra :
+ void cameraControls(Camera* camera, GLFWwindow* window, double currentTime, double lastFrame) {
+	double deltaTime = currentTime - lastFrame;
+	float movementSpeed = camera->getMovementSpeed() * deltaTime;
+	glm::vec3 camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
+	glm::vec3 camFront = { camera->getFrontX(), camera->getFrontY(), camera->getFrontZ() };
+	glm::vec3 camUp = { camera->getUpX(), camera->getUpY(), camera->getUpZ() };
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		glm::vec3 newPos = camPos + (camFront * movementSpeed);
+		camera->setPosition(newPos.x, newPos.y, newPos.z);
+		camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		glm::vec3 newPos = camPos - (camFront * movementSpeed);
+		camera->setPosition(newPos.x, newPos.y, newPos.z);
+		camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
+	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		glm::vec3 newPos = camPos - (glm::normalize(glm::cross(camFront, camUp)) * movementSpeed);
+		camera->setPosition(newPos.x, newPos.y, newPos.z);
+		camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		glm::vec3 newPos = camPos + (glm::normalize(glm::cross(camFront, camUp)) * movementSpeed);
+		camera->setPosition(newPos.x, newPos.y, newPos.z);
+		camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
+	}
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+		glm::vec3 newPos = camPos + (camUp * movementSpeed);
+		camera->setPosition(newPos.x, newPos.y, newPos.z);
+		camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+		glm::vec3 newPos = camPos - (camUp * movementSpeed);
+		camera->setPosition(newPos.x, newPos.y, newPos.z);
+		camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
+	}
+ }
+ ```
  
+ ```C++
+ // Assigner la fonction (même fonctionnement pour les objets) :
+ scene.getCamera()->controls = cameraControls;
+ ```
  - Lancer l'application
  ```C++
  GraphicsEngine app;

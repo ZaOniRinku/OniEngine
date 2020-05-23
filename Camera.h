@@ -1,4 +1,5 @@
 #pragma once
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
 class Camera {
@@ -20,6 +21,7 @@ public:
 	float getUpZ();
 	float getMovementSpeed();
 	void setMovementSpeed(float newMS);
+	void(*controls)(Camera *obj, GLFWwindow* window, double currentTime, double lastFrame);
 private:
 	glm::vec3 pos;
 	glm::vec3 front;

@@ -40,68 +40,31 @@ void GraphicsEngine::run() {
 }
 
 void GraphicsEngine::inputsManagement(GLFWwindow* window) {
-	Camera* camera = scene->getCamera();
-	double curr = glfwGetTime();
-	deltaTime = curr - lastFrame;
-	lastFrame = curr;
-	float movementSpeed = camera->getMovementSpeed() * deltaTime;
-	float movementObject = 1.0 * deltaTime;
-	glm::vec3 camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
-	glm::vec3 camFront = { camera->getFrontX(), camera->getFrontY(), camera->getFrontZ() };
-	glm::vec3 camUp = { camera->getUpX(), camera->getUpY(), camera->getUpZ() };
+	// Time management
+	currentTime = glfwGetTime();
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		glm::vec3 newPos = camPos + (camFront * movementSpeed);
-		camera->setPosition(newPos.x, newPos.y, newPos.z);
+	// Inputs for camera
+	Camera* camera = scene->getCamera();
+	if (camera->controls) {
+		camera->controls(camera, window, currentTime, lastFrame);
 	}
-	camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-		glm::vec3 newPos = camPos - (camFront * movementSpeed);
-		camera->setPosition(newPos.x, newPos.y, newPos.z);
+
+	// Inputs per object
+	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
+	while (!elements.empty()) {
+		Object *obj = elements.front()->getObject();
+		if (obj->controls) {
+			obj->controls(obj, window, currentTime, lastFrame);
+		}
+		for (SGNode* child : elements.front()->getChildren()) {
+			if (child->getObject()->controls) {
+				elements.insert(elements.end(), child);
+			}
+		}
+		elements.erase(elements.begin());
 	}
-	camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		glm::vec3 newPos = camPos - (glm::normalize(glm::cross(camFront, camUp)) * movementSpeed);
-		camera->setPosition(newPos.x, newPos.y, newPos.z);
-	}
-	camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		glm::vec3 newPos = camPos + (glm::normalize(glm::cross(camFront, camUp)) * movementSpeed);
-		camera->setPosition(newPos.x, newPos.y, newPos.z);
-	}
-	camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-		glm::vec3 newPos = camPos + (camUp * movementSpeed);
-		camera->setPosition(newPos.x, newPos.y, newPos.z);
-	}
-	camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-		glm::vec3 newPos = camPos - (camUp * movementSpeed);
-		camera->setPosition(newPos.x, newPos.y, newPos.z);
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(movementObject, 0.0f, 0.0f);
-	}
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(-movementObject, 0.0f, 0.0f);
-	}
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(0.0f, -movementObject, 0.0f);
-	}
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(0.0f, movementObject, 0.0f);
-	}
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(0.0f, 0.0f, movementObject);
-	}
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-		scene->getRoot()->getChildren().front()->getChildren()[0]->getObject()->move(0.0f, 0.0f, -movementObject);
-	}
-	// Lock z axis
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-		camera->setPosition(camera->getPositionX(), camera->getPositionY(), savedZAxis);
-	}
-	savedZAxis = camera->getPositionZ();
+	
+	lastFrame = currentTime;
 }
 
 bool GraphicsEngine::checkValidationLayerSupport() {

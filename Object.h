@@ -1,4 +1,5 @@
 #pragma once
+#include <GLFW/glfw3.h>
 #include "SGNode.h"
 #include "Material.h"
 #include "Mesh.h"
@@ -18,7 +19,6 @@ public:
 	Object(float x, float y, float z, float mScale);
 	Object(float x, float y, float z, float mScale, float xRot, float yRot, float zRot);
 	void move(float x, float y, float z);
-	void rescale(float newScale);
 	float getPositionX();
 	float getPositionY();
 	float getPositionZ();
@@ -44,6 +44,7 @@ public:
 	void addUniformBufferMemory(VkDeviceMemory* newUniformBufferMemory);
 	VkPipeline* getGraphicsPipeline();
 	void setGraphicsPipeline(VkPipeline* newGraphicsPipeline);
+	void(*controls)(Object *obj, GLFWwindow* window, double currentTime, double lastFrame);
 private:
 	// Object attributes
 
