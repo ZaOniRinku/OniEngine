@@ -63,8 +63,7 @@ Cette version du projet est étendue.
  - Configurer les contrôles
  ```C++
  // Fonction de contrôle pour la caméra :
- void cameraControls(Camera* camera, GLFWwindow* window, double currentTime, double lastFrame) {
-	double deltaTime = currentTime - lastFrame;
+ void cameraControls(Camera* camera, GLFWwindow* window, double deltaTime) {
 	float movementSpeed = camera->getMovementSpeed() * deltaTime;
 	glm::vec3 camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
 	glm::vec3 camFront = { camera->getFrontX(), camera->getFrontY(), camera->getFrontZ() };
