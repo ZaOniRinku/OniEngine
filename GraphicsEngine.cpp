@@ -44,21 +44,35 @@ void GraphicsEngine::inputsManagement(GLFWwindow* window) {
 	double currentTime = glfwGetTime();
 	double deltaTime = currentTime - lastFrame;
 
-	// Inputs for camera
-	Camera* camera = scene->getCamera();
-	if (camera->controls) {
-		camera->controls(camera, window, deltaTime);
+	// Frame Events for directional lights
+	for (DirectionalLight* dirLight : *scene->getDirectionalLights()) {
+		if (dirLight->frameEvent) {
+			dirLight->frameEvent(dirLight, window, deltaTime);
+		}
 	}
 
-	// Inputs per object
+	// Frame Events for point lights
+	for (PointLight* pointLight : *scene->getPointLights()) {
+		if (pointLight->frameEvent) {
+			pointLight->frameEvent(pointLight, window, deltaTime);
+		}
+	}
+
+	// Frame Events for camera
+	Camera* camera = scene->getCamera();
+	if (camera->frameEvent) {
+		camera->frameEvent(camera, window, deltaTime);
+	}
+
+	// Frame Events per object
 	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
 		Object *obj = elements.front()->getObject();
-		if (obj->controls) {
-			obj->controls(obj, window, deltaTime);
+		if (obj->frameEvent) {
+			obj->frameEvent(obj, window, deltaTime);
 		}
 		for (SGNode* child : elements.front()->getChildren()) {
-			if (child->getObject()->controls) {
+			if (child->getObject()->frameEvent) {
 				elements.insert(elements.end(), child);
 			}
 		}

@@ -1,4 +1,5 @@
 #pragma once
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
 class DirectionalLight {
@@ -12,6 +13,7 @@ public:
 	float getColorG();
 	float getColorB();
 	void setColor(float r, float g, float b);
+	void(*frameEvent)(DirectionalLight *dirLight, GLFWwindow* window, double deltaTime);
 private:
 	glm::vec3 direction;
 	glm::vec3 color;

@@ -44,7 +44,7 @@ public:
 	void addUniformBufferMemory(VkDeviceMemory* newUniformBufferMemory);
 	VkPipeline* getGraphicsPipeline();
 	void setGraphicsPipeline(VkPipeline* newGraphicsPipeline);
-	void(*controls)(Object *obj, GLFWwindow* window, double deltaTime);
+	void(*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
 private:
 	// Object attributes
 

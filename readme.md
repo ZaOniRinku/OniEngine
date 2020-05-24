@@ -62,7 +62,7 @@ Cette version du projet est étendue.
  SGNode anotherObjectNode = SGNode(&anotherObject);
  groundNode.addChild(&anotherObjectNode);
  ```
- - Configurer les contrôles
+ - Configurer les événements par frame (par exemple : les contrôles)
  ```C++
  // Fonction de contrôle pour la caméra :
  void cameraControls(Camera* camera, GLFWwindow* window, double deltaTime) {
@@ -105,8 +105,8 @@ Cette version du projet est étendue.
  ```
  
  ```C++
- // Assigner la fonction (même fonctionnement pour les objets) :
- scene.getCamera()->controls = cameraControls;
+ // Assigner la fonction (même fonctionnement pour les objets et les lumières) :
+ scene.getCamera()->frameEvent = cameraControls;
  ```
  - Lancer l'application
  ```C++
