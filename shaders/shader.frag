@@ -4,7 +4,7 @@
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 
-layout(binding = 1) uniform Lights {
+layout(binding = 2) uniform Lights {
 	int fragNumDirLights;
 	vec3 fragDirLights[MAX_DIR_LIGHTS];
 	vec3 fragDirLightsColor[MAX_DIR_LIGHTS];
@@ -13,12 +13,12 @@ layout(binding = 1) uniform Lights {
 	vec3 fragPointLightsColor[MAX_POINT_LIGHTS];
 } lights;
 
-layout(binding = 3) uniform sampler2D shadowTexSampler;
-layout(binding = 4) uniform sampler2D diffuseTexSampler;
-layout(binding = 5) uniform sampler2D normalTexSampler;
-layout(binding = 6) uniform sampler2D metallicTexSampler;
-layout(binding = 7) uniform sampler2D roughnessTexSampler;
-layout(binding = 8) uniform sampler2D AOTexSampler;
+layout(binding = 4) uniform sampler2D shadowTexSampler;
+layout(binding = 5) uniform sampler2D diffuseTexSampler;
+layout(binding = 6) uniform sampler2D normalTexSampler;
+layout(binding = 7) uniform sampler2D metallicTexSampler;
+layout(binding = 8) uniform sampler2D roughnessTexSampler;
+layout(binding = 9) uniform sampler2D AOTexSampler;
 
 layout(location = 0) in vec3 fragNormal;
 layout(location = 1) in vec2 fragTexCoord;

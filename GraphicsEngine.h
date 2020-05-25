@@ -43,6 +43,12 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
+struct CameraBufferObject {
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
+	alignas(16) glm::vec3 pos;
+};
+
 struct ShadowBufferObject {
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
@@ -244,6 +250,8 @@ private:
 
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	std::vector<VkBuffer> cameraBuffers;
+	std::vector<VkDeviceMemory> cameraBuffersMemory;
 	std::vector<VkBuffer> lightsBuffers;
 	std::vector <VkDeviceMemory> lightsBuffersMemory;
 	std::vector<VkBuffer> shadowBuffers;

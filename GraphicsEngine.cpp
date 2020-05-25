@@ -383,6 +383,8 @@ void GraphicsEngine::cleanupSwapChain() {
 	}
 	
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		vkDestroyBuffer(device, cameraBuffers[i], nullptr);
+		vkFreeMemory(device, cameraBuffersMemory[i], nullptr);
 		vkDestroyBuffer(device, lightsBuffers[i], nullptr);
 		vkFreeMemory(device, lightsBuffersMemory[i], nullptr);
 		vkDestroyBuffer(device, shadowBuffers[i], nullptr);
@@ -586,63 +588,70 @@ void GraphicsEngine::createDescriptorSetLayout() {
 	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	uboLayoutBinding.pImmutableSamplers = nullptr;
 
+	VkDescriptorSetLayoutBinding cboLayoutBinding = {};
+	cboLayoutBinding.binding = 1;
+	cboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	cboLayoutBinding.descriptorCount = 1;
+	cboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	cboLayoutBinding.pImmutableSamplers = nullptr;
+
 	VkDescriptorSetLayoutBinding lboLayoutBinding = {};
-	lboLayoutBinding.binding = 1;
+	lboLayoutBinding.binding = 2;
 	lboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	lboLayoutBinding.descriptorCount = 1;
 	lboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	lboLayoutBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutBinding sboLayoutBinding = {};
-	sboLayoutBinding.binding = 2;
+	sboLayoutBinding.binding = 3;
 	sboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	sboLayoutBinding.descriptorCount = 1;
 	sboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	sboLayoutBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutBinding shadowSamplerLayoutBinding = {};
-	shadowSamplerLayoutBinding.binding = 3;
+	shadowSamplerLayoutBinding.binding = 4;
 	shadowSamplerLayoutBinding.descriptorCount = 1;
 	shadowSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	shadowSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	shadowSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding diffuseSamplerLayoutBinding = {};
-	diffuseSamplerLayoutBinding.binding = 4;
+	diffuseSamplerLayoutBinding.binding = 5;
 	diffuseSamplerLayoutBinding.descriptorCount = 1;
 	diffuseSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	diffuseSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	diffuseSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding normalSamplerLayoutBinding = {};
-	normalSamplerLayoutBinding.binding = 5;
+	normalSamplerLayoutBinding.binding = 6;
 	normalSamplerLayoutBinding.descriptorCount = 1;
 	normalSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	normalSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	normalSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding metallicSamplerLayoutBinding = {};
-	metallicSamplerLayoutBinding.binding = 6;
+	metallicSamplerLayoutBinding.binding = 7;
 	metallicSamplerLayoutBinding.descriptorCount = 1;
 	metallicSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	metallicSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	metallicSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding roughnessSamplerLayoutBinding = {};
-	roughnessSamplerLayoutBinding.binding = 7;
+	roughnessSamplerLayoutBinding.binding = 8;
 	roughnessSamplerLayoutBinding.descriptorCount = 1;
 	roughnessSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	roughnessSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	roughnessSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding AOSamplerLayoutBinding = {};
-	AOSamplerLayoutBinding.binding = 8;
+	AOSamplerLayoutBinding.binding = 9;
 	AOSamplerLayoutBinding.descriptorCount = 1;
 	AOSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	AOSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	AOSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 9> bindings = { uboLayoutBinding, lboLayoutBinding, sboLayoutBinding, shadowSamplerLayoutBinding, diffuseSamplerLayoutBinding, normalSamplerLayoutBinding, metallicSamplerLayoutBinding, roughnessSamplerLayoutBinding, AOSamplerLayoutBinding };
+	std::array<VkDescriptorSetLayoutBinding, 10> bindings = { uboLayoutBinding, cboLayoutBinding, lboLayoutBinding, sboLayoutBinding, shadowSamplerLayoutBinding, diffuseSamplerLayoutBinding, normalSamplerLayoutBinding, metallicSamplerLayoutBinding, roughnessSamplerLayoutBinding, AOSamplerLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1078,6 +1087,16 @@ void GraphicsEngine::createUniformBuffers() {
 		elements.erase(elements.begin());
 	}
 
+	// Camera
+
+	cameraBuffers.resize(swapChainImages.size());
+	cameraBuffersMemory.resize(swapChainImages.size());
+
+	bufferSize = sizeof(CameraBufferObject);
+	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, cameraBuffers[i], cameraBuffersMemory[i]);
+	}
+
 	// Lights
 
 	lightsBuffers.resize(swapChainImages.size());
@@ -1103,7 +1122,7 @@ void GraphicsEngine::createDescriptorPool() {
 	int nbElems = scene->nbElements();
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = static_cast<uint32_t>(nbElems*swapChainImages.size()*3);
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(nbElems*swapChainImages.size()*4);
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	poolSizes[1].descriptorCount = static_cast<uint32_t>(nbElems*swapChainImages.size()*6);
 
@@ -1504,23 +1523,9 @@ void GraphicsEngine::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevice
 void GraphicsEngine::updateUniformBuffer(Object* obj, uint32_t currentImage) {
 	void* data;
 
-	// For time related manipulations
-	/*static auto startTime = std::chrono::high_resolution_clock::now();
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();*/
-
-	Camera* camera = scene->getCamera();
-	glm::vec3 camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
-	glm::vec3 camFront = { camera->getFrontX(), camera->getFrontY(), camera->getFrontZ() };
-	glm::vec3 camUp = { camera->getUpX(), camera->getUpY(), camera->getUpZ() };
-
 	UniformBufferObject ubo = {};
 	// Using T * R * S transformation for models, default rotate is 90 degrees on the X-axis so models got the angle they have on 3D modeling softwares
 	ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ())) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX() + 90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
-	ubo.view = glm::lookAt(camPos, camPos + camFront, camUp);
-	ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
-	ubo.proj[1][1] *= -1;
-	ubo.camPos = camPos;
 
 	vkMapMemory(device, *obj->getUniformBufferMemory(currentImage), 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
@@ -2127,10 +2132,15 @@ void GraphicsEngine::createIndexBuffer(Object* obj) {
 void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	obj->addDescriptorSet(&descriptorSets[nbDesc]);
 
-	VkDescriptorBufferInfo bufferInfo = {};
-	bufferInfo.buffer = *obj->getUniformBuffer(frame);
-	bufferInfo.offset = 0;
-	bufferInfo.range = sizeof(UniformBufferObject);
+	VkDescriptorBufferInfo objectInfo = {};
+	objectInfo.buffer = *obj->getUniformBuffer(frame);
+	objectInfo.offset = 0;
+	objectInfo.range = sizeof(UniformBufferObject);
+
+	VkDescriptorBufferInfo cameraInfo = {};
+	cameraInfo.buffer = cameraBuffers[frame];
+	cameraInfo.offset = 0;
+	cameraInfo.range = sizeof(CameraBufferObject);
 
 	VkDescriptorBufferInfo lightsInfo = {};
 	lightsInfo.buffer = lightsBuffers[frame];
@@ -2172,14 +2182,15 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	AOImageInfo.imageView = *obj->getMaterial()->getAOTextureImageView();
 	AOImageInfo.sampler = *obj->getMaterial()->getAOTextureSampler();
 
-	std::array<VkWriteDescriptorSet, 9> descriptorWrites = {};
+	std::array<VkWriteDescriptorSet, 10> descriptorWrites = {};
+
 	descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[0].dstSet = descriptorSets[nbDesc];
 	descriptorWrites[0].dstBinding = 0;
 	descriptorWrites[0].dstArrayElement = 0;
 	descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	descriptorWrites[0].descriptorCount = 1;
-	descriptorWrites[0].pBufferInfo = &bufferInfo;
+	descriptorWrites[0].pBufferInfo = &objectInfo;
 
 	descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[1].dstSet = descriptorSets[nbDesc];
@@ -2187,7 +2198,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[1].dstArrayElement = 0;
 	descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	descriptorWrites[1].descriptorCount = 1;
-	descriptorWrites[1].pBufferInfo = &lightsInfo;
+	descriptorWrites[1].pBufferInfo = &cameraInfo;
 
 	descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[2].dstSet = descriptorSets[nbDesc];
@@ -2195,15 +2206,15 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[2].dstArrayElement = 0;
 	descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	descriptorWrites[2].descriptorCount = 1;
-	descriptorWrites[2].pBufferInfo = &shadowInfo;
+	descriptorWrites[2].pBufferInfo = &lightsInfo;
 
 	descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[3].dstSet = descriptorSets[nbDesc];
 	descriptorWrites[3].dstBinding = 3;
 	descriptorWrites[3].dstArrayElement = 0;
-	descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	descriptorWrites[3].descriptorCount = 1;
-	descriptorWrites[3].pImageInfo = &shadowImageInfo;
+	descriptorWrites[3].pBufferInfo = &shadowInfo;
 
 	descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[4].dstSet = descriptorSets[nbDesc];
@@ -2211,7 +2222,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[4].dstArrayElement = 0;
 	descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrites[4].descriptorCount = 1;
-	descriptorWrites[4].pImageInfo = &diffuseImageInfo;
+	descriptorWrites[4].pImageInfo = &shadowImageInfo;
 
 	descriptorWrites[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[5].dstSet = descriptorSets[nbDesc];
@@ -2219,7 +2230,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[5].dstArrayElement = 0;
 	descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrites[5].descriptorCount = 1;
-	descriptorWrites[5].pImageInfo = &normalImageInfo;
+	descriptorWrites[5].pImageInfo = &diffuseImageInfo;
 
 	descriptorWrites[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[6].dstSet = descriptorSets[nbDesc];
@@ -2227,7 +2238,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[6].dstArrayElement = 0;
 	descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrites[6].descriptorCount = 1;
-	descriptorWrites[6].pImageInfo = &metallicImageInfo;
+	descriptorWrites[6].pImageInfo = &normalImageInfo;
 
 	descriptorWrites[7].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[7].dstSet = descriptorSets[nbDesc];
@@ -2235,7 +2246,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[7].dstArrayElement = 0;
 	descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrites[7].descriptorCount = 1;
-	descriptorWrites[7].pImageInfo = &roughnessImageInfo;
+	descriptorWrites[7].pImageInfo = &metallicImageInfo;
 
 	descriptorWrites[8].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[8].dstSet = descriptorSets[nbDesc];
@@ -2243,9 +2254,18 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[8].dstArrayElement = 0;
 	descriptorWrites[8].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrites[8].descriptorCount = 1;
-	descriptorWrites[8].pImageInfo = &AOImageInfo;
+	descriptorWrites[8].pImageInfo = &roughnessImageInfo;
+
+	descriptorWrites[9].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrites[9].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[9].dstBinding = 9;
+	descriptorWrites[9].dstArrayElement = 0;
+	descriptorWrites[9].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrites[9].descriptorCount = 1;
+	descriptorWrites[9].pImageInfo = &AOImageInfo;
 
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	std::cout << "test" << std::endl;
 }
 
 void GraphicsEngine::mainLoop() {
@@ -2282,6 +2302,18 @@ void GraphicsEngine::drawFrame() {
 	}
 
 	void *data;
+
+	// Camera
+	Camera *camera = scene->getCamera();
+	CameraBufferObject cbo = {};
+	cbo.view = glm::lookAt(glm::vec3(camera->getPositionX(), camera->getPositionY(), camera->getPositionZ()), glm::vec3(camera->getPositionX() + camera->getFrontX(), camera->getPositionY() + camera->getFrontY(), camera->getPositionZ() + camera->getFrontZ()), glm::vec3(camera->getUpX(), camera->getUpY(), camera->getUpZ()));
+	cbo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+	cbo.proj[1][1] *= -1;
+	cbo.pos = glm::vec3(camera->getPositionX(), camera->getPositionY(), camera->getPositionZ());
+
+	vkMapMemory(device, cameraBuffersMemory[imageIndex], 0, sizeof(cbo), 0, &data);
+	memcpy(data, &cbo, sizeof(cbo));
+	vkUnmapMemory(device, cameraBuffersMemory[imageIndex]);
 
 	// Lights
 	LightsBufferObject lbo = {};
