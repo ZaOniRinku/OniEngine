@@ -17,7 +17,7 @@ Cette version du projet est étendue.
  - Créer un fichier qui servira de **main** (main.cpp par exemple)
  - Inclure le moteur
  ```C++
- #include "GraphicsEngine.h"
+ #include "src/GraphicsEngine.h"
 ```
  - Créer une fonction main
  ```C++
