@@ -8,14 +8,32 @@ public:
 
 	std::string getDiffusePath();
 	void setDiffusePath(std::string newDiffusePath);
+	float getDiffuseRValue();
+	float getDiffuseGValue();
+	float getDiffuseBValue();
+	void setDiffuseValues(float newDiffuseRValue, float newDiffuseGValue, float newDiffuseBValue);
+
 	std::string getNormalPath();
 	void setNormalPath(std::string newNormalPath);
+	float getNormalXValue();
+	float getNormalYValue();
+	float getNormalZValue();
+	void setNormalValues(float newNormalXValue, float newNormalYValue, float newNormalZValue);
+
 	std::string getMetallicPath();
 	void setMetallicPath(std::string newMetallicPath);
+	float getMetallicValue();
+	void setMetallicValue(float newMetallicValue);
+
 	std::string getRoughnessPath();
 	void setRoughnessPath(std::string newRoughnessPath);
+	float getRoughnessValue();
+	void setRoughnessValue(float newRoughnessValue);
+
 	std::string getAOPath();
 	void setAOPath(std::string newAOPath);
+	float getAOValue();
+	void setAOValue(float newAOValue);
 
 	uint32_t getDiffuseMipLevel();
 	void setDiffuseMipLevel(uint32_t newDiffuseMipLevel);
@@ -77,6 +95,9 @@ public:
 	void constructedTrue();
 private:
 	std::string diffusePath;
+	float diffuseRValue;
+	float diffuseGValue;
+	float diffuseBValue;
 
 	VkImage diffuseTextureImage;
 	VkDeviceMemory diffuseTextureImageMemory;
@@ -85,6 +106,9 @@ private:
 	uint32_t diffuseMipLevel;
 
 	std::string normalPath;
+	float normalXValue;
+	float normalYValue;
+	float normalZValue;
 
 	VkImage normalTextureImage;
 	VkDeviceMemory normalTextureImageMemory;
@@ -93,6 +117,7 @@ private:
 	uint32_t normalMipLevel;
 
 	std::string metallicPath;
+	float metallicValue;
 
 	VkImage metallicTextureImage;
 	VkDeviceMemory metallicTextureImageMemory;
@@ -101,6 +126,7 @@ private:
 	uint32_t metallicMipLevel;
 
 	std::string roughnessPath;
+	float roughnessValue;
 
 	VkImage roughnessTextureImage;
 	VkDeviceMemory roughnessTextureImageMemory;
@@ -109,6 +135,7 @@ private:
 	uint32_t roughnessMipLevel;
 
 	std::string AOPath;
+	float AOValue;
 
 	VkImage AOTextureImage;
 	VkDeviceMemory AOTextureImageMemory;

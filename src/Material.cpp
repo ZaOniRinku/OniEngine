@@ -17,12 +17,48 @@ void Material::setDiffusePath(std::string newDiffusePath) {
 	diffusePath = newDiffusePath;
 }
 
+float Material::getDiffuseRValue() {
+	return diffuseRValue;
+}
+
+float Material::getDiffuseGValue() {
+	return diffuseGValue;
+}
+
+float Material::getDiffuseBValue() {
+	return diffuseBValue;
+}
+
+void Material::setDiffuseValues(float newDiffuseRValue, float newDiffuseGValue, float newDiffuseBValue) {
+	diffuseRValue = newDiffuseRValue;
+	diffuseGValue = newDiffuseGValue;
+	diffuseBValue = newDiffuseBValue;
+}
+
 std::string Material::getNormalPath() {
 	return normalPath;
 }
 
 void Material::setNormalPath(std::string newNormalPath) {
 	normalPath = newNormalPath;
+}
+
+float Material::getNormalXValue() {
+	return normalXValue;
+}
+
+float Material::getNormalYValue() {
+	return normalYValue;
+}
+
+float Material::getNormalZValue() {
+	return normalZValue;
+}
+
+void Material::setNormalValues(float newNormalXValue, float newNormalYValue, float newNormalZValue) {
+	normalXValue = newNormalXValue;
+	normalYValue = newNormalYValue;
+	normalZValue = newNormalZValue;
 }
 
 std::string Material::getMetallicPath() {
@@ -33,6 +69,14 @@ void Material::setMetallicPath(std::string newMetallicPath) {
 	metallicPath = newMetallicPath;
 }
 
+float Material::getMetallicValue() {
+	return metallicValue;
+}
+
+void Material::setMetallicValue(float newMetallicValue) {
+	metallicValue = newMetallicValue;
+}
+
 std::string Material::getRoughnessPath() {
 	return roughnessPath;
 }
@@ -41,12 +85,28 @@ void Material::setRoughnessPath(std::string newRoughnessPath) {
 	roughnessPath = newRoughnessPath;
 }
 
+float Material::getRoughnessValue() {
+	return roughnessValue;
+}
+
+void Material::setRoughnessValue(float newRoughnessValue) {
+	roughnessValue = newRoughnessValue;
+}
+
 std::string Material::getAOPath() {
 	return AOPath;
 }
 
 void Material::setAOPath(std::string newAOPath) {
 	AOPath = newAOPath;
+}
+
+float Material::getAOValue() {
+	return AOValue;
+}
+
+void Material::setAOValue(float newAOValue) {
+	AOValue = newAOValue;
 }
 
 uint32_t Material::getDiffuseMipLevel() {

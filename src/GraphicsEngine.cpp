@@ -1786,11 +1786,26 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	// Diffuse Texture
 	VkBuffer diffuseStagingBuffer;
 	VkDeviceMemory diffuseStagingBufferMemory;
+	VkDeviceSize diffuseImageSize;
 
 	int diffuseTexWidth, diffuseTexHeight, diffuseTexChannels;
-	stbi_uc* dPixels = stbi_load(obj->getMaterial()->getDiffusePath().c_str(), &diffuseTexWidth, &diffuseTexHeight, &diffuseTexChannels, STBI_rgb_alpha);
-	obj->getMaterial()->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
-	VkDeviceSize diffuseImageSize = diffuseTexWidth * diffuseTexHeight * 4;
+
+	stbi_uc* dPixels;
+	if (obj->getMaterial()->getDiffusePath() != "") {
+		dPixels = stbi_load(obj->getMaterial()->getDiffusePath().c_str(), &diffuseTexWidth, &diffuseTexHeight, &diffuseTexChannels, STBI_rgb_alpha);
+		obj->getMaterial()->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
+		diffuseImageSize = diffuseTexWidth * diffuseTexHeight * 4;
+	} else {
+		unsigned char dRVal = round(obj->getMaterial()->getDiffuseRValue() * 255);
+		unsigned char dGVal = round(obj->getMaterial()->getDiffuseGValue() * 255);
+		unsigned char dBVal = round(obj->getMaterial()->getDiffuseBValue() * 255);
+		std::array<unsigned char, 4> dArray = { dRVal, dGVal, dBVal, 255 };
+		dPixels = dArray.data();
+		obj->getMaterial()->setDiffuseMipLevel(1);
+		diffuseTexWidth = 1;
+		diffuseTexHeight = 1;
+		diffuseImageSize = 4;
+	}
 
 	if (!dPixels) {
 		throw std::runtime_error("failed to load diffuse texture image!");
@@ -1802,7 +1817,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	vkMapMemory(device, diffuseStagingBufferMemory, 0, diffuseImageSize, 0, &ddata);
 	memcpy(ddata, dPixels, static_cast<size_t>(diffuseImageSize));
 	vkUnmapMemory(device, diffuseStagingBufferMemory);
-	stbi_image_free(dPixels);
+	if (obj->getMaterial()->getDiffusePath() != "") {
+		stbi_image_free(dPixels);
+	}
 	createImage(diffuseTexWidth, diffuseTexHeight, obj->getMaterial()->getDiffuseMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getDiffuseTextureImage(), *obj->getMaterial()->getDiffuseTextureImageMemory());
 
 	transitionImageLayout(*obj->getMaterial()->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getDiffuseMipLevel());
@@ -1815,11 +1832,25 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	// Normal Texture
 	VkBuffer normalStagingBuffer;
 	VkDeviceMemory normalStagingBufferMemory;
+	VkDeviceSize normalImageSize;
 
 	int normalTexWidth, normalTexHeight, normalTexChannels;
-	stbi_uc* nPixels = stbi_load(obj->getMaterial()->getNormalPath().c_str(), &normalTexWidth, &normalTexHeight, &normalTexChannels, STBI_rgb_alpha);
-	obj->getMaterial()->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
-	VkDeviceSize normalImageSize = normalTexWidth * normalTexHeight * 4;
+	stbi_uc* nPixels;
+	if (obj->getMaterial()->getNormalPath() != "") {
+		nPixels = stbi_load(obj->getMaterial()->getNormalPath().c_str(), &normalTexWidth, &normalTexHeight, &normalTexChannels, STBI_rgb_alpha);
+		obj->getMaterial()->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
+		normalImageSize = normalTexWidth * normalTexHeight * 4;
+	} else {
+		unsigned char nXVal = round(obj->getMaterial()->getNormalXValue() * 255);
+		unsigned char nYVal = round(obj->getMaterial()->getNormalYValue() * 255);
+		unsigned char nZVal = round(obj->getMaterial()->getNormalZValue() * 255);
+		std::array<unsigned char, 4> nArray = { nXVal, nYVal, nZVal, 255 };
+		nPixels = nArray.data();
+		obj->getMaterial()->setNormalMipLevel(1);
+		normalTexWidth = 1;
+		normalTexHeight = 1;
+		normalImageSize = 4;
+	}
 
 	if (!nPixels) {
 		throw std::runtime_error("failed to load normal texture image!");
@@ -1831,7 +1862,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	vkMapMemory(device, normalStagingBufferMemory, 0, normalImageSize, 0, &ndata);
 	memcpy(ndata, nPixels, static_cast<size_t>(normalImageSize));
 	vkUnmapMemory(device, normalStagingBufferMemory);
-	stbi_image_free(nPixels);
+	if (obj->getMaterial()->getNormalPath() != "") {
+		stbi_image_free(nPixels);
+	}
 	createImage(normalTexWidth, normalTexHeight, obj->getMaterial()->getNormalMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getNormalTextureImage(), *obj->getMaterial()->getNormalTextureImageMemory());
 
 	transitionImageLayout(*obj->getMaterial()->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getNormalMipLevel());
@@ -1844,11 +1877,23 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	// Metallic Texture
 	VkBuffer metallicStagingBuffer;
 	VkDeviceMemory metallicStagingBufferMemory;
+	VkDeviceSize metallicImageSize;
 
 	int metallicTexWidth, metallicTexHeight, metallicTexChannels;
-	stbi_uc* mPixels = stbi_load(obj->getMaterial()->getMetallicPath().c_str(), &metallicTexWidth, &metallicTexHeight, &metallicTexChannels, STBI_rgb_alpha);
-	obj->getMaterial()->setMetallicMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(metallicTexWidth, metallicTexHeight)))) + 1);
-	VkDeviceSize metallicImageSize = metallicTexWidth * metallicTexHeight * 4;
+	stbi_uc* mPixels;
+	if (obj->getMaterial()->getMetallicPath() != "") {
+		mPixels = stbi_load(obj->getMaterial()->getMetallicPath().c_str(), &metallicTexWidth, &metallicTexHeight, &metallicTexChannels, STBI_rgb_alpha);
+		obj->getMaterial()->setMetallicMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(metallicTexWidth, metallicTexHeight)))) + 1);
+		metallicImageSize = metallicTexWidth * metallicTexHeight * 4;
+	} else {
+		unsigned char mVal = round(obj->getMaterial()->getMetallicValue() * 255);
+		std::array<unsigned char, 4> mArray = { mVal, mVal, mVal, 255 };
+		mPixels = mArray.data();
+		obj->getMaterial()->setMetallicMipLevel(1);
+		metallicTexWidth = 1;
+		metallicTexHeight = 1;
+		metallicImageSize = 4;
+	}
 
 
 	if (!mPixels) {
@@ -1861,7 +1906,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	vkMapMemory(device, metallicStagingBufferMemory, 0, metallicImageSize, 0, &mdata);
 	memcpy(mdata, mPixels, static_cast<size_t>(metallicImageSize));
 	vkUnmapMemory(device, metallicStagingBufferMemory);
-	stbi_image_free(mPixels);
+	if (obj->getMaterial()->getMetallicPath() != "") {
+		stbi_image_free(mPixels);
+	}
 	createImage(metallicTexWidth, metallicTexHeight, obj->getMaterial()->getMetallicMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getMetallicTextureImage(), *obj->getMaterial()->getMetallicTextureImageMemory());
 
 	transitionImageLayout(*obj->getMaterial()->getMetallicTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getMetallicMipLevel());
@@ -1874,11 +1921,23 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	// Roughness Texture
 	VkBuffer roughnessStagingBuffer;
 	VkDeviceMemory roughnessStagingBufferMemory;
-
+	VkDeviceSize roughnessImageSize;
 	int roughnessTexWidth, roughnessTexHeight, roughnessTexChannels;
-	stbi_uc* rPixels = stbi_load(obj->getMaterial()->getRoughnessPath().c_str(), &roughnessTexWidth, &roughnessTexHeight, &roughnessTexChannels, STBI_rgb_alpha);
-	obj->getMaterial()->setRoughnessMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(roughnessTexWidth, roughnessTexHeight)))) + 1);
-	VkDeviceSize roughnessImageSize = roughnessTexWidth * roughnessTexHeight * 4;
+
+	stbi_uc* rPixels;
+	if (obj->getMaterial()->getRoughnessPath() != "") {
+		rPixels = stbi_load(obj->getMaterial()->getRoughnessPath().c_str(), &roughnessTexWidth, &roughnessTexHeight, &roughnessTexChannels, STBI_rgb_alpha);
+		obj->getMaterial()->setRoughnessMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(roughnessTexWidth, roughnessTexHeight)))) + 1);
+		roughnessImageSize = roughnessTexWidth * roughnessTexHeight * 4;
+	} else {
+		unsigned char rVal = obj->getMaterial()->getRoughnessValue();
+		std::array<unsigned char, 4> rArray = { rVal, rVal, rVal, 255 };
+		rPixels = rArray.data();
+		obj->getMaterial()->setRoughnessMipLevel(1);
+		roughnessTexWidth = 1;
+		roughnessTexHeight = 1;
+		roughnessImageSize = 4;
+;	}
 
 	if (!rPixels) {
 		throw std::runtime_error("failed to load roughness texture image!");
@@ -1890,7 +1949,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	vkMapMemory(device, roughnessStagingBufferMemory, 0, roughnessImageSize, 0, &rdata);
 	memcpy(rdata, rPixels, static_cast<size_t>(roughnessImageSize));
 	vkUnmapMemory(device, roughnessStagingBufferMemory);
-	stbi_image_free(rPixels);
+	if (obj->getMaterial()->getRoughnessPath() != "") {
+		stbi_image_free(rPixels);
+	}
 	createImage(roughnessTexWidth, roughnessTexHeight, obj->getMaterial()->getRoughnessMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getRoughnessTextureImage(), *obj->getMaterial()->getRoughnessTextureImageMemory());
 
 	transitionImageLayout(*obj->getMaterial()->getRoughnessTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getRoughnessMipLevel());
@@ -1903,11 +1964,23 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	// AO Texture
 	VkBuffer AOStagingBuffer;
 	VkDeviceMemory AOStagingBufferMemory;
+	VkDeviceSize AOImageSize;
 
 	int AOTexWidth, AOTexHeight, AOTexChannels;
-	stbi_uc* aPixels = stbi_load(obj->getMaterial()->getAOPath().c_str(), &AOTexWidth, &AOTexHeight, &AOTexChannels, STBI_rgb_alpha);
-	obj->getMaterial()->setAOMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(AOTexWidth, AOTexHeight)))) + 1);
-	VkDeviceSize AOImageSize = AOTexWidth * AOTexHeight * 4;
+	stbi_uc* aPixels;
+	if (obj->getMaterial()->getAOPath() != "") {
+		aPixels = stbi_load(obj->getMaterial()->getAOPath().c_str(), &AOTexWidth, &AOTexHeight, &AOTexChannels, STBI_rgb_alpha);
+		obj->getMaterial()->setAOMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(AOTexWidth, AOTexHeight)))) + 1);
+		AOImageSize = AOTexWidth * AOTexHeight * 4;
+	} else {
+		unsigned char aVal = obj->getMaterial()->getAOValue();
+		std::array<unsigned char, 4> aArray = { aVal, aVal, aVal, 255 };
+		aPixels = aArray.data();
+		obj->getMaterial()->setAOMipLevel(1);
+		AOTexWidth = 1;
+		AOTexHeight = 1;
+		AOImageSize = 4;
+	}
 
 	if (!aPixels) {
 		throw std::runtime_error("failed to load AO texture image!");
@@ -1919,7 +1992,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	vkMapMemory(device, AOStagingBufferMemory, 0, AOImageSize, 0, &adata);
 	memcpy(adata, aPixels, static_cast<size_t>(AOImageSize));
 	vkUnmapMemory(device, AOStagingBufferMemory);
-	stbi_image_free(aPixels);
+	if (obj->getMaterial()->getAOPath() != "") {
+		stbi_image_free(aPixels);
+	}
 	createImage(AOTexWidth, AOTexHeight, obj->getMaterial()->getAOMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMaterial()->getAOTextureImage(), *obj->getMaterial()->getAOTextureImageMemory());
 
 	transitionImageLayout(*obj->getMaterial()->getAOTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, obj->getMaterial()->getAOMipLevel());
@@ -2265,7 +2340,6 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[9].pImageInfo = &AOImageInfo;
 
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	std::cout << "test" << std::endl;
 }
 
 void GraphicsEngine::mainLoop() {
