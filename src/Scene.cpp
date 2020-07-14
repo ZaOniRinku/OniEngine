@@ -26,13 +26,25 @@ void Scene::setCamera(Camera newCamera) {
 	camera = newCamera;
 }
 
+Object * Scene::getSkybox() {
+	return skybox;
+}
+
+void Scene::setSkybox(Object* newSkybox) {
+	skybox = newSkybox;
+}
+
 void Scene::viewSceneGraph() {
 	std::cout << "Scene" << std::endl;
 	sceneRoot.viewSceneNode(1);
 }
 
 int Scene::nbElements() {
-	return sceneRoot.nbElements();
+	int nbElems = sceneRoot.nbElements();
+	if (skybox) {
+		return nbElems + 1;
+	}
+	return nbElems;
 }
 
 std::vector<DirectionalLight*>* Scene::getDirectionalLights()

@@ -21,6 +21,8 @@ public:
 	void setRoot(SGNode newRoot);
 	Camera* getCamera();
 	void setCamera(Camera newCamera);
+	Object* getSkybox();
+	void setSkybox(Object* newSkybox);
 	void viewSceneGraph();
 	int nbElements();
 	std::vector<DirectionalLight*>* getDirectionalLights();
@@ -30,6 +32,7 @@ public:
 private:
 	SGNode sceneRoot;
 	Camera camera;
+	Object* skybox;
 
 	// Lights
 	std::vector<DirectionalLight*> dirLights;

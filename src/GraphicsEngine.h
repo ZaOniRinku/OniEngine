@@ -195,6 +195,7 @@ private:
 	bool hasStencilComponent(VkFormat format);
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 	VkSampleCountFlagBits getMaxUsableSampleCount();
+	void createSkybox();
 	void createTextureImage(Object* obj);
 	void createTextureImageView(Object* obj);
 	void createTextureSampler(Object* obj);
@@ -226,6 +227,8 @@ private:
 	VkPipeline shadowGraphicsPipeline;
 	VkPipelineLayout pipelineLayout;
 	VkPipelineLayout shadowPipelineLayout;
+	VkPipeline skyboxGraphicsPipeline;
+	VkPipelineLayout skyboxPipelineLayout;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<VkFramebuffer> shadowFramebuffers;
 	VkCommandPool commandPool;
