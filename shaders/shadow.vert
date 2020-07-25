@@ -6,9 +6,7 @@ layout(binding = 0) uniform UniformBufferObject {
 } ubo;
 
 layout(binding = 3) uniform ShadowBufferObject {
-  mat4 view;
-  mat4 proj;
-  vec3 pos;
+  mat4 lightSpace;
 } sbo;
 
 layout(location = 0) in vec3 inPosition;
@@ -19,5 +17,6 @@ layout(location = 4) in vec3 inTangent;
 layout(location = 5) in vec3 inBitangent;
 
 void main() {
-  gl_Position = sbo.proj * sbo.view * ubo.model * vec4(inPosition, 1.0);
+  gl_Position = sbo.lightSpace * ubo.model * vec4(inPosition, 1.0);
+  gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 }

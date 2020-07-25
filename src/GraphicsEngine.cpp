@@ -1206,9 +1206,9 @@ void GraphicsEngine::createTextures() {
 	shadowSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	shadowSamplerInfo.magFilter = VK_FILTER_LINEAR;
 	shadowSamplerInfo.minFilter = VK_FILTER_LINEAR;
-	shadowSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	shadowSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	shadowSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	shadowSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	shadowSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	shadowSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 	shadowSamplerInfo.maxAnisotropy = 1.0f;
 	shadowSamplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	shadowSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
@@ -2632,8 +2632,9 @@ void GraphicsEngine::drawFrame() {
 
 	// Shadows
 	ShadowBufferObject sbo = {};
-	sbo.view = glm::lookAt(glm::vec3(-scene->getDirectionalLights()->at(0)->getDirectionX(), -scene->getDirectionalLights()->at(0)->getDirectionY(), -scene->getDirectionalLights()->at(0)->getDirectionZ()), glm::vec3(0.0f), glm::vec3(scene->getCamera()->getUpX(), scene->getCamera()->getUpY(), scene->getCamera()->getUpZ()));
-	sbo.proj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -20.0f, 100.0f);
+	glm::mat4 shadowView = glm::lookAt(glm::vec3(-scene->getDirectionalLights()->at(0)->getDirectionX(), -scene->getDirectionalLights()->at(0)->getDirectionY(), -scene->getDirectionalLights()->at(0)->getDirectionZ()), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+	glm::mat4 shadowProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 20.0f);
+	sbo.lightSpace = shadowProj * shadowView;
 
 	vkMapMemory(device, shadowBuffersMemory[imageIndex], 0, sizeof(sbo), 0, &data);
 	memcpy(data, &sbo, sizeof(sbo));

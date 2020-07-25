@@ -34,8 +34,8 @@ layout(location = 0) out vec4 outColor;
 float RDM_Distribution(float NdotH, float roughness) {
 	float a = roughness * roughness;
 	float asquare = a * a;
-	float NdotHcarre = NdotH * NdotH;
-	float denom = NdotHcarre * (asquare - 1.0) + 1.0;
+	float NdotHsquare = NdotH * NdotH;
+	float denom = NdotHsquare * (asquare - 1.0) + 1.0;
 
 	return asquare / (M_PI * denom * denom);
 }
@@ -90,6 +90,7 @@ float shadowValue(float bias) {
 	proj = proj * 0.5 + 0.5;
 	float curr = proj.z;
 	float shadow = 0.0;
+	
 	vec2 texelSize = 1.0 / textureSize(shadowTexSampler, 0);
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
@@ -116,11 +117,9 @@ void main() {
 	
 	vec3 color = vec3(0.0);
 	float shadow = 0.0;
-
 	for (int i = 0; i < lights.fragNumDirLights; i++) {
 		l = normalize(-lights.fragDirLights[i]);
 		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
-		float bias = max(0.05 * (1.0 - dot(fragNormal, normalize(-lights.fragDirLights[i]))), 0.005);
 		shadow += shadowValue(0.0);
 	}
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
@@ -130,7 +129,8 @@ void main() {
 		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
 	}
-	vec3 ambient = vec3(0.03) * (d * (1.0 - shadow)) * ao;
+	color *= (1.0 - shadow);
+	vec3 ambient = vec3(0.03) * d * ao;
 	color += ambient;
 
 	// HDR

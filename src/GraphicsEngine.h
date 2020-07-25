@@ -50,8 +50,7 @@ struct CameraBufferObject {
 };
 
 struct ShadowBufferObject {
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
+	alignas(16) glm::mat4 lightSpace;
 };
 
 struct QueueFamilyIndices {

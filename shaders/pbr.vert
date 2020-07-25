@@ -15,8 +15,7 @@ layout(binding = 1) uniform CameraBufferObject {
 } cbo;
 
 layout(binding = 3) uniform ShadowBufferObject {
-  mat4 view;
-  mat4 proj;
+  mat4 lightSpace;
 } sbo;
 
 layout(location = 0) in vec3 inPosition;
@@ -39,7 +38,7 @@ void main() {
   fragPos = vec3(ubo.model * vec4(inPosition, 1.0));
   fragTexCoord = inTexCoord;
   fragCamPos = cbo.pos;
-  fragLightSpace = sbo.proj * sbo.view * ubo.model * vec4(inPosition, 1.0);
+  fragLightSpace = sbo.lightSpace * vec4(fragPos, 1.0);
   vec3 T = normalize(vec3(ubo.model * vec4(inTangent, 0.0)));
   vec3 B = normalize(vec3(ubo.model * vec4(inBitangent, 0.0)));
   vec3 N = normalize(vec3(ubo.model * vec4(inNormal, 0.0)));
