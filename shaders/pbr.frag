@@ -120,7 +120,7 @@ void main() {
 	for (int i = 0; i < lights.fragNumDirLights; i++) {
 		l = normalize(-lights.fragDirLights[i]);
 		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
-		shadow += shadowValue(0.0);
+		shadow += shadowValue(0.000005);
 	}
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
 		l = normalize(lights.fragPointLights[i] - fragPos);
