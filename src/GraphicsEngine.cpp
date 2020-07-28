@@ -792,9 +792,9 @@ void GraphicsEngine::createGraphicsPipeline() {
 		| VK_COLOR_COMPONENT_G_BIT
 		| VK_COLOR_COMPONENT_B_BIT
 		| VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.blendEnable = VK_TRUE;
 	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
 	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -952,9 +952,9 @@ void GraphicsEngine::createGraphicsPipeline() {
 			| VK_COLOR_COMPONENT_G_BIT
 			| VK_COLOR_COMPONENT_B_BIT
 			| VK_COLOR_COMPONENT_A_BIT;
-		skyboxColorBlendAttachment.blendEnable = VK_FALSE;
+		skyboxColorBlendAttachment.blendEnable = VK_TRUE;
 		skyboxColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		skyboxColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		skyboxColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		skyboxColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
 		skyboxColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 		skyboxColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -1464,7 +1464,7 @@ void GraphicsEngine::createCommandBuffers() {
 		}
 
 		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0.06f, 0.7f, 0.7f, 1.0f };
+		clearValues[0].color = { 0.f, 0.f, 0.f, 1.0f };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		VkRenderPassBeginInfo renderPassInfo = {};
@@ -1515,6 +1515,16 @@ void GraphicsEngine::createCommandBuffers() {
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+		// Skybox if drawn first for color blending
+		if (scene->getSkybox()) {
+			Object* skybox = scene->getSkybox();
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *skybox->getGraphicsPipeline());
+			VkBuffer vertexCmdBuffers[] = { *skybox->getMesh()->getVertexBuffer() };
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
+			vkCmdBindIndexBuffer(commandBuffers[i], *skybox->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipelineLayout, 0, 1, skybox->getDescriptorSet(i), 0, nullptr);
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(skybox->getMesh()->getIndices()->size()), 1, 0, 0, 0);
+		}
 		// For each 3D model, bind its vertex and indices and the right descriptor set for its texture
 		elements = scene->getRoot()->getChildren();
 		while (!elements.empty()) {
@@ -1529,16 +1539,6 @@ void GraphicsEngine::createCommandBuffers() {
 				elements.insert(elements.end(), child);
 			}
 			elements.erase(elements.begin());
-		}
-		// Skybox
-		if (scene->getSkybox()) {
-			Object* skybox = scene->getSkybox();
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *skybox->getGraphicsPipeline());
-			VkBuffer vertexCmdBuffers[] = { *skybox->getMesh()->getVertexBuffer() };
-			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
-			vkCmdBindIndexBuffer(commandBuffers[i], *skybox->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipelineLayout, 0, 1, skybox->getDescriptorSet(i), 0, nullptr);
-			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(skybox->getMesh()->getIndices()->size()), 1, 0, 0, 0);
 		}
 
 		vkCmdEndRenderPass(commandBuffers[i]);
@@ -2086,7 +2086,8 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		unsigned char dRVal = round(obj->getMaterial()->getDiffuseRValue() * 255);
 		unsigned char dGVal = round(obj->getMaterial()->getDiffuseGValue() * 255);
 		unsigned char dBVal = round(obj->getMaterial()->getDiffuseBValue() * 255);
-		std::array<unsigned char, 4> dArray = { dRVal, dGVal, dBVal, 255 };
+		unsigned char dAVal = round(obj->getMaterial()->getDiffuseAValue() * 255);
+		std::array<unsigned char, 4> dArray = { dRVal, dGVal, dBVal, dAVal };
 		dPixels = dArray.data();
 		obj->getMaterial()->setDiffuseMipLevel(1);
 		diffuseTexWidth = 1;

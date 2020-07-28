@@ -29,10 +29,16 @@ float Material::getDiffuseBValue() {
 	return diffuseBValue;
 }
 
-void Material::setDiffuseValues(float newDiffuseRValue, float newDiffuseGValue, float newDiffuseBValue) {
+float Material::getDiffuseAValue()
+{
+	return diffuseAValue;
+}
+
+void Material::setDiffuseValues(float newDiffuseRValue, float newDiffuseGValue, float newDiffuseBValue, float newDiffuseAValue) {
 	diffuseRValue = newDiffuseRValue;
 	diffuseGValue = newDiffuseGValue;
 	diffuseBValue = newDiffuseBValue;
+	diffuseAValue = newDiffuseAValue;
 }
 
 std::string Material::getNormalPath() {

@@ -11,7 +11,8 @@ public:
 	float getDiffuseRValue();
 	float getDiffuseGValue();
 	float getDiffuseBValue();
-	void setDiffuseValues(float newDiffuseRValue, float newDiffuseGValue, float newDiffuseBValue);
+	float getDiffuseAValue();
+	void setDiffuseValues(float newDiffuseRValue, float newDiffuseGValue, float newDiffuseBValue, float newDiffuseAValue);
 
 	std::string getNormalPath();
 	void setNormalPath(std::string newNormalPath);
@@ -98,6 +99,7 @@ private:
 	float diffuseRValue;
 	float diffuseGValue;
 	float diffuseBValue;
+	float diffuseAValue;
 
 	VkImage diffuseTextureImage;
 	VkDeviceMemory diffuseTextureImageMemory;
