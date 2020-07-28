@@ -26,8 +26,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const int WIDTH = 1280;
 const int HEIGHT = 720;
-const int SHADOW_WIDTH = 2048;
-const int SHADOW_HEIGHT = 2048;
+const int SHADOWMAP_WIDTH = 2048;
+const int SHADOWMAP_HEIGHT = 2048;
 
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -49,7 +49,7 @@ struct CameraBufferObject {
 	alignas(16) glm::vec3 pos;
 };
 
-struct ShadowBufferObject {
+struct ShadowsBufferObject {
 	alignas(16) glm::mat4 lightSpace;
 };
 
@@ -202,6 +202,7 @@ private:
 	void createVertexBuffer(Object* obj);
 	void createIndexBuffer(Object* obj);
 	void updateDescriptorSets(Object* obj, int frame, int nbDesc);
+	void updateShadowsDescriptorSets(Object* obj, int frame, int nbDesc);
 	void mainLoop();
 	void drawFrame();
 	void cleanup();
@@ -218,18 +219,19 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
-	VkSampler shadowSampler;
+	VkSampler shadowsSampler;
 	VkRenderPass renderPass;
-	VkRenderPass shadowRenderPass;
+	VkRenderPass shadowsRenderPass;
 	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayout shadowsDescriptorSetLayout;
 	VkPipeline graphicsPipeline;
-	VkPipeline shadowGraphicsPipeline;
+	VkPipeline shadowsGraphicsPipeline;
 	VkPipelineLayout pipelineLayout;
-	VkPipelineLayout shadowPipelineLayout;
+	VkPipelineLayout shadowsPipelineLayout;
 	VkPipeline skyboxGraphicsPipeline;
 	VkPipelineLayout skyboxPipelineLayout;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
-	std::vector<VkFramebuffer> shadowFramebuffers;
+	std::vector<VkFramebuffer> shadowsFramebuffers;
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -238,13 +240,15 @@ private:
 	size_t currentFrame = 0;
 	bool framebufferResized = false;
 	VkDescriptorPool descriptorPool;
+	VkDescriptorPool shadowsDescriptorPool;
 	std::vector<VkDescriptorSet> descriptorSets;
+	std::vector<VkDescriptorSet> shadowsDescriptorSets;
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
-	VkImage shadowImage;
-	VkDeviceMemory shadowImageMemory;
-	VkImageView shadowImageView;
+	VkImage shadowsImage;
+	VkDeviceMemory shadowsImageMemory;
+	VkImageView shadowsImageView;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImage colorImage;
 	VkDeviceMemory colorImageMemory;
@@ -256,8 +260,8 @@ private:
 	std::vector<VkDeviceMemory> cameraBuffersMemory;
 	std::vector<VkBuffer> lightsBuffers;
 	std::vector <VkDeviceMemory> lightsBuffersMemory;
-	std::vector<VkBuffer> shadowBuffers;
-	std::vector<VkDeviceMemory> shadowBuffersMemory;
+	std::vector<VkBuffer> shadowsBuffers;
+	std::vector<VkDeviceMemory> shadowsBuffersMemory;
 
 	// Game scene
 	Scene* scene;

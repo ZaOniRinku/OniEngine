@@ -35,6 +35,8 @@ public:
 	void setMaterial(Material* newMaterial);
 	VkDescriptorSet* getDescriptorSet(int index);
 	void addDescriptorSet(VkDescriptorSet* newDescriptorSet);
+	VkDescriptorSet* getShadowsDescriptorSet(int index);
+	void addShadowsDescriptorSet(VkDescriptorSet* newShadowsDescriptorSet);
 	VkBuffer* getUniformBuffer(int index);
 	void addUniformBuffer(VkBuffer* newUniformBuffer);
 	VkDeviceMemory* getUniformBufferMemory(int index);
@@ -56,6 +58,7 @@ private:
 	SGNode* node;
 
 	std::vector<VkDescriptorSet*> descriptorSets;
+	std::vector<VkDescriptorSet*> shadowsDescriptorSets;
 
 	std::vector<VkBuffer*> uniformBuffers;
 	std::vector<VkDeviceMemory*> uniformBuffersMemory;

@@ -101,6 +101,16 @@ void Object::addDescriptorSet(VkDescriptorSet* newDescriptorSet) {
 	descriptorSets.push_back(newDescriptorSet);
 }
 
+VkDescriptorSet* Object::getShadowsDescriptorSet(int index)
+{
+	return shadowsDescriptorSets[index];
+}
+
+void Object::addShadowsDescriptorSet(VkDescriptorSet* newShadowsDescriptorSet)
+{
+	shadowsDescriptorSets.push_back(newShadowsDescriptorSet);
+}
+
 VkBuffer* Object::getUniformBuffer(int index) {
 	return uniformBuffers[index];
 }

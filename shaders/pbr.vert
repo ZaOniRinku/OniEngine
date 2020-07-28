@@ -14,7 +14,7 @@ layout(binding = 1) uniform CameraBufferObject {
   vec3 pos;
 } cbo;
 
-layout(binding = 3) uniform ShadowBufferObject {
+layout(binding = 3) uniform ShadowsBufferObject {
   mat4 lightSpace;
 } sbo;
 

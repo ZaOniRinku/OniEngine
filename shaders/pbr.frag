@@ -13,7 +13,7 @@ layout(binding = 2) uniform Lights {
 	vec3 fragPointLightsColor[MAX_POINT_LIGHTS];
 } lights;
 
-layout(binding = 4) uniform sampler2D shadowTexSampler;
+layout(binding = 4) uniform sampler2D shadowsTexSampler;
 layout(binding = 5) uniform sampler2D diffuseTexSampler;
 layout(binding = 6) uniform sampler2D normalTexSampler;
 layout(binding = 7) uniform sampler2D metallicTexSampler;
@@ -82,24 +82,24 @@ vec3 shade(vec3 n, vec3 v, vec3 l, vec3 lc, vec3 diffuse, float metallic, float 
 	return ret;
 }
 
-float shadowValue(float bias) {
+float shadowsValue(float bias) {
 	vec3 proj = fragLightSpace.xyz / fragLightSpace.w;
 	if (proj.z > 1.0) {
 		return 0.0;
 	}
 	proj = proj * 0.5 + 0.5;
 	float curr = proj.z;
-	float shadow = 0.0;
+	float shadows = 0.0;
 	
-	vec2 texelSize = 1.0 / textureSize(shadowTexSampler, 0);
+	vec2 texelSize = 1.0 / textureSize(shadowsTexSampler, 0);
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
-			float pcf = texture(shadowTexSampler, proj.xy + vec2(x, y) * texelSize).x;
-			shadow += curr - bias > pcf ? 1.0 : 0.0;
+			float pcf = texture(shadowsTexSampler, proj.xy + vec2(x, y) * texelSize).x;
+			shadows += curr - bias > pcf ? 1.0 : 0.0;
 		}
 	}
 
-	return shadow / 9.0;
+	return shadows / 9.0;
 }
 
 void main() {
@@ -116,11 +116,12 @@ void main() {
 	vec3 l;
 	
 	vec3 color = vec3(0.0);
-	float shadow = 0.0;
+	float shadows = 0.0;
 	for (int i = 0; i < lights.fragNumDirLights; i++) {
 		l = normalize(-lights.fragDirLights[i]);
 		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
-		shadow += shadowValue(0.000005);
+		float bias = 0.000005 * tan(acos(dot(n, l)));
+		shadows += shadowsValue(bias);
 	}
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
 		l = normalize(lights.fragPointLights[i] - fragPos);
@@ -129,7 +130,7 @@ void main() {
 		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
 	}
-	color *= (1.0 - shadow);
+	color *= (1.0 - shadows);
 	vec3 ambient = vec3(0.03) * d * ao;
 	color += ambient;
 
