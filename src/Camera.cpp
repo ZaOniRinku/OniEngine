@@ -1,30 +1,30 @@
 #include "Camera.h"
 
 Camera::Camera() {
-	pos = glm::vec3(-3.0f, 0.0f, 0.3f);
+	pos = glm::vec3(-3.0f, 0.3f, 0.0f);
 	front = glm::vec3(1.0f, 0.0f, 0.0f);
-	up = glm::vec3(0.0f, 0.0f, 1.0f);
+	up = glm::vec3(0.0f, 1.0f, 0.0f);
 	movementSpeed = 2.5;
 }
 
-Camera::Camera(glm::vec3 cPos) {
-	pos = cPos;
+Camera::Camera(float posX, float posY, float posZ) {
+	pos = glm::vec3(posX, posY, posZ);
 	front = glm::vec3(1.0f, 0.0f, 0.0f);
-	up = glm::vec3(0.0f, 0.0f, 1.0f);
+	up = glm::vec3(0.0f, 1.0f, 0.0f);
 	movementSpeed = 2.5;
 }
 
-Camera::Camera(glm::vec3 cPos, glm::vec3 cFront) {
-	pos = cPos;
-	front = cFront;
-	up = glm::vec3(0.0f, 0.0f, 1.0f);
+Camera::Camera(float posX, float posY, float posZ, float frontX, float frontY, float frontZ) {
+	pos = glm::vec3(posX, posY, posZ);
+	front = glm::vec3(frontX, frontY, frontZ);
+	up = glm::vec3(0.0f, 1.0f, 0.0f);
 	movementSpeed = 2.5;
 }
 
-Camera::Camera(glm::vec3 cPos, glm::vec3 cFront, float ms) {
-	pos = cPos;
-	front = cFront;
-	up = glm::vec3(0.0f, 0.0f, 1.0f);
+Camera::Camera(float posX, float posY, float posZ, float frontX, float frontY, float frontZ, float ms) {
+	pos = glm::vec3(posX, posY, posZ);
+	front = glm::vec3(frontX, frontY, frontZ);
+	up = glm::vec3(0.0f, 1.0f, 0.0f);
 	movementSpeed = ms;
 }
 

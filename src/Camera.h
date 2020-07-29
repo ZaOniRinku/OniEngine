@@ -5,9 +5,9 @@
 class Camera {
 public:
 	Camera();
-	Camera(glm::vec3 cPos);
-	Camera(glm::vec3 cPos, glm::vec3 cFront);
-	Camera(glm::vec3 cPos, glm::vec3 cFront, float ms);
+	Camera(float posX, float posY, float posZ);
+	Camera(float posX, float posY, float posZ, float frontX, float frontY, float frontZ);
+	Camera(float posX, float posY, float posZ, float frontX, float frontY, float frontZ, float ms);
 	float getPositionX();
 	float getPositionY();
 	float getPositionZ();

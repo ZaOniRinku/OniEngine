@@ -26,8 +26,6 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 	}
 }
 
-VkSurfaceKHR surface;
-
 void GraphicsEngine::setScene(Scene* newScene) {
 	scene = newScene;
 }
@@ -39,7 +37,7 @@ void GraphicsEngine::run() {
 	cleanup();
 }
 
-void GraphicsEngine::inputsManagement(GLFWwindow* window) {
+void GraphicsEngine::frameEvents(GLFWwindow* window) {
 	// Time management
 	double currentTime = glfwGetTime();
 	double deltaTime = currentTime - lastFrame;
@@ -1812,7 +1810,7 @@ void GraphicsEngine::updateUniformBuffer(Object* obj, uint32_t currentImage) {
 
 	UniformBufferObject ubo = {};
 	// Using T * R * S transformation for models, default rotate is 90 degrees on the X-axis so models got the angle they have on 3D modeling softwares
-	ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ())) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX() + 90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
+	ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ())) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX()), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
 
 	vkMapMemory(device, *obj->getUniformBufferMemory(currentImage), 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
@@ -2667,7 +2665,7 @@ void GraphicsEngine::updateShadowsDescriptorSets(Object* obj, int frame, int nbD
 void GraphicsEngine::mainLoop() {
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
-		inputsManagement(window);
+		frameEvents(window);
 		drawFrame();
 	}
 

@@ -74,7 +74,7 @@ public:
 	int start();
 private:
 	void run();
-	void inputsManagement(GLFWwindow* window);
+	void frameEvents(GLFWwindow* window);
 
 	static void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
 		auto app = reinterpret_cast<GraphicsEngine*>(glfwGetWindowUserPointer(window));
@@ -102,8 +102,8 @@ private:
 
 		glm::vec3 front;
 		front.x = cos(glm::radians(app->pitch)) * cos(glm::radians(app->yaw));
-		front.y = cos(glm::radians(app->pitch)) * sin(glm::radians(app->yaw)) * -1;
-		front.z = sin(glm::radians(app->pitch)) * -1;
+		front.y = sin(glm::radians(app->pitch)) * -1;
+		front.z = cos(glm::radians(app->pitch)) * sin(glm::radians(app->yaw));
 		Camera* camera = app->scene->getCamera();
 		glm::vec3 frontN = glm::normalize(front);
 		camera->setFront(frontN.x, frontN.y, frontN.z);
@@ -214,6 +214,7 @@ private:
 	VkDevice device;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
+	VkSurfaceKHR surface;
 	VkSwapchainKHR swapChain;
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;

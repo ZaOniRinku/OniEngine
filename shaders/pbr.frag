@@ -126,7 +126,7 @@ void main() {
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
 		l = normalize(lights.fragPointLights[i] - fragPos);
 		float distance = length(lights.fragPointLights[i] - fragPos);
-		float attenuation = 1.0 / (distance * distance);
+		float attenuation = 1.0 / pow(distance, 2.2);
 		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
 	}
@@ -137,5 +137,5 @@ void main() {
 	// HDR
 	color = color / (color + vec3(1.0));
 	color = pow(color, vec3(1.0/2.2));
-	outColor = vec4(color, diffuse.w);
+	outColor = vec4(color, 1.0);
 }
