@@ -60,22 +60,22 @@ float RDM_Smith(float LdotN, float VdotN, float roughness) {
 }
 
 vec3 RDM_bsdf(float LdotH, float NdotH, float VdotH, float LdotN, float VdotN, vec3 diffuse, float metallic, float roughness) {
-	float d = RDM_Distribution(max(NdotH, 0.0), roughness);
-	vec3 f = RDM_Fresnel(max(VdotH, 0.0), mix(vec3(0.04), diffuse, metallic));
-	float g = RDM_Smith(max(LdotN, 0.0), max(VdotN, 0.0), roughness);
+	float d = RDM_Distribution(NdotH, roughness);
+	vec3 f = RDM_Fresnel(VdotH, mix(vec3(0.04), diffuse, metallic));
+	float g = RDM_Smith(LdotN, VdotN, roughness);
 
-	vec3 specular = (d * f * g) / max(4.0 * max(LdotN, 0.0) * max(VdotN, 0.0), 0.001);
+	vec3 specular = (d * f * g) / max(4.0 * LdotN * VdotN, 0.001);
 	vec3 kd = (vec3(1.0) - f) * (1.0 - metallic);
 	return kd * diffuse / M_PI + specular;
 }
 
 vec3 shade(vec3 n, vec3 v, vec3 l, vec3 lc, vec3 diffuse, float metallic, float roughness) {
 	vec3 h = normalize(v+l);
-	float LdotH = dot(l,h);
-	float NdotH = dot(n,h);
-	float VdotH = dot(v,h);
-	float LdotN = dot(l,n);
-	float VdotN = dot(v,n);
+	float LdotH = max(dot(l,h), 0.0);
+	float NdotH = max(dot(n,h), 0.0);
+	float VdotH = max(dot(v,h), 0.0);
+	float LdotN = max(dot(l,n), 0.0);
+	float VdotN = max(dot(v,n), 0.0);
 	vec3 bsdf = RDM_bsdf(LdotH, NdotH, VdotH, LdotN, VdotN, diffuse, metallic, roughness);
 	vec3 ret = lc*bsdf*LdotN;
 
