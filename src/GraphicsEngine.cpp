@@ -368,7 +368,7 @@ void GraphicsEngine::cleanupSwapChain() {
 	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
 	// Destroy pipelines
-	vkDestroyPipeline(device, *scene->getRoot()->getObject()->getGraphicsPipeline(), nullptr);
+	vkDestroyPipeline(device, graphicsPipeline, nullptr);
 	vkDestroyPipeline(device, skyboxGraphicsPipeline, nullptr);
 	vkDestroyPipeline(device, shadowsGraphicsPipeline, nullptr);
 

@@ -130,6 +130,7 @@ void Object::addUniformBufferMemory(VkDeviceMemory* newUniformBufferMemory) {
 VkPipeline* Object::getGraphicsPipeline() {
 	return graphicsPipeline;
 }
+
 void Object::setGraphicsPipeline(VkPipeline* newGraphicsPipeline) {
 	graphicsPipeline = newGraphicsPipeline;
 }
