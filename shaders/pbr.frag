@@ -120,7 +120,7 @@ void main() {
 	for (int i = 0; i < lights.fragNumDirLights; i++) {
 		l = normalize(-lights.fragDirLights[i]);
 		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
-		float bias = max(0.005 * (1.0 - dot(n, l)), 0.0005);
+		float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
 		shadows += shadowsValue(bias);
 	}
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
