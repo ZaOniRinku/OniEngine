@@ -137,7 +137,7 @@ void GraphicsEngine::initWindow() {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	// Change the first nullptr to glfwGetPrimaryMonitor() for fullscreen
-	window = glfwCreateWindow(WIDTH, HEIGHT, "ONIEngine", nullptr, nullptr);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "ONIEngine", glfwGetPrimaryMonitor(), nullptr);
 	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
