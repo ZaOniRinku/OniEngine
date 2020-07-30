@@ -368,3 +368,4 @@ main.cpp
 *.vcxproj.filters
 *.vcxproj.user
 compile.bat
+CMakeLists.txt
