@@ -59,13 +59,13 @@ float smith(float LdotN, float VdotN, float roughness) {
 	return g1l * g1v;
 }
 
-vec3 diffuseFresnelCorrection(vec3 n) {
-	vec3 nsquare = n * n;
-	bvec3 TIR = lessThan(n, vec3(1.0));
-    vec3 invdenum = mix(vec3(1.0), vec3(1.0) / (nsquare * nsquare * (vec3(554.33) - 380.7 * n)), TIR);
-    vec3 num = n * mix(vec3(0.1921156102251088), n * 298.25 - 261.38 * nsquare + 138.43, TIR);
-    num += mix(vec3(0.8078843897748912), vec3(-1.67), TIR);
-    return num * invdenum;
+vec3 diffuseFresnelCorrection(vec3 ior) {
+	vec3 iorsquare = ior * ior;
+	bvec3 TIR = lessThan(ior, vec3(1.0));
+	vec3 invdenum = mix(vec3(1.0), vec3(1.0) / (iorsquare * iorsquare * (vec3(554.33) - 380.7 * ior)), TIR);
+	vec3 num = ior * mix(vec3(0.1921156102251088), ior * 298.25 - 261.38 * iorsquare + 138.43, TIR);
+	num += mix(vec3(0.8078843897748912), vec3(-1.67), TIR);
+	return num * invdenum;
 }
 
 vec3 brdf(float LdotH, float NdotH, float VdotH, float LdotN, float VdotN, vec3 diffuse, float metallic, float roughness) {
