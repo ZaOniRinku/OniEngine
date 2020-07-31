@@ -2735,9 +2735,11 @@ void GraphicsEngine::drawFrame() {
 
 	// Shadows
 	ShadowsBufferObject sbo = {};
-	glm::mat4 shadowsView = glm::lookAt(glm::vec3(-scene->getDirectionalLights()->at(0)->getDirectionX(), -scene->getDirectionalLights()->at(0)->getDirectionY(), -scene->getDirectionalLights()->at(0)->getDirectionZ()), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	glm::mat4 shadowsProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 20.0f);
-	sbo.lightSpace = shadowsProj * shadowsView;
+	for (int i = 0; i < lbo.numDirLights; i++) {
+		glm::mat4 shadowsView = glm::lookAt(glm::vec3(-scene->getDirectionalLights()->at(i)->getDirectionX(), -scene->getDirectionalLights()->at(i)->getDirectionY(), -scene->getDirectionalLights()->at(i)->getDirectionZ()), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		glm::mat4 shadowsProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 20.0f);
+		sbo.lightSpace = shadowsProj * shadowsView;
+	}
 
 	vkMapMemory(device, shadowsBuffersMemory[imageIndex], 0, sizeof(sbo), 0, &data);
 	memcpy(data, &sbo, sizeof(sbo));
