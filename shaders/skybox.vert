@@ -5,13 +5,13 @@
 #define MAX_POINT_LIGHTS 10
 
 layout(binding = 0) uniform UniformBufferObject {
-  mat4 model;
+	mat4 model;
 } ubo;
 
 layout(binding = 1) uniform CameraBufferObject {
-  mat4 view;
-  mat4 proj;
-  vec3 pos;
+	mat4 view;
+	mat4 proj;
+	vec3 pos;
 } cbo;
 
 layout(location = 0) in vec3 inPosition;
