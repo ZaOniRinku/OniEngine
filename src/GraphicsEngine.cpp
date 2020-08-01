@@ -361,6 +361,9 @@ void GraphicsEngine::cleanupSwapChain() {
 		vkDestroyImageView(device, shadowsImageViews[i], nullptr);
 		vkDestroyImage(device, shadowsImages[i], nullptr);
 		vkFreeMemory(device, shadowsImageMemories[i], nullptr);
+		for (int j = 0; j < swapChainImages.size(); j++) {
+			vkDestroyFramebuffer(device, shadowsFramebuffers[j][i], nullptr);
+		}
 	}
 
 	for (auto framebuffer : swapChainFramebuffers) {
