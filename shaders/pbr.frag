@@ -4,6 +4,8 @@
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 
+layout(constant_id = 0) const int numShadowmaps = 10;
+
 layout(binding = 2) uniform Lights {
 	int fragNumDirLights;
 	vec3 fragDirLights[MAX_DIR_LIGHTS];
@@ -13,7 +15,7 @@ layout(binding = 2) uniform Lights {
 	vec3 fragPointLightsColor[MAX_POINT_LIGHTS];
 } lights;
 
-layout(binding = 4) uniform sampler2D shadowsTexSampler;
+layout(binding = 4) uniform sampler2D shadowsTexSampler[numShadowmaps];
 layout(binding = 5) uniform sampler2D diffuseTexSampler;
 layout(binding = 6) uniform sampler2D normalTexSampler;
 layout(binding = 7) uniform sampler2D metallicTexSampler;
@@ -24,8 +26,8 @@ layout(location = 0) in vec3 fragNormal;
 layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 fragPos;
 layout(location = 3) in vec3 fragCamPos;
-layout(location = 4) in vec4 fragLightSpace;
-layout(location = 5) in mat3 fragTBN;
+layout(location = 4) in vec4 fragLightSpace[MAX_DIR_LIGHTS];
+layout(location = MAX_DIR_LIGHTS + 4) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
@@ -93,8 +95,8 @@ vec3 shade(vec3 n, vec3 v, vec3 l, vec3 lc, vec3 diffuse, float metallic, float 
 	return ret;
 }
 
-float shadowsValue(float bias) {
-	vec3 proj = fragLightSpace.xyz / fragLightSpace.w;
+float shadowsValue(int index, float bias) {
+	vec3 proj = fragLightSpace[index].xyz / fragLightSpace[index].w;
 	if (proj.z > 1.0) {
 		return 0.0;
 	}
@@ -102,10 +104,10 @@ float shadowsValue(float bias) {
 	float curr = proj.z;
 	float shadows = 0.0;
 	
-	vec2 texelSize = 1.0 / textureSize(shadowsTexSampler, 0);
+	vec2 texelSize = 1.0 / textureSize(shadowsTexSampler[index], 0);
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
-			float pcf = texture(shadowsTexSampler, proj.xy + vec2(x, y) * texelSize).x;
+			float pcf = texture(shadowsTexSampler[index], proj.xy + vec2(x, y) * texelSize).x;
 			shadows += curr - bias > pcf ? 1.0 : 0.0;
 		}
 	}
@@ -132,7 +134,7 @@ void main() {
 		l = normalize(-lights.fragDirLights[i]);
 		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
 		float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
-		shadows += shadowsValue(bias);
+		shadows += shadowsValue(i, bias);
 	}
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
 		l = normalize(lights.fragPointLights[i] - fragPos);
@@ -141,6 +143,7 @@ void main() {
 		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
 	}
+	shadows = clamp(shadows, 0.0, 1.0);
 	color *= (1.0 - shadows);
 	vec3 ambient = vec3(0.03) * d * ao;
 	color += ambient;

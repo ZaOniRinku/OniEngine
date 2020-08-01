@@ -357,9 +357,11 @@ void GraphicsEngine::cleanupSwapChain() {
 	vkDestroyImage(device, depthImage, nullptr);
 	vkFreeMemory(device, depthImageMemory, nullptr);
 
-	vkDestroyImageView(device, shadowsImageView, nullptr);
-	vkDestroyImage(device, shadowsImage, nullptr);
-	vkFreeMemory(device, shadowsImageMemory, nullptr);
+	for (int i = 0; i < scene->getDirectionalLights()->size(); i++) {
+		vkDestroyImageView(device, shadowsImageViews[i], nullptr);
+		vkDestroyImage(device, shadowsImages[i], nullptr);
+		vkFreeMemory(device, shadowsImageMemories[i], nullptr);
+	}
 
 	for (auto framebuffer : swapChainFramebuffers) {
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -618,43 +620,43 @@ void GraphicsEngine::createDescriptorSetLayout() {
 
 	VkDescriptorSetLayoutBinding shadowsSamplerLayoutBinding = {};
 	shadowsSamplerLayoutBinding.binding = 4;
-	shadowsSamplerLayoutBinding.descriptorCount = 1;
 	shadowsSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	shadowsSamplerLayoutBinding.descriptorCount = static_cast<uint32_t>(scene->getDirectionalLights()->size());
 	shadowsSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	shadowsSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding diffuseSamplerLayoutBinding = {};
 	diffuseSamplerLayoutBinding.binding = 5;
-	diffuseSamplerLayoutBinding.descriptorCount = 1;
 	diffuseSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	diffuseSamplerLayoutBinding.descriptorCount = 1;
 	diffuseSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	diffuseSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding normalSamplerLayoutBinding = {};
 	normalSamplerLayoutBinding.binding = 6;
-	normalSamplerLayoutBinding.descriptorCount = 1;
 	normalSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	normalSamplerLayoutBinding.descriptorCount = 1;
 	normalSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	normalSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding metallicSamplerLayoutBinding = {};
 	metallicSamplerLayoutBinding.binding = 7;
-	metallicSamplerLayoutBinding.descriptorCount = 1;
 	metallicSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	metallicSamplerLayoutBinding.descriptorCount = 1;
 	metallicSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	metallicSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding roughnessSamplerLayoutBinding = {};
 	roughnessSamplerLayoutBinding.binding = 8;
-	roughnessSamplerLayoutBinding.descriptorCount = 1;
 	roughnessSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	roughnessSamplerLayoutBinding.descriptorCount = 1;
 	roughnessSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	roughnessSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutBinding AOSamplerLayoutBinding = {};
 	AOSamplerLayoutBinding.binding = 9;
-	AOSamplerLayoutBinding.descriptorCount = 1;
 	AOSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	AOSamplerLayoutBinding.descriptorCount = 1;
 	AOSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	AOSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
@@ -710,11 +712,25 @@ void GraphicsEngine::createGraphicsPipeline() {
 	vertShaderStageInfo.module = vertShaderModule;
 	vertShaderStageInfo.pName = "main";
 
+	VkSpecializationMapEntry mapEntry = {};
+	mapEntry.constantID = 0;
+	mapEntry.offset = 0;
+	mapEntry.size = sizeof(int);
+
+	int specValue = scene->getDirectionalLights()->size();
+
+	VkSpecializationInfo fragSpecInfo = {};
+	fragSpecInfo.mapEntryCount = 1;
+	fragSpecInfo.pMapEntries = &mapEntry;
+	fragSpecInfo.dataSize = sizeof(int);
+	fragSpecInfo.pData = &specValue;
+
 	VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
 	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 	fragShaderStageInfo.module = fragShaderModule;
 	fragShaderStageInfo.pName = "main";
+	fragShaderStageInfo.pSpecializationInfo = &fragSpecInfo;
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
@@ -1091,12 +1107,17 @@ void GraphicsEngine::createGraphicsPipeline() {
 	shadowsDepthStencil.front = {};
 	shadowsDepthStencil.back = {};
 
+	VkPushConstantRange shadowsPushConstantRange = {};
+	shadowsPushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	shadowsPushConstantRange.offset = 0;
+	shadowsPushConstantRange.size = sizeof(int);
+
 	VkPipelineLayoutCreateInfo shadowsPipelineLayoutInfo = {};
 	shadowsPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	shadowsPipelineLayoutInfo.setLayoutCount = 1;
 	shadowsPipelineLayoutInfo.pSetLayouts = &shadowsDescriptorSetLayout;
-	shadowsPipelineLayoutInfo.pushConstantRangeCount = 0;
-	shadowsPipelineLayoutInfo.pPushConstantRanges = nullptr;
+	shadowsPipelineLayoutInfo.pushConstantRangeCount = 1;
+	shadowsPipelineLayoutInfo.pPushConstantRanges = &shadowsPushConstantRange;
 
 	if (vkCreatePipelineLayout(device, &shadowsPipelineLayoutInfo, nullptr, &shadowsPipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create shadows pipeline layout!");
@@ -1152,18 +1173,20 @@ void GraphicsEngine::createFramebuffers() {
 		}
 
 		// Shadows
+		shadowsFramebuffers[i].resize(scene->getDirectionalLights()->size());
+		for (int j = 0; j < scene->getDirectionalLights()->size(); j++) {
+			VkFramebufferCreateInfo shadowsFramebufferInfo = {};
+			shadowsFramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			shadowsFramebufferInfo.renderPass = shadowsRenderPass;
+			shadowsFramebufferInfo.attachmentCount = 1;
+			shadowsFramebufferInfo.pAttachments = &shadowsImageViews[j];
+			shadowsFramebufferInfo.width = SHADOWMAP_WIDTH;
+			shadowsFramebufferInfo.height = SHADOWMAP_HEIGHT;
+			shadowsFramebufferInfo.layers = 1;
 
-		VkFramebufferCreateInfo shadowsFramebufferInfo = {};
-		shadowsFramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		shadowsFramebufferInfo.renderPass = shadowsRenderPass;
-		shadowsFramebufferInfo.attachmentCount = 1;
-		shadowsFramebufferInfo.pAttachments = &shadowsImageView;
-		shadowsFramebufferInfo.width = SHADOWMAP_WIDTH;
-		shadowsFramebufferInfo.height = SHADOWMAP_HEIGHT;
-		shadowsFramebufferInfo.layers = 1;
-
-		if (vkCreateFramebuffer(device, &shadowsFramebufferInfo, nullptr, &shadowsFramebuffers[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create shadow framebuffer!");
+			if (vkCreateFramebuffer(device, &shadowsFramebufferInfo, nullptr, &shadowsFramebuffers[i][j]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create shadow framebuffer!");
+			}
 		}
 	}
 }
@@ -1196,8 +1219,13 @@ void GraphicsEngine::createDepthResources() {
 
 	// Shadows
 
-	createImage(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowsImage, shadowsImageMemory);
-	shadowsImageView = createImageView(shadowsImage, VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+	shadowsImages.resize(scene->getDirectionalLights()->size());
+	shadowsImageViews.resize(scene->getDirectionalLights()->size());
+	shadowsImageMemories.resize(scene->getDirectionalLights()->size());
+	for (int i = 0; i < scene->getDirectionalLights()->size(); i++) {
+		createImage(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowsImages[i], shadowsImageMemories[i]);
+		shadowsImageViews[i] = createImageView(shadowsImages[i], VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+	}
 }
 
 void GraphicsEngine::createTextures() {
@@ -1477,7 +1505,6 @@ void GraphicsEngine::createCommandBuffers() {
 		VkRenderPassBeginInfo shadowsRenderPassInfo = {};
 		shadowsRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		shadowsRenderPassInfo.renderPass = shadowsRenderPass;
-		shadowsRenderPassInfo.framebuffer = shadowsFramebuffers[i];
 		shadowsRenderPassInfo.renderArea.offset = { 0, 0 };
 		shadowsRenderPassInfo.renderArea.extent.width = SHADOWMAP_WIDTH;
 		shadowsRenderPassInfo.renderArea.extent.height = SHADOWMAP_HEIGHT;
@@ -1488,29 +1515,31 @@ void GraphicsEngine::createCommandBuffers() {
 
 		std::vector<SGNode*> elements;
 
-		// First pass : Shadows
+		// First passes : Shadows
+		for (int j = 0; j < scene->getDirectionalLights()->size(); j++) {
+			shadowsRenderPassInfo.framebuffer = shadowsFramebuffers[i][j];
+			vkCmdBeginRenderPass(commandBuffers[i], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsGraphicsPipeline);
 
-		vkCmdBeginRenderPass(commandBuffers[i], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsGraphicsPipeline);
-
-		elements = scene->getRoot()->getChildren();
-		while (!elements.empty()) {
-			Object* obj = elements.front()->getObject();
-			VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
-			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
-			vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsPipelineLayout, 0, 1, obj->getShadowsDescriptorSet(i), 0, nullptr);
-			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
-			for (SGNode* child : elements.front()->getChildren()) {
-				elements.insert(elements.end(), child);
+			elements = scene->getRoot()->getChildren();
+			while (!elements.empty()) {
+				Object* obj = elements.front()->getObject();
+				VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
+				vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
+				vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsPipelineLayout, 0, 1, obj->getShadowsDescriptorSet(i), 0, nullptr);
+				vkCmdPushConstants(commandBuffers[i], shadowsPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
+				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
+				for (SGNode* child : elements.front()->getChildren()) {
+					elements.insert(elements.end(), child);
+				}
+				elements.erase(elements.begin());
 			}
-			elements.erase(elements.begin());
+
+			vkCmdEndRenderPass(commandBuffers[i]);
 		}
 
-		vkCmdEndRenderPass(commandBuffers[i]);
-
 		// Second pass : Objects
-
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		// Skybox if drawn first for color blending
@@ -2328,13 +2357,11 @@ void GraphicsEngine::createTextureSampler(Object* obj) {
 	samplerInfo.mipLodBias = 0.0f;
 
 	// Diffuse Texture
-
 	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getDiffuseTextureSampler()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create diffuse texture sampler!");
 	}
 
 	// Normal Texture (Lod update)
-
 	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getNormalMipLevel());
 
 	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getNormalTextureSampler()) != VK_SUCCESS) {
@@ -2342,7 +2369,6 @@ void GraphicsEngine::createTextureSampler(Object* obj) {
 	}
 
 	// Metallic Texture (Lod update)
-
 	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getMetallicMipLevel());
 
 	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getMetallicTextureSampler()) != VK_SUCCESS) {
@@ -2350,7 +2376,6 @@ void GraphicsEngine::createTextureSampler(Object* obj) {
 	}
 
 	// Roughness Texture (Lod update)
-
 	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getRoughnessMipLevel());
 
 	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getRoughnessTextureSampler()) != VK_SUCCESS) {
@@ -2358,7 +2383,6 @@ void GraphicsEngine::createTextureSampler(Object* obj) {
 	}
 
 	// AO Texture (Lod update)
-
 	samplerInfo.maxLod = static_cast<float> (obj->getMaterial()->getAOMipLevel());
 
 	if (vkCreateSampler(device, &samplerInfo, nullptr, obj->getMaterial()->getAOTextureSampler()) != VK_SUCCESS) {
@@ -2513,10 +2537,14 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	shadowsInfo.offset = 0;
 	shadowsInfo.range = sizeof(ShadowsBufferObject);
 
-	VkDescriptorImageInfo shadowsImageInfo = {};
-	shadowsImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-	shadowsImageInfo.imageView = shadowsImageView;
-	shadowsImageInfo.sampler = shadowsSampler;
+	std::vector<VkDescriptorImageInfo> shadowsImageInfos;
+	shadowsImageInfos.resize(scene->getDirectionalLights()->size());
+	for (int i = 0; i < scene->getDirectionalLights()->size(); i++) {
+		shadowsImageInfos[i] = {};
+		shadowsImageInfos[i].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		shadowsImageInfos[i].imageView = shadowsImageViews[i];
+		shadowsImageInfos[i].sampler = shadowsSampler;
+	}
 
 	VkDescriptorImageInfo diffuseImageInfo = {};
 	diffuseImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -2582,8 +2610,8 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[4].dstBinding = 4;
 	descriptorWrites[4].dstArrayElement = 0;
 	descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorWrites[4].descriptorCount = 1;
-	descriptorWrites[4].pImageInfo = &shadowsImageInfo;
+	descriptorWrites[4].descriptorCount = static_cast<uint32_t>(shadowsImageInfos.size());
+	descriptorWrites[4].pImageInfo = shadowsImageInfos.data();
 
 	descriptorWrites[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrites[5].dstSet = descriptorSets[nbDesc];
@@ -2696,7 +2724,6 @@ void GraphicsEngine::drawFrame() {
 	}
 
 	// Skybox
-
 	if (scene->getSkybox()) {
 		Object* skybox = scene->getSkybox();
 		updateUniformBuffer(skybox, imageIndex);
@@ -2735,10 +2762,10 @@ void GraphicsEngine::drawFrame() {
 
 	// Shadows
 	ShadowsBufferObject sbo = {};
-	for (int i = 0; i < lbo.numDirLights; i++) {
+	glm::mat4 shadowsProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 20.0f);
+	for (int i = 0; i < scene->getDirectionalLights()->size(); i++) {
 		glm::mat4 shadowsView = glm::lookAt(glm::vec3(-scene->getDirectionalLights()->at(i)->getDirectionX(), -scene->getDirectionalLights()->at(i)->getDirectionY(), -scene->getDirectionalLights()->at(i)->getDirectionZ()), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		glm::mat4 shadowsProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 20.0f);
-		sbo.lightSpace = shadowsProj * shadowsView;
+		sbo.lightSpace[i] = shadowsProj * shadowsView;
 	}
 
 	vkMapMemory(device, shadowsBuffersMemory[imageIndex], 0, sizeof(sbo), 0, &data);

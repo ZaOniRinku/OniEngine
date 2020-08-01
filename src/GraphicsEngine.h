@@ -50,7 +50,7 @@ struct CameraBufferObject {
 };
 
 struct ShadowsBufferObject {
-	alignas(16) glm::mat4 lightSpace;
+	alignas(16) glm::mat4 lightSpace[10];
 };
 
 struct QueueFamilyIndices {
@@ -194,7 +194,6 @@ private:
 	bool hasStencilComponent(VkFormat format);
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 	VkSampleCountFlagBits getMaxUsableSampleCount();
-	void createSkybox();
 	void createTextureImage(Object* obj);
 	void createTextureImageView(Object* obj);
 	void createTextureSampler(Object* obj);
@@ -232,7 +231,7 @@ private:
 	VkPipeline skyboxGraphicsPipeline;
 	VkPipelineLayout skyboxPipelineLayout;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
-	std::vector<VkFramebuffer> shadowsFramebuffers;
+	std::vector<std::vector<VkFramebuffer>> shadowsFramebuffers;
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -247,9 +246,9 @@ private:
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
-	VkImage shadowsImage;
-	VkDeviceMemory shadowsImageMemory;
-	VkImageView shadowsImageView;
+	std::vector<VkImage> shadowsImages;
+	std::vector<VkDeviceMemory> shadowsImageMemories;
+	std::vector<VkImageView> shadowsImageViews;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImage colorImage;
 	VkDeviceMemory colorImageMemory;
