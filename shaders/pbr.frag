@@ -139,7 +139,7 @@ void main() {
 	for (int i = 0; i < lights.fragNumPointLights; i++) {
 		l = normalize(lights.fragPointLights[i] - fragPos);
 		float distance = length(lights.fragPointLights[i] - fragPos);
-		float attenuation = 1.0 / pow(distance, 2.2);
+		float attenuation = 1.0 / (distance * distance);
 		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
 	}
