@@ -94,6 +94,8 @@ public:
 
 	bool isConstructed();
 	void constructedTrue();
+	bool isDestructed();
+	void destructedTrue();
 private:
 	std::string diffusePath;
 	float diffuseRValue;
@@ -146,5 +148,6 @@ private:
 	uint32_t AOMipLevel;
 
 	bool constructed;
+	bool destructed;
 };
 

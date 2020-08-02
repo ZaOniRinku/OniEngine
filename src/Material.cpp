@@ -334,3 +334,11 @@ bool Material::isConstructed() {
 void Material::constructedTrue() {
 	constructed = true;
 }
+
+bool Material::isDestructed() {
+	return destructed;
+}
+
+void Material::destructedTrue() {
+	destructed = true;
+}

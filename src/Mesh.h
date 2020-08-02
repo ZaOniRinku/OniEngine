@@ -89,6 +89,8 @@ public:
 
 	bool isConstructed();
 	void constructedTrue();
+	bool isDestructed();
+	void destructedTrue();
 private:
 	std::string modelPath;
 
@@ -101,4 +103,5 @@ private:
 	VkDeviceMemory indexBufferMemory;
 
 	bool constructed;
+	bool destructed;
 };

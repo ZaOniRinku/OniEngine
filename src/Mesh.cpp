@@ -40,3 +40,11 @@ bool Mesh::isConstructed() {
 void Mesh::constructedTrue() {
 	constructed = true;
 }
+
+bool Mesh::isDestructed() {
+	return destructed;
+}
+
+void Mesh::destructedTrue() {
+	destructed = true;
+}

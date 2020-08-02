@@ -401,7 +401,7 @@ void GraphicsEngine::cleanupSwapChain() {
 		vkDestroyBuffer(device, shadowsBuffers[i], nullptr);
 		vkFreeMemory(device, shadowsBuffersMemory[i], nullptr);
 	}
-
+	
 	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 	vkDestroyDescriptorPool(device, shadowsDescriptorPool, nullptr);
 }
@@ -2827,31 +2827,35 @@ void GraphicsEngine::cleanup() {
 
 	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
-		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getDiffuseTextureSampler(), nullptr);
-		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getDiffuseTextureImageView(), nullptr);
-		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getDiffuseTextureImage(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getDiffuseTextureImageMemory(), nullptr);
+		Material *material = elements.front()->getObject()->getMaterial();
+		if (!material->isDestructed()) {
+			vkDestroySampler(device, *material->getDiffuseTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getDiffuseTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getDiffuseTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getDiffuseTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getNormalTextureSampler(), nullptr);
-		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getNormalTextureImageView(), nullptr);
-		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getNormalTextureImage(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getNormalTextureImageMemory(), nullptr);
+			vkDestroySampler(device, *material->getNormalTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getNormalTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getNormalTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getNormalTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getMetallicTextureSampler(), nullptr);
-		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getMetallicTextureImageView(), nullptr);
-		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getMetallicTextureImage(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getMetallicTextureImageMemory(), nullptr);
+			vkDestroySampler(device, *material->getMetallicTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getMetallicTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getMetallicTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getMetallicTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getRoughnessTextureSampler(), nullptr);
-		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getRoughnessTextureImageView(), nullptr);
-		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getRoughnessTextureImage(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getRoughnessTextureImageMemory(), nullptr);
+			vkDestroySampler(device, *material->getRoughnessTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getRoughnessTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getRoughnessTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getRoughnessTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *elements.front()->getObject()->getMaterial()->getAOTextureSampler(), nullptr);
-		vkDestroyImageView(device, *elements.front()->getObject()->getMaterial()->getAOTextureImageView(), nullptr);
-		vkDestroyImage(device, *elements.front()->getObject()->getMaterial()->getAOTextureImage(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getMaterial()->getAOTextureImageMemory(), nullptr);
+			vkDestroySampler(device, *material->getAOTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getAOTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getAOTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getAOTextureImageMemory(), nullptr);
 
+			material->destructedTrue();
+		}
 		for (SGNode* child : elements.front()->getChildren()) {
 			elements.insert(elements.end(), child);
 		}
@@ -2860,30 +2864,35 @@ void GraphicsEngine::cleanup() {
 
 	if (scene->getSkybox()) {
 		Object* skybox = scene->getSkybox();
-		vkDestroySampler(device, *skybox->getMaterial()->getDiffuseTextureSampler(), nullptr);
-		vkDestroyImageView(device, *skybox->getMaterial()->getDiffuseTextureImageView(), nullptr);
-		vkDestroyImage(device, *skybox->getMaterial()->getDiffuseTextureImage(), nullptr);
-		vkFreeMemory(device, *skybox->getMaterial()->getDiffuseTextureImageMemory(), nullptr);
+		Material *material = skybox->getMaterial();
+		if (!material->isDestructed()) {
+			vkDestroySampler(device, *material->getDiffuseTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getDiffuseTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getDiffuseTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getDiffuseTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *skybox->getMaterial()->getNormalTextureSampler(), nullptr);
-		vkDestroyImageView(device, *skybox->getMaterial()->getNormalTextureImageView(), nullptr);
-		vkDestroyImage(device, *skybox->getMaterial()->getNormalTextureImage(), nullptr);
-		vkFreeMemory(device, *skybox->getMaterial()->getNormalTextureImageMemory(), nullptr);
+			vkDestroySampler(device, *material->getNormalTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getNormalTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getNormalTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getNormalTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *skybox->getMaterial()->getMetallicTextureSampler(), nullptr);
-		vkDestroyImageView(device, *skybox->getMaterial()->getMetallicTextureImageView(), nullptr);
-		vkDestroyImage(device, *skybox->getMaterial()->getMetallicTextureImage(), nullptr);
-		vkFreeMemory(device, *skybox->getMaterial()->getMetallicTextureImageMemory(), nullptr);
+			vkDestroySampler(device, *material->getMetallicTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getMetallicTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getMetallicTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getMetallicTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *skybox->getMaterial()->getRoughnessTextureSampler(), nullptr);
-		vkDestroyImageView(device, *skybox->getMaterial()->getRoughnessTextureImageView(), nullptr);
-		vkDestroyImage(device, *skybox->getMaterial()->getRoughnessTextureImage(), nullptr);
-		vkFreeMemory(device, *skybox->getMaterial()->getRoughnessTextureImageMemory(), nullptr);
+			vkDestroySampler(device, *material->getRoughnessTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getRoughnessTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getRoughnessTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getRoughnessTextureImageMemory(), nullptr);
 
-		vkDestroySampler(device, *skybox->getMaterial()->getAOTextureSampler(), nullptr);
-		vkDestroyImageView(device, *skybox->getMaterial()->getAOTextureImageView(), nullptr);
-		vkDestroyImage(device, *skybox->getMaterial()->getAOTextureImage(), nullptr);
-		vkFreeMemory(device, *skybox->getMaterial()->getAOTextureImageMemory(), nullptr);
+			vkDestroySampler(device, *material->getAOTextureSampler(), nullptr);
+			vkDestroyImageView(device, *material->getAOTextureImageView(), nullptr);
+			vkDestroyImage(device, *material->getAOTextureImage(), nullptr);
+			vkFreeMemory(device, *material->getAOTextureImageMemory(), nullptr);
+
+			material->destructedTrue();
+		}
 	}
 
 	vkDestroySampler(device, shadowsSampler, nullptr);
@@ -2893,10 +2902,15 @@ void GraphicsEngine::cleanup() {
 
 	elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
-		vkDestroyBuffer(device, *elements.front()->getObject()->getMesh()->getIndexBuffer(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getMesh()->getIndexBufferMemory(), nullptr);
-		vkDestroyBuffer(device, *elements.front()->getObject()->getMesh()->getVertexBuffer(), nullptr);
-		vkFreeMemory(device, *elements.front()->getObject()->getMesh()->getVertexBufferMemory(), nullptr);
+		Mesh *mesh = elements.front()->getObject()->getMesh();
+		if (!mesh->isDestructed()) {
+			vkDestroyBuffer(device, *elements.front()->getObject()->getMesh()->getIndexBuffer(), nullptr);
+			vkFreeMemory(device, *elements.front()->getObject()->getMesh()->getIndexBufferMemory(), nullptr);
+			vkDestroyBuffer(device, *elements.front()->getObject()->getMesh()->getVertexBuffer(), nullptr);
+			vkFreeMemory(device, *elements.front()->getObject()->getMesh()->getVertexBufferMemory(), nullptr);
+
+			mesh->destructedTrue();
+		}
 		for (SGNode* child : elements.front()->getChildren()) {
 			elements.insert(elements.end(), child);
 		}
@@ -2905,10 +2919,15 @@ void GraphicsEngine::cleanup() {
 
 	if (scene->getSkybox()) {
 		Object* skybox = scene->getSkybox();
-		vkDestroyBuffer(device, *skybox->getMesh()->getIndexBuffer(), nullptr);
-		vkFreeMemory(device, *skybox->getMesh()->getIndexBufferMemory(), nullptr);
-		vkDestroyBuffer(device, *skybox->getMesh()->getVertexBuffer(), nullptr);
-		vkFreeMemory(device, *skybox->getMesh()->getVertexBufferMemory(), nullptr);
+		Mesh *mesh = skybox->getMesh();
+		if (!mesh->isDestructed()) {
+			vkDestroyBuffer(device, *skybox->getMesh()->getIndexBuffer(), nullptr);
+			vkFreeMemory(device, *skybox->getMesh()->getIndexBufferMemory(), nullptr);
+			vkDestroyBuffer(device, *skybox->getMesh()->getVertexBuffer(), nullptr);
+			vkFreeMemory(device, *skybox->getMesh()->getVertexBufferMemory(), nullptr);
+
+			mesh->destructedTrue();
+		}
 	}
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
