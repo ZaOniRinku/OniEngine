@@ -5,15 +5,15 @@ Object::Object() {}
 Object::Object(float x, float y, float z, float mScale) {
 	pos = { x, y, z };
 	scale = mScale;
-	node = nullptr;
 	rot = { 0.0f, 0.0f, 0.0f };
+	node = nullptr;
 }
 
 Object::Object(float x, float y, float z, float mScale, float xRot, float yRot, float zRot) {
 	pos = { x, y, z };
 	scale = mScale;
-	node = nullptr;
 	rot = { xRot, yRot, zRot };
+	node = nullptr;
 }
 
 void Object::move(float x, float y, float z) {
@@ -93,20 +93,12 @@ void Object::setName(std::string newName) {
 	name = newName;
 }
 
-VkDescriptorSet* Object::getDescriptorSet(int index) {
-	return descriptorSets[index];
+std::vector<VkDescriptorSet>* Object::getDescriptorSets() {
+	return &descriptorSets;
 }
 
-void Object::addDescriptorSet(VkDescriptorSet* newDescriptorSet) {
-	descriptorSets.push_back(newDescriptorSet);
-}
-
-VkDescriptorSet* Object::getShadowsDescriptorSet(int index) {
-	return shadowsDescriptorSets[index];
-}
-
-void Object::addShadowsDescriptorSet(VkDescriptorSet* newShadowsDescriptorSet) {
-	shadowsDescriptorSets.push_back(newShadowsDescriptorSet);
+std::vector<VkDescriptorSet>* Object::getShadowsDescriptorSets() {
+	return &shadowsDescriptorSets;
 }
 
 std::vector<VkBuffer>* Object::getObjectBuffers() {

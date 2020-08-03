@@ -1325,18 +1325,15 @@ void GraphicsEngine::createModels() {
 void GraphicsEngine::createUniformBuffers() {
 	int nbElems = scene->nbElements();
 
-	int nbBuffer;
 	VkDeviceSize bufferSize = sizeof(ObjectBufferObject);
 	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
 		Object *obj = elements.front()->getObject();
 		obj->getObjectBuffers()->resize(swapChainImages.size());
 		obj->getObjectBufferMemories()->resize(swapChainImages.size());
-		nbBuffer = 0;
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, obj->getObjectBuffers()->at(nbBuffer), obj->getObjectBufferMemories()->at(nbBuffer));
-			nbBuffer++;
+				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, obj->getObjectBuffers()->at(i), obj->getObjectBufferMemories()->at(i));
 		}
 		for (SGNode* child : elements.front()->getChildren()) {
 			elements.insert(elements.end(), child);
@@ -1350,11 +1347,9 @@ void GraphicsEngine::createUniformBuffers() {
 		Object* skybox = scene->getSkybox();
 		skybox->getObjectBuffers()->resize(swapChainImages.size());
 		skybox->getObjectBufferMemories()->resize(swapChainImages.size());
-		nbBuffer = 0;
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, skybox->getObjectBuffers()->at(nbBuffer), skybox->getObjectBufferMemories()->at(nbBuffer));
-			nbBuffer++;
+				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, skybox->getObjectBuffers()->at(i), skybox->getObjectBufferMemories()->at(i));
 		}
 	}
 
@@ -1426,23 +1421,22 @@ void GraphicsEngine::createDescriptorPool() {
 
 void GraphicsEngine::createDescriptorSets() {
 	int nbElems = scene->nbElements();
-	std::vector<VkDescriptorSetLayout> layouts(nbElems*swapChainImages.size(), descriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> layouts(swapChainImages.size(), descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(nbElems*swapChainImages.size());
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
 	allocInfo.pSetLayouts = layouts.data();
 
-	descriptorSets.resize(nbElems*swapChainImages.size());
-	if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate descriptor sets!");
-	}
-	size_t nbDesc = 0;
 	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
+		Object* obj = elements.front()->getObject();
+		obj->getDescriptorSets()->resize(swapChainImages.size());
+		if (vkAllocateDescriptorSets(device, &allocInfo, obj->getDescriptorSets()->data()) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate descriptor sets!");
+		}
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			updateDescriptorSets(elements.front()->getObject(), (int)i, (int)nbDesc);
-			nbDesc++;
+			updateDescriptorSets(elements.front()->getObject(), (int)i);
 		}
 		for (SGNode* child : elements.front()->getChildren()) {
 			elements.insert(elements.end(), child);
@@ -1454,31 +1448,32 @@ void GraphicsEngine::createDescriptorSets() {
 
 	if (scene->getSkybox()) {
 		Object* skybox = scene->getSkybox();
+		skybox->getDescriptorSets()->resize(swapChainImages.size());
+		if (vkAllocateDescriptorSets(device, &allocInfo, skybox->getDescriptorSets()->data()) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate descriptor sets!");
+		}
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			updateDescriptorSets(skybox, (int)i, (int)nbDesc);
-			nbDesc++;
+			updateDescriptorSets(skybox, (int)i);
 		}
 	}
 
 	// Shadows
-	std::vector<VkDescriptorSetLayout> shadowsLayouts(nbElems*swapChainImages.size(), shadowsDescriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> shadowsLayouts(swapChainImages.size(), shadowsDescriptorSetLayout);
 	VkDescriptorSetAllocateInfo shadowsAllocInfo = {};
 	shadowsAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	shadowsAllocInfo.descriptorPool = shadowsDescriptorPool;
-	shadowsAllocInfo.descriptorSetCount = static_cast<uint32_t>(nbElems*swapChainImages.size());
+	shadowsAllocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
 	shadowsAllocInfo.pSetLayouts = shadowsLayouts.data();
 
-	shadowsDescriptorSets.resize(nbElems*swapChainImages.size());
-	if (vkAllocateDescriptorSets(device, &shadowsAllocInfo, shadowsDescriptorSets.data()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate shadows descriptor sets!");
-	}
-
-	nbDesc = 0;
 	elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
+		Object* obj = elements.front()->getObject();
+		obj->getShadowsDescriptorSets()->resize(swapChainImages.size());
+		if (vkAllocateDescriptorSets(device, &shadowsAllocInfo, obj->getShadowsDescriptorSets()->data()) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate descriptor sets!");
+		}
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			updateShadowsDescriptorSets(elements.front()->getObject(), (int)i, (int)nbDesc);
-			nbDesc++;
+			updateShadowsDescriptorSets(elements.front()->getObject(), (int)i);
 		}
 		for (SGNode* child : elements.front()->getChildren()) {
 			elements.insert(elements.end(), child);
@@ -1547,7 +1542,7 @@ void GraphicsEngine::createCommandBuffers() {
 				VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
 				vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 				vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsPipelineLayout, 0, 1, obj->getShadowsDescriptorSet(i), 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsPipelineLayout, 0, 1, &obj->getShadowsDescriptorSets()->at(i), 0, nullptr);
 				vkCmdPushConstants(commandBuffers[i], shadowsPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
 				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
 				for (SGNode* child : elements.front()->getChildren()) {
@@ -1569,7 +1564,7 @@ void GraphicsEngine::createCommandBuffers() {
 			VkBuffer vertexCmdBuffers[] = { *skybox->getMesh()->getVertexBuffer() };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffers[i], *skybox->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipelineLayout, 0, 1, skybox->getDescriptorSet(i), 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipelineLayout, 0, 1, &skybox->getDescriptorSets()->at(i), 0, nullptr);
 			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(skybox->getMesh()->getIndices()->size()), 1, 0, 0, 0);
 		}
 		// For each 3D model, bind its vertex and indices and the right descriptor set for its texture
@@ -1580,7 +1575,7 @@ void GraphicsEngine::createCommandBuffers() {
 			VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, obj->getDescriptorSet(i), 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &obj->getDescriptorSets()->at(i), 0, nullptr);
 			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
 			for (SGNode* child : elements.front()->getChildren()) {
 				elements.insert(elements.end(), child);
@@ -2534,9 +2529,7 @@ void GraphicsEngine::createIndexBuffer(Object* obj) {
 	vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
-void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
-	obj->addDescriptorSet(&descriptorSets[nbDesc]);
-
+void GraphicsEngine::updateDescriptorSets(Object* obj, int frame) {
 	VkDescriptorBufferInfo objectInfo = {};
 	objectInfo.buffer = obj->getObjectBuffers()->at(frame);
 	objectInfo.offset = 0;
@@ -2594,7 +2587,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	std::array<VkWriteDescriptorSet, 10> descriptorWrites = {};
 
 	descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[0].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[0].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[0].dstBinding = 0;
 	descriptorWrites[0].dstArrayElement = 0;
 	descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -2602,7 +2595,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[0].pBufferInfo = &objectInfo;
 
 	descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[1].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[1].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[1].dstBinding = 1;
 	descriptorWrites[1].dstArrayElement = 0;
 	descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -2610,7 +2603,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[1].pBufferInfo = &cameraInfo;
 
 	descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[2].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[2].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[2].dstBinding = 2;
 	descriptorWrites[2].dstArrayElement = 0;
 	descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -2618,7 +2611,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[2].pBufferInfo = &lightsInfo;
 
 	descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[3].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[3].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[3].dstBinding = 3;
 	descriptorWrites[3].dstArrayElement = 0;
 	descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -2626,7 +2619,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[3].pBufferInfo = &shadowsInfo;
 
 	descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[4].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[4].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[4].dstBinding = 4;
 	descriptorWrites[4].dstArrayElement = 0;
 	descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2634,7 +2627,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[4].pImageInfo = shadowsImageInfos.data();
 
 	descriptorWrites[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[5].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[5].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[5].dstBinding = 5;
 	descriptorWrites[5].dstArrayElement = 0;
 	descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2642,7 +2635,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[5].pImageInfo = &diffuseImageInfo;
 
 	descriptorWrites[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[6].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[6].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[6].dstBinding = 6;
 	descriptorWrites[6].dstArrayElement = 0;
 	descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2650,7 +2643,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[6].pImageInfo = &normalImageInfo;
 
 	descriptorWrites[7].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[7].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[7].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[7].dstBinding = 7;
 	descriptorWrites[7].dstArrayElement = 0;
 	descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2658,7 +2651,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[7].pImageInfo = &metallicImageInfo;
 
 	descriptorWrites[8].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[8].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[8].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[8].dstBinding = 8;
 	descriptorWrites[8].dstArrayElement = 0;
 	descriptorWrites[8].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2666,7 +2659,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	descriptorWrites[8].pImageInfo = &roughnessImageInfo;
 
 	descriptorWrites[9].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[9].dstSet = descriptorSets[nbDesc];
+	descriptorWrites[9].dstSet = obj->getDescriptorSets()->at(frame);
 	descriptorWrites[9].dstBinding = 9;
 	descriptorWrites[9].dstArrayElement = 0;
 	descriptorWrites[9].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -2676,9 +2669,7 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
-void GraphicsEngine::updateShadowsDescriptorSets(Object* obj, int frame, int nbDesc) {
-	obj->addShadowsDescriptorSet(&shadowsDescriptorSets[nbDesc]);
-
+void GraphicsEngine::updateShadowsDescriptorSets(Object* obj, int frame) {
 	VkDescriptorBufferInfo objectInfo = {};
 	objectInfo.buffer = obj->getObjectBuffers()->at(frame);
 	objectInfo.offset = 0;
@@ -2692,7 +2683,7 @@ void GraphicsEngine::updateShadowsDescriptorSets(Object* obj, int frame, int nbD
 	std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
 
 	descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[0].dstSet = shadowsDescriptorSets[nbDesc];
+	descriptorWrites[0].dstSet = obj->getShadowsDescriptorSets()->at(frame);
 	descriptorWrites[0].dstBinding = 0;
 	descriptorWrites[0].dstArrayElement = 0;
 	descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -2700,7 +2691,7 @@ void GraphicsEngine::updateShadowsDescriptorSets(Object* obj, int frame, int nbD
 	descriptorWrites[0].pBufferInfo = &objectInfo;
 
 	descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[1].dstSet = shadowsDescriptorSets[nbDesc];
+	descriptorWrites[1].dstSet = obj->getShadowsDescriptorSets()->at(frame);
 	descriptorWrites[1].dstBinding = 1;
 	descriptorWrites[1].dstArrayElement = 0;
 	descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

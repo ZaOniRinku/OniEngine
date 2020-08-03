@@ -33,10 +33,8 @@ public:
 	void setMesh(Mesh *newMesh);
 	Material* getMaterial();
 	void setMaterial(Material* newMaterial);
-	VkDescriptorSet* getDescriptorSet(int index);
-	void addDescriptorSet(VkDescriptorSet* newDescriptorSet);
-	VkDescriptorSet* getShadowsDescriptorSet(int index);
-	void addShadowsDescriptorSet(VkDescriptorSet* newShadowsDescriptorSet);
+	std::vector<VkDescriptorSet>* getDescriptorSets();
+	std::vector<VkDescriptorSet>* getShadowsDescriptorSets();
 	std::vector<VkBuffer>* getObjectBuffers();
 	std::vector<VkDeviceMemory>* getObjectBufferMemories();
 	VkPipeline* getGraphicsPipeline();
@@ -55,8 +53,8 @@ private:
 
 	SGNode* node;
 
-	std::vector<VkDescriptorSet*> descriptorSets;
-	std::vector<VkDescriptorSet*> shadowsDescriptorSets;
+	std::vector<VkDescriptorSet> descriptorSets;
+	std::vector<VkDescriptorSet> shadowsDescriptorSets;
 
 	std::vector<VkBuffer> objectBuffers;
 	std::vector<VkDeviceMemory> objectBufferMemories;

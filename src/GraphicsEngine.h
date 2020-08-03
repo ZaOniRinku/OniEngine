@@ -200,8 +200,8 @@ private:
 	void loadModel(Object* obj);
 	void createVertexBuffer(Object* obj);
 	void createIndexBuffer(Object* obj);
-	void updateDescriptorSets(Object* obj, int frame, int nbDesc);
-	void updateShadowsDescriptorSets(Object* obj, int frame, int nbDesc);
+	void updateDescriptorSets(Object* obj, int frame);
+	void updateShadowsDescriptorSets(Object* obj, int frame);
 	void mainLoop();
 	void drawFrame();
 	void cleanup();
@@ -241,8 +241,6 @@ private:
 	bool framebufferResized = false;
 	VkDescriptorPool descriptorPool;
 	VkDescriptorPool shadowsDescriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
-	std::vector<VkDescriptorSet> shadowsDescriptorSets;
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
