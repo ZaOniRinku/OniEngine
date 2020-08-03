@@ -361,7 +361,6 @@ FodyWeavers.xsd
 
 models/
 textures/
-main.cpp
 *.bin
 *.sln
 *.vcxproj
