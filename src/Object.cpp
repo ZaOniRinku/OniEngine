@@ -101,30 +101,20 @@ void Object::addDescriptorSet(VkDescriptorSet* newDescriptorSet) {
 	descriptorSets.push_back(newDescriptorSet);
 }
 
-VkDescriptorSet* Object::getShadowsDescriptorSet(int index)
-{
+VkDescriptorSet* Object::getShadowsDescriptorSet(int index) {
 	return shadowsDescriptorSets[index];
 }
 
-void Object::addShadowsDescriptorSet(VkDescriptorSet* newShadowsDescriptorSet)
-{
+void Object::addShadowsDescriptorSet(VkDescriptorSet* newShadowsDescriptorSet) {
 	shadowsDescriptorSets.push_back(newShadowsDescriptorSet);
 }
 
-VkBuffer* Object::getUniformBuffer(int index) {
-	return uniformBuffers[index];
+std::vector<VkBuffer>* Object::getObjectBuffers() {
+	return &objectBuffers;
 }
 
-void Object::addUniformBuffer(VkBuffer* newUniformBuffer) {
-	uniformBuffers.push_back(newUniformBuffer);
-}
-
-VkDeviceMemory* Object::getUniformBufferMemory(int index) {
-	return uniformBuffersMemory[index];
-}
-
-void Object::addUniformBufferMemory(VkDeviceMemory* newUniformBufferMemory) {
-	uniformBuffersMemory.push_back(newUniformBufferMemory);
+std::vector<VkDeviceMemory>* Object::getObjectBufferMemories() {
+	return &objectBufferMemories;
 }
 
 VkPipeline* Object::getGraphicsPipeline() {

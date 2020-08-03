@@ -254,13 +254,11 @@ private:
 	VkDeviceMemory colorImageMemory;
 	VkImageView colorImageView;
 
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	std::vector<VkBuffer> cameraBuffers;
-	std::vector<VkDeviceMemory> cameraBuffersMemory;
 	std::vector<VkBuffer> lightsBuffers;
-	std::vector <VkDeviceMemory> lightsBuffersMemory;
 	std::vector<VkBuffer> shadowsBuffers;
+	std::vector<VkDeviceMemory> cameraBuffersMemory;
+	std::vector<VkDeviceMemory> lightsBuffersMemory;
 	std::vector<VkDeviceMemory> shadowsBuffersMemory;
 
 	// Game scene

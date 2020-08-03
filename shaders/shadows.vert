@@ -4,9 +4,9 @@
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform ObjectBufferObject {
 	mat4 model;
-} ubo;
+} obo;
 
 layout(binding = 1) uniform ShadowBufferObject {
 	mat4 lightSpace[MAX_DIR_LIGHTS];
@@ -24,6 +24,6 @@ layout(location = 4) in vec3 inTangent;
 layout(location = 5) in vec3 inBitangent;
 
 void main() {
-	gl_Position = sbo.lightSpace[li.lightIndex] * ubo.model * vec4(inPosition, 1.0);
+	gl_Position = sbo.lightSpace[li.lightIndex] * obo.model * vec4(inPosition, 1.0);
 	gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 }

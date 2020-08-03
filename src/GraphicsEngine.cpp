@@ -388,18 +388,34 @@ void GraphicsEngine::cleanupSwapChain() {
 	}
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-	for (size_t i = 0; i < swapChainImages.size()*scene->nbElements(); i++) {
-		vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-		vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
+	while (!elements.empty()) {
+		Object *obj = elements.front()->getObject();
+		for (size_t i = 0; i < swapChainImages.size(); i++) {
+			vkFreeMemory(device, obj->getObjectBufferMemories()->at(i), nullptr);
+			vkDestroyBuffer(device, obj->getObjectBuffers()->at(i), nullptr);
+		}
+		for (SGNode* child : elements.front()->getChildren()) {
+			elements.insert(elements.end(), child);
+		}
+		elements.erase(elements.begin());
+	}
+
+	if (scene->getSkybox()) {
+		Object *skybox = scene->getSkybox();
+		for (size_t i = 0; i < swapChainImages.size(); i++) {
+			vkFreeMemory(device, skybox->getObjectBufferMemories()->at(i), nullptr);
+			vkDestroyBuffer(device, skybox->getObjectBuffers()->at(i), nullptr);
+		}
 	}
 	
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
-		vkDestroyBuffer(device, cameraBuffers[i], nullptr);
 		vkFreeMemory(device, cameraBuffersMemory[i], nullptr);
-		vkDestroyBuffer(device, lightsBuffers[i], nullptr);
+		vkDestroyBuffer(device, cameraBuffers[i], nullptr);
 		vkFreeMemory(device, lightsBuffersMemory[i], nullptr);
-		vkDestroyBuffer(device, shadowsBuffers[i], nullptr);
+		vkDestroyBuffer(device, lightsBuffers[i], nullptr);
 		vkFreeMemory(device, shadowsBuffersMemory[i], nullptr);
+		vkDestroyBuffer(device, shadowsBuffers[i], nullptr);
 	}
 	
 	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
@@ -720,7 +736,7 @@ void GraphicsEngine::createGraphicsPipeline() {
 	mapEntry.offset = 0;
 	mapEntry.size = sizeof(int);
 
-	int specValue = scene->getDirectionalLights()->size();
+	int specValue = (int)scene->getDirectionalLights()->size();
 
 	VkSpecializationInfo fragSpecInfo = {};
 	fragSpecInfo.mapEntryCount = 1;
@@ -1308,18 +1324,18 @@ void GraphicsEngine::createModels() {
 
 void GraphicsEngine::createUniformBuffers() {
 	int nbElems = scene->nbElements();
-	uniformBuffers.resize(swapChainImages.size()*nbElems);
-	uniformBuffersMemory.resize(swapChainImages.size()*nbElems);
 
-	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-	int nbBuffer = 0;
+	int nbBuffer;
+	VkDeviceSize bufferSize = sizeof(ObjectBufferObject);
 	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
+		Object *obj = elements.front()->getObject();
+		obj->getObjectBuffers()->resize(swapChainImages.size());
+		obj->getObjectBufferMemories()->resize(swapChainImages.size());
+		nbBuffer = 0;
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[nbBuffer], uniformBuffersMemory[nbBuffer]);
-			elements.front()->getObject()->addUniformBuffer(&uniformBuffers[nbBuffer]);
-			elements.front()->getObject()->addUniformBufferMemory(&uniformBuffersMemory[nbBuffer]);
+				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, obj->getObjectBuffers()->at(nbBuffer), obj->getObjectBufferMemories()->at(nbBuffer));
 			nbBuffer++;
 		}
 		for (SGNode* child : elements.front()->getChildren()) {
@@ -1332,11 +1348,12 @@ void GraphicsEngine::createUniformBuffers() {
 
 	if (scene->getSkybox()) {
 		Object* skybox = scene->getSkybox();
+		skybox->getObjectBuffers()->resize(swapChainImages.size());
+		skybox->getObjectBufferMemories()->resize(swapChainImages.size());
+		nbBuffer = 0;
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[nbBuffer], uniformBuffersMemory[nbBuffer]);
-			skybox->addUniformBuffer(&uniformBuffers[nbBuffer]);
-			skybox->addUniformBufferMemory(&uniformBuffersMemory[nbBuffer]);
+				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, skybox->getObjectBuffers()->at(nbBuffer), skybox->getObjectBufferMemories()->at(nbBuffer));
 			nbBuffer++;
 		}
 	}
@@ -1424,7 +1441,7 @@ void GraphicsEngine::createDescriptorSets() {
 	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			updateDescriptorSets(elements.front()->getObject(), (int)i, nbDesc);
+			updateDescriptorSets(elements.front()->getObject(), (int)i, (int)nbDesc);
 			nbDesc++;
 		}
 		for (SGNode* child : elements.front()->getChildren()) {
@@ -1438,7 +1455,7 @@ void GraphicsEngine::createDescriptorSets() {
 	if (scene->getSkybox()) {
 		Object* skybox = scene->getSkybox();
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			updateDescriptorSets(skybox, (int)i, nbDesc);
+			updateDescriptorSets(skybox, (int)i, (int)nbDesc);
 			nbDesc++;
 		}
 	}
@@ -1460,7 +1477,7 @@ void GraphicsEngine::createDescriptorSets() {
 	elements = scene->getRoot()->getChildren();
 	while (!elements.empty()) {
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			updateShadowsDescriptorSets(elements.front()->getObject(), (int)i, nbDesc);
+			updateShadowsDescriptorSets(elements.front()->getObject(), (int)i, (int)nbDesc);
 			nbDesc++;
 		}
 		for (SGNode* child : elements.front()->getChildren()) {
@@ -1840,13 +1857,13 @@ void GraphicsEngine::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevice
 void GraphicsEngine::updateUniformBuffer(Object* obj, uint32_t currentImage) {
 	void* data;
 
-	UniformBufferObject ubo = {};
+	ObjectBufferObject obo = {};
 	// Using T * R * S transformation for models, default rotate is 90 degrees on the X-axis so models got the angle they have on 3D modeling softwares
-	ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ())) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX()), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
+	obo.model = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ())) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX()), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
 
-	vkMapMemory(device, *obj->getUniformBufferMemory(currentImage), 0, sizeof(ubo), 0, &data);
-	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(device, *obj->getUniformBufferMemory(currentImage));
+	vkMapMemory(device, obj->getObjectBufferMemories()->at(currentImage), 0, sizeof(obo), 0, &data);
+	memcpy(data, &obo, sizeof(obo));
+	vkUnmapMemory(device, obj->getObjectBufferMemories()->at(currentImage));
 }
 
 VkCommandBuffer GraphicsEngine::beginSingleTimeCommands() {
@@ -2113,10 +2130,10 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
 		diffuseImageSize = diffuseTexWidth * diffuseTexHeight * 4;
 	} else {
-		unsigned char dRVal = round(obj->getMaterial()->getDiffuseRValue() * 255);
-		unsigned char dGVal = round(obj->getMaterial()->getDiffuseGValue() * 255);
-		unsigned char dBVal = round(obj->getMaterial()->getDiffuseBValue() * 255);
-		unsigned char dAVal = round(obj->getMaterial()->getDiffuseAValue() * 255);
+		unsigned char dRVal = round(obj->getMaterial()->getDiffuseRValue() * 255.0);
+		unsigned char dGVal = round(obj->getMaterial()->getDiffuseGValue() * 255.0);
+		unsigned char dBVal = round(obj->getMaterial()->getDiffuseBValue() * 255.0);
+		unsigned char dAVal = round(obj->getMaterial()->getDiffuseAValue() * 255.0);
 		std::array<unsigned char, 4> dArray = { dRVal, dGVal, dBVal, dAVal };
 		dPixels = dArray.data();
 		obj->getMaterial()->setDiffuseMipLevel(1);
@@ -2159,9 +2176,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
 		normalImageSize = normalTexWidth * normalTexHeight * 4;
 	} else {
-		unsigned char nXVal = round(obj->getMaterial()->getNormalXValue() * 255);
-		unsigned char nYVal = round(obj->getMaterial()->getNormalYValue() * 255);
-		unsigned char nZVal = round(obj->getMaterial()->getNormalZValue() * 255);
+		unsigned char nXVal = round(obj->getMaterial()->getNormalXValue() * 255.0);
+		unsigned char nYVal = round(obj->getMaterial()->getNormalYValue() * 255.0);
+		unsigned char nZVal = round(obj->getMaterial()->getNormalZValue() * 255.0);
 		std::array<unsigned char, 4> nArray = { nXVal, nYVal, nZVal, 255 };
 		nPixels = nArray.data();
 		obj->getMaterial()->setNormalMipLevel(1);
@@ -2204,7 +2221,7 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setMetallicMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(metallicTexWidth, metallicTexHeight)))) + 1);
 		metallicImageSize = metallicTexWidth * metallicTexHeight * 4;
 	} else {
-		unsigned char mVal = round(obj->getMaterial()->getMetallicValue() * 255);
+		unsigned char mVal = round(obj->getMaterial()->getMetallicValue() * 255.0);
 		std::array<unsigned char, 4> mArray = { mVal, mVal, mVal, 255 };
 		mPixels = mArray.data();
 		obj->getMaterial()->setMetallicMipLevel(1);
@@ -2248,7 +2265,7 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setRoughnessMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(roughnessTexWidth, roughnessTexHeight)))) + 1);
 		roughnessImageSize = roughnessTexWidth * roughnessTexHeight * 4;
 	} else {
-		unsigned char rVal = obj->getMaterial()->getRoughnessValue();
+		unsigned char rVal = round(obj->getMaterial()->getRoughnessValue() * 255.0);
 		std::array<unsigned char, 4> rArray = { rVal, rVal, rVal, 255 };
 		rPixels = rArray.data();
 		obj->getMaterial()->setRoughnessMipLevel(1);
@@ -2291,7 +2308,7 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setAOMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(AOTexWidth, AOTexHeight)))) + 1);
 		AOImageSize = AOTexWidth * AOTexHeight * 4;
 	} else {
-		unsigned char aVal = obj->getMaterial()->getAOValue();
+		unsigned char aVal = round(obj->getMaterial()->getAOValue() * 255.0);
 		std::array<unsigned char, 4> aArray = { aVal, aVal, aVal, 255 };
 		aPixels = aArray.data();
 		obj->getMaterial()->setAOMipLevel(1);
@@ -2521,9 +2538,9 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame, int nbDesc) {
 	obj->addDescriptorSet(&descriptorSets[nbDesc]);
 
 	VkDescriptorBufferInfo objectInfo = {};
-	objectInfo.buffer = *obj->getUniformBuffer(frame);
+	objectInfo.buffer = obj->getObjectBuffers()->at(frame);
 	objectInfo.offset = 0;
-	objectInfo.range = sizeof(UniformBufferObject);
+	objectInfo.range = sizeof(ObjectBufferObject);
 
 	VkDescriptorBufferInfo cameraInfo = {};
 	cameraInfo.buffer = cameraBuffers[frame];
@@ -2663,9 +2680,9 @@ void GraphicsEngine::updateShadowsDescriptorSets(Object* obj, int frame, int nbD
 	obj->addShadowsDescriptorSet(&shadowsDescriptorSets[nbDesc]);
 
 	VkDescriptorBufferInfo objectInfo = {};
-	objectInfo.buffer = *obj->getUniformBuffer(frame);
+	objectInfo.buffer = obj->getObjectBuffers()->at(frame);
 	objectInfo.offset = 0;
-	objectInfo.range = sizeof(UniformBufferObject);
+	objectInfo.range = sizeof(ObjectBufferObject);
 
 	VkDescriptorBufferInfo shadowsInfo = {};
 	shadowsInfo.buffer = shadowsBuffers[frame];
@@ -2748,7 +2765,7 @@ void GraphicsEngine::drawFrame() {
 
 	// Lights
 	LightsBufferObject lbo = {};
-	lbo.numDirLights = scene->getDirectionalLights()->size();
+	lbo.numDirLights = (int)scene->getDirectionalLights()->size();
 	lbo.numPointLights = scene->getPointLights()->size();
 	for (int i = 0; i < lbo.numDirLights; i++) {
 		lbo.dirLights[i] = glm::vec3(scene->getDirectionalLights()->at(i)->getDirectionX(), scene->getDirectionalLights()->at(i)->getDirectionY(), scene->getDirectionalLights()->at(i)->getDirectionZ());
@@ -2904,10 +2921,10 @@ void GraphicsEngine::cleanup() {
 	while (!elements.empty()) {
 		Mesh *mesh = elements.front()->getObject()->getMesh();
 		if (!mesh->isDestructed()) {
-			vkDestroyBuffer(device, *elements.front()->getObject()->getMesh()->getIndexBuffer(), nullptr);
-			vkFreeMemory(device, *elements.front()->getObject()->getMesh()->getIndexBufferMemory(), nullptr);
-			vkDestroyBuffer(device, *elements.front()->getObject()->getMesh()->getVertexBuffer(), nullptr);
-			vkFreeMemory(device, *elements.front()->getObject()->getMesh()->getVertexBufferMemory(), nullptr);
+			vkDestroyBuffer(device, *mesh->getVertexBuffer(), nullptr);
+			vkFreeMemory(device, *mesh->getVertexBufferMemory(), nullptr);
+			vkDestroyBuffer(device, *mesh->getIndexBuffer(), nullptr);
+			vkFreeMemory(device, *mesh->getIndexBufferMemory(), nullptr);
 
 			mesh->destructedTrue();
 		}

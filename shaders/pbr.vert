@@ -4,9 +4,9 @@
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform ObjectBufferObject {
 	mat4 model;
-} ubo;
+} obo;
 
 layout(binding = 1) uniform CameraBufferObject {
 	mat4 view;
@@ -33,17 +33,17 @@ layout(location = 4) out vec4 fragLightSpace[MAX_DIR_LIGHTS];
 layout(location = MAX_DIR_LIGHTS + 4) out mat3 fragTBN;
 
 void main() {
-	mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
+	mat3 normalMatrix = transpose(inverse(mat3(obo.model)));
 	fragNormal = normalize(normalMatrix * inNormal);
-	fragPos = vec3(ubo.model * vec4(inPosition, 1.0));
+	fragPos = vec3(obo.model * vec4(inPosition, 1.0));
 	fragTexCoord = inTexCoord;
 	fragCamPos = cbo.pos;
 	for (int i = 0; i < MAX_DIR_LIGHTS; i++) {
 		fragLightSpace[i] = sbo.lightSpace[i] * vec4(fragPos, 1.0);
 	}
-	vec3 T = normalize(vec3(ubo.model * vec4(inTangent, 0.0)));
-	vec3 B = normalize(vec3(ubo.model * vec4(inBitangent, 0.0)));
-	vec3 N = normalize(vec3(ubo.model * vec4(inNormal, 0.0)));
+	vec3 T = normalize(vec3(obo.model * vec4(inTangent, 0.0)));
+	vec3 B = normalize(vec3(obo.model * vec4(inBitangent, 0.0)));
+	vec3 N = normalize(vec3(obo.model * vec4(inNormal, 0.0)));
 	fragTBN = mat3(T, B, N);
 	gl_Position = cbo.proj * cbo.view * vec4(fragPos, 1.0);
 }

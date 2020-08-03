@@ -4,7 +4,7 @@
 #include "Material.h"
 #include "Mesh.h"
 
-struct UniformBufferObject {
+struct ObjectBufferObject {
 	alignas(16) glm::mat4 model;
 };
 
@@ -37,13 +37,11 @@ public:
 	void addDescriptorSet(VkDescriptorSet* newDescriptorSet);
 	VkDescriptorSet* getShadowsDescriptorSet(int index);
 	void addShadowsDescriptorSet(VkDescriptorSet* newShadowsDescriptorSet);
-	VkBuffer* getUniformBuffer(int index);
-	void addUniformBuffer(VkBuffer* newUniformBuffer);
-	VkDeviceMemory* getUniformBufferMemory(int index);
-	void addUniformBufferMemory(VkDeviceMemory* newUniformBufferMemory);
+	std::vector<VkBuffer>* getObjectBuffers();
+	std::vector<VkDeviceMemory>* getObjectBufferMemories();
 	VkPipeline* getGraphicsPipeline();
 	void setGraphicsPipeline(VkPipeline* newGraphicsPipeline);
-	void(*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
+	void (*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
 private:
 	// Object attributes
 
@@ -60,8 +58,8 @@ private:
 	std::vector<VkDescriptorSet*> descriptorSets;
 	std::vector<VkDescriptorSet*> shadowsDescriptorSets;
 
-	std::vector<VkBuffer*> uniformBuffers;
-	std::vector<VkDeviceMemory*> uniformBuffersMemory;
+	std::vector<VkBuffer> objectBuffers;
+	std::vector<VkDeviceMemory> objectBufferMemories;
 
 	VkPipeline* graphicsPipeline;
 };

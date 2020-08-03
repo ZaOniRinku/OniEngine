@@ -4,9 +4,9 @@
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform ObjectBufferObject {
 	mat4 model;
-} ubo;
+} obo;
 
 layout(binding = 1) uniform CameraBufferObject {
 	mat4 view;
@@ -24,7 +24,7 @@ layout(location = 5) in vec3 inBitangent;
 layout(location = 0) out vec2 fragTexCoord;
 
 void main() {
-	vec3 pos = vec3(ubo.model * vec4(inPosition, 1.0));
+	vec3 pos = vec3(obo.model * vec4(inPosition, 1.0));
 	fragTexCoord = inTexCoord;
 	gl_Position = cbo.proj * cbo.view * vec4(pos, 1.0);
 }
