@@ -368,3 +368,4 @@ textures/
 *.vcxproj.user
 compile.bat
 CMakeLists.txt
+main.cpp
