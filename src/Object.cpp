@@ -1,12 +1,11 @@
 #include "Object.h"
 
-Object::Object() {}
-
 Object::Object(float x, float y, float z, float mScale) {
 	pos = { x, y, z };
 	scale = mScale;
 	rot = { 0.0f, 0.0f, 0.0f };
 	node = nullptr;
+	frameEvent = nullptr;
 }
 
 Object::Object(float x, float y, float z, float mScale, float xRot, float yRot, float zRot) {
@@ -14,6 +13,7 @@ Object::Object(float x, float y, float z, float mScale, float xRot, float yRot, 
 	scale = mScale;
 	rot = { xRot, yRot, zRot };
 	node = nullptr;
+	frameEvent = nullptr;
 }
 
 void Object::move(float x, float y, float z) {

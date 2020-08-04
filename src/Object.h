@@ -12,7 +12,6 @@ class SGNode;
 
 class Object {
 public:
-	Object();
 	Object(float x, float y, float z, float mScale);
 	Object(float x, float y, float z, float mScale, float xRot, float yRot, float zRot);
 	void move(float x, float y, float z);

@@ -5,6 +5,7 @@ Camera::Camera() {
 	front = glm::vec3(1.0f, 0.0f, 0.0f);
 	up = glm::vec3(0.0f, 1.0f, 0.0f);
 	movementSpeed = 2.5;
+	frameEvent = nullptr;
 }
 
 Camera::Camera(float posX, float posY, float posZ) {
@@ -12,6 +13,7 @@ Camera::Camera(float posX, float posY, float posZ) {
 	front = glm::vec3(1.0f, 0.0f, 0.0f);
 	up = glm::vec3(0.0f, 1.0f, 0.0f);
 	movementSpeed = 2.5;
+	frameEvent = nullptr;
 }
 
 Camera::Camera(float posX, float posY, float posZ, float frontX, float frontY, float frontZ) {
@@ -19,6 +21,7 @@ Camera::Camera(float posX, float posY, float posZ, float frontX, float frontY, f
 	front = glm::vec3(frontX, frontY, frontZ);
 	up = glm::vec3(0.0f, 1.0f, 0.0f);
 	movementSpeed = 2.5;
+	frameEvent = nullptr;
 }
 
 Camera::Camera(float posX, float posY, float posZ, float frontX, float frontY, float frontZ, float ms) {
@@ -26,6 +29,7 @@ Camera::Camera(float posX, float posY, float posZ, float frontX, float frontY, f
 	front = glm::vec3(frontX, frontY, frontZ);
 	up = glm::vec3(0.0f, 1.0f, 0.0f);
 	movementSpeed = ms;
+	frameEvent = nullptr;
 }
 
 float Camera::getPositionX() {
