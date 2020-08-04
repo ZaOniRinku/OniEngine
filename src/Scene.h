@@ -48,4 +48,7 @@ private:
 	std::vector<SpotLight*> spotLights;
 
 	LightsBufferObject lbo;
+
+	// Dummy lights
+	DirectionalLight dummyDirLight = DirectionalLight(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 };

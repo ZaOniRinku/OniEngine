@@ -3,6 +3,7 @@
 Scene::Scene() {
 	sceneRoot = SGNode();
 	camera = Camera();
+	dirLights.push_back(&dummyDirLight);
 }
 
 Scene::Scene(Camera sceneCamera) {
@@ -54,7 +55,11 @@ std::vector<DirectionalLight*>& Scene::getDirectionalLights()
 
 void Scene::addDirectionalLight(DirectionalLight* newDirectionalLight)
 {
-	dirLights.push_back(newDirectionalLight);
+	if (dirLights.size() == 1 && dirLights[0] == &dummyDirLight) {
+		dirLights[0] = newDirectionalLight;
+	} else {
+		dirLights.push_back(newDirectionalLight);
+	}
 }
 
 std::vector<PointLight*>& Scene::getPointLights()
