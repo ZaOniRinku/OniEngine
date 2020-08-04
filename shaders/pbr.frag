@@ -3,6 +3,7 @@
 
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
+#define MAX_SPOT_LIGHTS 10
 
 layout(constant_id = 0) const int numShadowmaps = 10;
 
@@ -13,6 +14,11 @@ layout(binding = 2) uniform Lights {
 	int fragNumPointLights;
 	vec3 fragPointLights[MAX_POINT_LIGHTS];
 	vec3 fragPointLightsColor[MAX_POINT_LIGHTS];
+	int fragNumSpotLights;
+	vec3 fragSpotLightsPos[MAX_SPOT_LIGHTS];
+	vec3 fragSpotLightsDir[MAX_SPOT_LIGHTS];
+	vec3 fragSpotLightsColor[MAX_SPOT_LIGHTS];
+	float fragSpotLightsCutoff[MAX_SPOT_LIGHTS];
 } lights;
 
 layout(binding = 4) uniform sampler2D shadowsTexSampler[numShadowmaps];
@@ -142,6 +148,13 @@ void main() {
 		float attenuation = 1.0 / (distance * distance);
 		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
+	}
+	for (int i = 0; i < lights.fragNumSpotLights; i++) {
+		l = normalize(lights.fragSpotLightsPos[i] - fragPos);
+		float theta = dot(l, normalize(-lights.fragSpotLightsDir[i]));
+		if (theta > lights.fragSpotLightsCutoff[i]) {
+			color += shade(n, v, l, lights.fragSpotLightsColor[i], d, metallic, roughness);
+		}
 	}
 	shadows = clamp(shadows, 0.0, 1.0);
 	color *= (1.0 - shadows);

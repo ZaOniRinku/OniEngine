@@ -13,6 +13,7 @@ public:
 	float getColorG();
 	float getColorB();
 	void setColor(float r, float g, float b);
+
 	void(*frameEvent)(PointLight *pointLight, GLFWwindow* window, double deltaTime);
 private:
 	glm::vec3 position;

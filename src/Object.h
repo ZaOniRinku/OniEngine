@@ -39,6 +39,7 @@ public:
 	std::vector<VkDeviceMemory>* getObjectBufferMemories();
 	VkPipeline* getGraphicsPipeline();
 	void setGraphicsPipeline(VkPipeline* newGraphicsPipeline);
+
 	void (*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
 private:
 	// Object attributes

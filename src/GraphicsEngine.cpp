@@ -43,16 +43,27 @@ void GraphicsEngine::frameEvents(GLFWwindow* window) {
 	double deltaTime = currentTime - lastFrame;
 
 	// Frame Events for directional lights
-	for (DirectionalLight* dirLight : *scene->getDirectionalLights()) {
+	for (DirectionalLight* dirLight : scene->getDirectionalLights()) {
 		if (dirLight->frameEvent) {
 			dirLight->frameEvent(dirLight, window, deltaTime);
 		}
 	}
 
 	// Frame Events for point lights
-	for (PointLight* pointLight : *scene->getPointLights()) {
+	for (PointLight* pointLight : scene->getPointLights()) {
 		if (pointLight->frameEvent) {
 			pointLight->frameEvent(pointLight, window, deltaTime);
+		}
+	}
+
+	// Frame Events for spot lights
+	for (SpotLight* spotLight : scene->getSpotLights()) {
+		if (spotLight->frameEvent) {
+			spotLight->frameEvent(spotLight, window, deltaTime);
+		}
+		if (spotLight->isTorchlight()) {
+			spotLight->setPosition(scene->getCamera()->getPositionX(), scene->getCamera()->getPositionY(), scene->getCamera()->getPositionZ());
+			spotLight->setDirection(scene->getCamera()->getFrontX(), scene->getCamera()->getFrontY(), scene->getCamera()->getFrontZ());
 		}
 	}
 
@@ -357,7 +368,7 @@ void GraphicsEngine::cleanupSwapChain() {
 	vkDestroyImage(device, depthImage, nullptr);
 	vkFreeMemory(device, depthImageMemory, nullptr);
 
-	for (int i = 0; i < scene->getDirectionalLights()->size(); i++) {
+	for (int i = 0; i < scene->getDirectionalLights().size(); i++) {
 		vkDestroyImageView(device, shadowsImageViews[i], nullptr);
 		vkDestroyImage(device, shadowsImages[i], nullptr);
 		vkFreeMemory(device, shadowsImageMemories[i], nullptr);
@@ -640,7 +651,7 @@ void GraphicsEngine::createDescriptorSetLayout() {
 	VkDescriptorSetLayoutBinding shadowsSamplerLayoutBinding = {};
 	shadowsSamplerLayoutBinding.binding = 4;
 	shadowsSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	shadowsSamplerLayoutBinding.descriptorCount = static_cast<uint32_t>(scene->getDirectionalLights()->size());
+	shadowsSamplerLayoutBinding.descriptorCount = static_cast<uint32_t>(scene->getDirectionalLights().size());
 	shadowsSamplerLayoutBinding.pImmutableSamplers = nullptr;
 	shadowsSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
@@ -736,7 +747,7 @@ void GraphicsEngine::createGraphicsPipeline() {
 	mapEntry.offset = 0;
 	mapEntry.size = sizeof(int);
 
-	int specValue = (int)scene->getDirectionalLights()->size();
+	int specValue = (int)scene->getDirectionalLights().size();
 
 	VkSpecializationInfo fragSpecInfo = {};
 	fragSpecInfo.mapEntryCount = 1;
@@ -1192,8 +1203,8 @@ void GraphicsEngine::createFramebuffers() {
 		}
 
 		// Shadows
-		shadowsFramebuffers[i].resize(scene->getDirectionalLights()->size());
-		for (int j = 0; j < scene->getDirectionalLights()->size(); j++) {
+		shadowsFramebuffers[i].resize(scene->getDirectionalLights().size());
+		for (int j = 0; j < scene->getDirectionalLights().size(); j++) {
 			VkFramebufferCreateInfo shadowsFramebufferInfo = {};
 			shadowsFramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			shadowsFramebufferInfo.renderPass = shadowsRenderPass;
@@ -1238,10 +1249,10 @@ void GraphicsEngine::createDepthResources() {
 
 	// Shadows
 
-	shadowsImages.resize(scene->getDirectionalLights()->size());
-	shadowsImageViews.resize(scene->getDirectionalLights()->size());
-	shadowsImageMemories.resize(scene->getDirectionalLights()->size());
-	for (int i = 0; i < scene->getDirectionalLights()->size(); i++) {
+	shadowsImages.resize(scene->getDirectionalLights().size());
+	shadowsImageViews.resize(scene->getDirectionalLights().size());
+	shadowsImageMemories.resize(scene->getDirectionalLights().size());
+	for (int i = 0; i < scene->getDirectionalLights().size(); i++) {
 		createImage(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowsImages[i], shadowsImageMemories[i]);
 		shadowsImageViews[i] = createImageView(shadowsImages[i], VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
@@ -1531,7 +1542,7 @@ void GraphicsEngine::createCommandBuffers() {
 		std::vector<SGNode*> elements;
 
 		// First passes : Shadows
-		for (int j = 0; j < scene->getDirectionalLights()->size(); j++) {
+		for (int j = 0; j < scene->getDirectionalLights().size(); j++) {
 			shadowsRenderPassInfo.framebuffer = shadowsFramebuffers[i][j];
 			vkCmdBeginRenderPass(commandBuffers[i], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsGraphicsPipeline);
@@ -2551,8 +2562,8 @@ void GraphicsEngine::updateDescriptorSets(Object* obj, int frame) {
 	shadowsInfo.range = sizeof(ShadowsBufferObject);
 
 	std::vector<VkDescriptorImageInfo> shadowsImageInfos;
-	shadowsImageInfos.resize(scene->getDirectionalLights()->size());
-	for (int i = 0; i < scene->getDirectionalLights()->size(); i++) {
+	shadowsImageInfos.resize(scene->getDirectionalLights().size());
+	for (int i = 0; i < scene->getDirectionalLights().size(); i++) {
 		shadowsImageInfos[i] = {};
 		shadowsImageInfos[i].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 		shadowsImageInfos[i].imageView = shadowsImageViews[i];
@@ -2756,15 +2767,25 @@ void GraphicsEngine::drawFrame() {
 
 	// Lights
 	LightsBufferObject lbo = {};
-	lbo.numDirLights = (int)scene->getDirectionalLights()->size();
-	lbo.numPointLights = scene->getPointLights()->size();
-	for (int i = 0; i < lbo.numDirLights; i++) {
-		lbo.dirLights[i] = glm::vec3(scene->getDirectionalLights()->at(i)->getDirectionX(), scene->getDirectionalLights()->at(i)->getDirectionY(), scene->getDirectionalLights()->at(i)->getDirectionZ());
-		lbo.dirLightsColor[i] = glm::vec3(scene->getDirectionalLights()->at(i)->getColorR(), scene->getDirectionalLights()->at(i)->getColorG(), scene->getDirectionalLights()->at(i)->getColorB());
+	std::vector<DirectionalLight*> dirLights = scene->getDirectionalLights();
+	std::vector<PointLight*> pointLights = scene->getPointLights();
+	std::vector<SpotLight*> spotLights = scene->getSpotLights();
+	lbo.numDirLights = dirLights.size();
+	lbo.numPointLights = pointLights.size();
+	lbo.numSpotLights = spotLights.size();
+	for (size_t i = 0; i < lbo.numDirLights; i++) {
+		lbo.dirLights[i] = glm::vec3(dirLights[i]->getDirectionX(), dirLights[i]->getDirectionY(), dirLights[i]->getDirectionZ());
+		lbo.dirLightsColor[i] = glm::vec3(dirLights[i]->getColorR(), dirLights[i]->getColorG(), dirLights[i]->getColorB());
 	}
-	for (int i = 0; i < lbo.numPointLights; i++) {
-		lbo.pointLights[i] = glm::vec3(scene->getPointLights()->at(i)->getPositionX(), scene->getPointLights()->at(i)->getPositionY(), scene->getPointLights()->at(i)->getPositionZ());
-		lbo.pointLightsColor[i] = glm::vec3(scene->getPointLights()->at(i)->getColorR(), scene->getPointLights()->at(i)->getColorG(), scene->getPointLights()->at(i)->getColorB());
+	for (size_t i = 0; i < lbo.numPointLights; i++) {
+		lbo.pointLights[i] = glm::vec3(pointLights[i]->getPositionX(), pointLights[i]->getPositionY(), pointLights[i]->getPositionZ());
+		lbo.pointLightsColor[i] = glm::vec3(pointLights[i]->getColorR(), pointLights[i]->getColorG(), pointLights[i]->getColorB());
+	}
+	for (size_t i = 0; i < lbo.numSpotLights; i++) {
+		lbo.spotLightsPos[i] = glm::vec3(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ());
+		lbo.spotLightsDir[i] = glm::vec3(spotLights[i]->getDirectionX(), spotLights[i]->getDirectionY(), spotLights[i]->getDirectionZ());
+		lbo.spotLightsColor[i] = glm::vec3(spotLights[i]->getColorR(), spotLights[i]->getColorG(), spotLights[i]->getColorB());
+		lbo.spotLightsCutoff[i] = spotLights[i]->getCutoff();
 	}
 
 	vkMapMemory(device, lightsBuffersMemory[imageIndex], 0, sizeof(lbo), 0, &data);
@@ -2774,8 +2795,8 @@ void GraphicsEngine::drawFrame() {
 	// Shadows
 	ShadowsBufferObject sbo = {};
 	glm::mat4 shadowsProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 20.0f);
-	for (int i = 0; i < scene->getDirectionalLights()->size(); i++) {
-		glm::mat4 shadowsView = glm::lookAt(glm::vec3(-scene->getDirectionalLights()->at(i)->getDirectionX(), -scene->getDirectionalLights()->at(i)->getDirectionY(), -scene->getDirectionalLights()->at(i)->getDirectionZ()), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	for (int i = 0; i < scene->getDirectionalLights().size(); i++) {
+		glm::mat4 shadowsView = glm::lookAt(glm::vec3(-scene->getDirectionalLights()[i]->getDirectionX(), -scene->getDirectionalLights()[i]->getDirectionY(), -scene->getDirectionalLights()[i]->getDirectionZ()), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		sbo.lightSpace[i] = shadowsProj * shadowsView;
 	}
 

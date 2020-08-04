@@ -47,9 +47,9 @@ int Scene::nbElements() {
 	return nbElems;
 }
 
-std::vector<DirectionalLight*>* Scene::getDirectionalLights()
+std::vector<DirectionalLight*>& Scene::getDirectionalLights()
 {
-	return &dirLights;
+	return dirLights;
 }
 
 void Scene::addDirectionalLight(DirectionalLight* newDirectionalLight)
@@ -57,13 +57,22 @@ void Scene::addDirectionalLight(DirectionalLight* newDirectionalLight)
 	dirLights.push_back(newDirectionalLight);
 }
 
-std::vector<PointLight*>* Scene::getPointLights()
+std::vector<PointLight*>& Scene::getPointLights()
 {
-	return &pointLights;
+	return pointLights;
 }
 
 void Scene::addPointLight(PointLight* newPointLight)
 {
 	pointLights.push_back(newPointLight);
-	
+}
+
+std::vector<SpotLight*>& Scene::getSpotLights()
+{
+	return spotLights;
+}
+
+void Scene::addSpotLight(SpotLight* newSpotLight)
+{
+	spotLights.push_back(newSpotLight);
 }
