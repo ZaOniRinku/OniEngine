@@ -16,7 +16,7 @@ struct LightsBufferObject {
 	alignas(16) glm::vec3 spotLightsPos[10];
 	alignas(16) glm::vec3 spotLightsDir[10];
 	alignas(16) glm::vec3 spotLightsColor[10];
-	alignas(16) float spotLightsCutoff[10];
+	alignas(16) glm::vec2 spotLightsCutoffs[10];
 };
 
 class Scene {

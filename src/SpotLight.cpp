@@ -1,11 +1,13 @@
 #include "SpotLight.h"
 
-SpotLight::SpotLight(float px, float py, float pz, float dx, float dy, float dz, float r, float g, float b, float co) {
+SpotLight::SpotLight(float px, float py, float pz, float dx, float dy, float dz, float r, float g, float b, float co, float oCo) {
 	position = glm::vec3(px, py, pz);
 	direction = glm::vec3(dx, dy, dz);
 	color = glm::vec3(r, g, b);
 	cutoff = glm::cos(glm::radians(co));
+	outCutoff = glm::cos(glm::radians(oCo));
 	torchlight = false;
+	frameEvent = nullptr;
 }
 
 float SpotLight::getPositionX() {
@@ -62,6 +64,14 @@ float SpotLight::getCutoff() {
 
 void SpotLight::setCutoff(float newCutoff) {
 	cutoff = glm::cos(glm::radians(newCutoff));
+}
+
+float SpotLight::getOutCutoff() {
+	return outCutoff;
+}
+
+void SpotLight::setOutCutoff(float newOutCutoff) {
+	outCutoff = glm::cos(glm::radians(newOutCutoff));
 }
 
 bool SpotLight::isTorchlight() {

@@ -18,7 +18,7 @@ layout(binding = 2) uniform Lights {
 	vec3 fragSpotLightsPos[MAX_SPOT_LIGHTS];
 	vec3 fragSpotLightsDir[MAX_SPOT_LIGHTS];
 	vec3 fragSpotLightsColor[MAX_SPOT_LIGHTS];
-	float fragSpotLightsCutoff[MAX_SPOT_LIGHTS];
+	vec2 fragSpotLightsCutoffs[MAX_SPOT_LIGHTS];
 } lights;
 
 layout(binding = 4) uniform sampler2D shadowsTexSampler[numShadowmaps];
@@ -152,8 +152,12 @@ void main() {
 	for (int i = 0; i < lights.fragNumSpotLights; i++) {
 		l = normalize(lights.fragSpotLightsPos[i] - fragPos);
 		float theta = dot(l, normalize(-lights.fragSpotLightsDir[i]));
-		if (theta > lights.fragSpotLightsCutoff[i]) {
+		if (theta > lights.fragSpotLightsCutoffs[i].x) {
 			color += shade(n, v, l, lights.fragSpotLightsColor[i], d, metallic, roughness);
+		} else if (dot(normalize(lights.fragSpotLightsPos[i] - fragPos), normalize(-lights.fragSpotLightsDir[i])) > lights.fragSpotLightsCutoffs[i].y) {
+			float epsilon = lights.fragSpotLightsCutoffs[i].x - lights.fragSpotLightsCutoffs[i].y;
+			float intensity = clamp((theta - lights.fragSpotLightsCutoffs[i].y) / epsilon, 0.0, 1.0);
+			color += shade(n, v, l, lights.fragSpotLightsColor[i] * intensity, d * intensity, metallic * intensity, roughness);
 		}
 	}
 	shadows = clamp(shadows, 0.0, 1.0);

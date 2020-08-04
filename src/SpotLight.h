@@ -4,7 +4,7 @@
 
 class SpotLight {
 public:
-	SpotLight(float px, float py, float pz, float dx, float dy, float dz, float r, float g, float b, float co);
+	SpotLight(float px, float py, float pz, float dx, float dy, float dz, float r, float g, float b, float co, float oCo);
 	float getPositionX();
 	float getPositionY();
 	float getPositionZ();
@@ -19,6 +19,8 @@ public:
 	void setColor(float r, float g, float b);
 	float getCutoff();
 	void setCutoff(float newCutoff);
+	float getOutCutoff();
+	void setOutCutoff(float newOutCutoff);
 	bool isTorchlight();
 	void actAsTorchlight(bool torchlightVal);
 
@@ -28,6 +30,7 @@ private:
 	glm::vec3 direction;
 	glm::vec3 color;
 	float cutoff;
+	float outCutoff;
 
 	bool torchlight;
 };

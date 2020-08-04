@@ -2785,7 +2785,7 @@ void GraphicsEngine::drawFrame() {
 		lbo.spotLightsPos[i] = glm::vec3(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ());
 		lbo.spotLightsDir[i] = glm::vec3(spotLights[i]->getDirectionX(), spotLights[i]->getDirectionY(), spotLights[i]->getDirectionZ());
 		lbo.spotLightsColor[i] = glm::vec3(spotLights[i]->getColorR(), spotLights[i]->getColorG(), spotLights[i]->getColorB());
-		lbo.spotLightsCutoff[i] = spotLights[i]->getCutoff();
+		lbo.spotLightsCutoffs[i] = glm::vec2(spotLights[i]->getCutoff(), spotLights[i]->getOutCutoff());
 	}
 
 	vkMapMemory(device, lightsBuffersMemory[imageIndex], 0, sizeof(lbo), 0, &data);
