@@ -83,7 +83,6 @@ int main() {
 	PointLight point5 = PointLight(0.25f, 1.0f, 0.25f, 1.0f, 1.0f, 0.0f);
 	SpotLight spot = SpotLight(0.0f, 2.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.86, 0.49, 0.0, 12.5f);
 	scene.addDirectionalLight(&ambient2);
-	spot.actAsTorchlight(true);
 	scene.addPointLight(&point);
 	scene.addPointLight(&point2);
 	scene.addPointLight(&point3);
