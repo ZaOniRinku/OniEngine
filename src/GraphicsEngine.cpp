@@ -2802,14 +2802,21 @@ void GraphicsEngine::drawFrame() {
 	sbo.numLights.x = dirLights.size();
 	sbo.numLights.y = pointLights.size();
 	sbo.numLights.z = spotLights.size();
+	glm::vec3 eye;
+	glm::vec3 up;
+	glm::mat4 shadowsView;
 	glm::mat4 shadowsProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 20.0f);
 	for (int i = 0; i < sbo.numLights.x; i++) {
-		glm::mat4 shadowsView = glm::lookAt(glm::vec3(-dirLights[i]->getDirectionX(), -dirLights[i]->getDirectionY(), -dirLights[i]->getDirectionZ()), glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		eye = glm::vec3(-dirLights[i]->getDirectionX(), -dirLights[i]->getDirectionY(), -dirLights[i]->getDirectionZ());
+		up = glm::dot(glm::vec3(0.0f, 1.0f, 0.0f), eye) == (glm::length(glm::vec3(0.0f, 1.0f, 0.0f)) * glm::length(eye)) ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+		shadowsView = glm::lookAt(eye, glm::vec3(0.0f), up);
 		sbo.dirLightsSpace[i] = shadowsProj * shadowsView;
 	}
 	for (int i = 0; i < sbo.numLights.z; i++) {
 		shadowsProj = glm::perspective(glm::acos(spotLights[i]->getOutCutoff()), SHADOWMAP_WIDTH / (float)SHADOWMAP_HEIGHT, 0.1f, 20.0f);
-		glm::mat4 shadowsView = glm::lookAt(glm::vec3(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ()), glm::vec3(spotLights[i]->getPositionX() + spotLights[i]->getDirectionX(), spotLights[i]->getPositionY() + spotLights[i]->getDirectionY(), spotLights[i]->getPositionZ() + spotLights[i]->getDirectionZ()), glm::vec3(0.0f, 0.0f, 1.0f));
+		eye = glm::vec3(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ());
+		up = glm::dot(glm::vec3(0.0f, 1.0f, 0.0f), eye) == (glm::length(glm::vec3(0.0f, 1.0f, 0.0f)) * glm::length(eye)) ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+		shadowsView = glm::lookAt(eye, glm::vec3(spotLights[i]->getPositionX() + spotLights[i]->getDirectionX(), spotLights[i]->getPositionY() + spotLights[i]->getDirectionY(), spotLights[i]->getPositionZ() + spotLights[i]->getDirectionZ()), up);
 		sbo.spotLightsSpace[i] = shadowsProj * shadowsView;
 	}
 

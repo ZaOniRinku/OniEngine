@@ -73,7 +73,7 @@ int main() {
 	// Camera controls
 	scene.getCamera()->frameEvent = cameraControls;
 
-	DirectionalLight ambient = DirectionalLight(0.0f, -1.0f, -1.5f, 1.0f, 1.0f, 1.0f);
+	DirectionalLight ambient = DirectionalLight(-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f);
 	DirectionalLight ambient2 = DirectionalLight(1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f);
 	DirectionalLight ambient3 = DirectionalLight(0.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
 	PointLight point = PointLight(0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f);
@@ -81,7 +81,7 @@ int main() {
 	PointLight point3 = PointLight(0.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f);
 	PointLight point4 = PointLight(0.5f, 1.0f, 0.5f, 1.0f, 0.0f, 1.0f);
 	PointLight point5 = PointLight(0.25f, 1.0f, 0.25f, 1.0f, 1.0f, 0.0f);
-	SpotLight spot = SpotLight(0.0f, 2.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.86, 0.49, 0.0, 40.0f, 120.0f);
+	SpotLight spot = SpotLight(0.0f, 5.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.86, 0.49, 0.0, 40.0f, 120.0f);
 	scene.addDirectionalLight(&ambient);
 	scene.addDirectionalLight(&ambient2);
 	scene.addPointLight(&point);
