@@ -80,5 +80,4 @@ bool SpotLight::isTorchlight() {
 
 void SpotLight::actAsTorchlight(bool torchlightVal) {
 	torchlight = torchlightVal;
-	direction = -direction;
 }

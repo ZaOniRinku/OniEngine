@@ -41,7 +41,11 @@ public:
 
 	void (*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
 private:
-	// Object attributes
+	std::vector<VkDescriptorSet> descriptorSets;
+	std::vector<VkDescriptorSet> shadowsDescriptorSets;
+
+	std::vector<VkBuffer> objectBuffers;
+	std::vector<VkDeviceMemory> objectBufferMemories;
 
 	Mesh *mesh;
 	Material *material;
@@ -52,12 +56,6 @@ private:
 	glm::vec3 rot;
 
 	SGNode* node;
-
-	std::vector<VkDescriptorSet> descriptorSets;
-	std::vector<VkDescriptorSet> shadowsDescriptorSets;
-
-	std::vector<VkBuffer> objectBuffers;
-	std::vector<VkDeviceMemory> objectBufferMemories;
 
 	VkPipeline* graphicsPipeline;
 };

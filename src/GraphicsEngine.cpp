@@ -62,7 +62,7 @@ void GraphicsEngine::frameEvents(GLFWwindow* window) {
 			spotLight->frameEvent(spotLight, window, deltaTime);
 		}
 		if (spotLight->isTorchlight()) {
-			spotLight->setPosition(scene->getCamera()->getPositionX(), scene->getCamera()->getPositionY(), scene->getCamera()->getPositionZ());
+			spotLight->setPosition(scene->getCamera()->getPositionX(), scene->getCamera()->getPositionY() - 0.5, scene->getCamera()->getPositionZ());
 			spotLight->setDirection(scene->getCamera()->getFrontX(), scene->getCamera()->getFrontY(), scene->getCamera()->getFrontZ());
 		}
 	}
@@ -2813,7 +2813,7 @@ void GraphicsEngine::drawFrame() {
 		sbo.dirLightsSpace[i] = shadowsProj * shadowsView;
 	}
 	for (int i = 0; i < sbo.numLights.z; i++) {
-		shadowsProj = glm::perspective(glm::acos(spotLights[i]->getOutCutoff()), SHADOWMAP_WIDTH / (float)SHADOWMAP_HEIGHT, 0.1f, 20.0f);
+		shadowsProj = glm::perspective(glm::radians(120.0f), SHADOWMAP_WIDTH / (float)SHADOWMAP_HEIGHT, 0.1f, 20.0f);
 		eye = glm::vec3(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ());
 		up = glm::dot(glm::vec3(0.0f, 1.0f, 0.0f), eye) == (glm::length(glm::vec3(0.0f, 1.0f, 0.0f)) * glm::length(eye)) ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
 		shadowsView = glm::lookAt(eye, glm::vec3(spotLights[i]->getPositionX() + spotLights[i]->getDirectionX(), spotLights[i]->getPositionY() + spotLights[i]->getDirectionY(), spotLights[i]->getPositionZ() + spotLights[i]->getDirectionZ()), up);
