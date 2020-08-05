@@ -188,7 +188,7 @@ void main() {
 			shadows = spotShadowsValue(i, shadowmapIndex, bias);
 			float epsilon = lights.spotLightsCutoffs[i].x - lights.spotLightsCutoffs[i].y;
 			float intensity = clamp((theta - lights.spotLightsCutoffs[i].y) / epsilon, 0.0, 1.0);
-			color += shade(n, v, l, lights.spotLightsColor[i] * intensity, d * intensity, metallic * intensity, roughness) * (1.0 - shadows);
+			color += shade(n, v, l, lights.spotLightsColor[i] * intensity, d * intensity, metallic, roughness) * (1.0 - shadows);
 		}
 		shadowmapIndex++;
 	}
