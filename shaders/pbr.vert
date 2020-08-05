@@ -3,6 +3,7 @@
 
 #define MAX_DIR_LIGHTS 10
 #define MAX_POINT_LIGHTS 10
+#define MAX_SPOT_LIGHTS 10
 
 layout(binding = 0) uniform ObjectBufferObject {
 	mat4 model;
@@ -15,7 +16,9 @@ layout(binding = 1) uniform CameraBufferObject {
 } cbo;
 
 layout(binding = 3) uniform ShadowsBufferObject {
-	mat4 lightSpace[MAX_DIR_LIGHTS];
+	vec3 numLights;
+	mat4 dirLightsSpace[MAX_DIR_LIGHTS];
+	mat4 spotLightsSpace[MAX_SPOT_LIGHTS];
 } sbo;
 
 layout(location = 0) in vec3 inPosition;
@@ -29,8 +32,9 @@ layout(location = 0) out vec3 fragNormal;
 layout(location = 1) out vec2 fragTexCoord;
 layout(location = 2) out vec3 fragPos;
 layout(location = 3) out vec3 fragCamPos;
-layout(location = 4) out vec4 fragLightSpace[MAX_DIR_LIGHTS];
-layout(location = MAX_DIR_LIGHTS + 4) out mat3 fragTBN;
+layout(location = 4) out vec4 fragDirLightsSpace[MAX_DIR_LIGHTS];
+layout(location = MAX_DIR_LIGHTS + 4) out vec4 fragSpotLightsSpace[MAX_SPOT_LIGHTS];
+layout(location = MAX_SPOT_LIGHTS + MAX_DIR_LIGHTS + 4) out mat3 fragTBN;
 
 void main() {
 	mat3 normalMatrix = transpose(inverse(mat3(obo.model)));
@@ -38,8 +42,11 @@ void main() {
 	fragPos = vec3(obo.model * vec4(inPosition, 1.0));
 	fragTexCoord = inTexCoord;
 	fragCamPos = cbo.pos;
-	for (int i = 0; i < MAX_DIR_LIGHTS; i++) {
-		fragLightSpace[i] = sbo.lightSpace[i] * vec4(fragPos, 1.0);
+	for (int i = 0; i < sbo.numLights.x; i++) {
+		fragDirLightsSpace[i] = sbo.dirLightsSpace[i] * vec4(fragPos, 1.0);
+	}
+	for (int i = 0; i < sbo.numLights.z; i++) {
+		fragSpotLightsSpace[i] = sbo.spotLightsSpace[i] * vec4(fragPos, 1.0);
 	}
 	vec3 T = normalize(vec3(obo.model * vec4(inTangent, 0.0)));
 	vec3 B = normalize(vec3(obo.model * vec4(inBitangent, 0.0)));

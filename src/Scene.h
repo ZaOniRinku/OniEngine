@@ -6,13 +6,11 @@
 #include "SpotLight.h"
 
 struct LightsBufferObject {
-	alignas(16) int numDirLights;
-	alignas(16) glm::vec3 dirLights[10];
+	alignas(16) glm::vec3 numLights;
+	alignas(16) glm::vec3 dirLightsDir[10];
 	alignas(16) glm::vec3 dirLightsColor[10];
-	alignas(16) int numPointLights;
-	alignas(16) glm::vec3 pointLights[10];
+	alignas(16) glm::vec3 pointLightsPos[10];
 	alignas(16) glm::vec3 pointLightsColor[10];
-	alignas(16) int numSpotLights;
 	alignas(16) glm::vec3 spotLightsPos[10];
 	alignas(16) glm::vec3 spotLightsDir[10];
 	alignas(16) glm::vec3 spotLightsColor[10];
@@ -47,8 +45,8 @@ private:
 	std::vector<PointLight*> pointLights;
 	std::vector<SpotLight*> spotLights;
 
-	LightsBufferObject lbo;
-
 	// Dummy lights
 	DirectionalLight dummyDirLight = DirectionalLight(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	PointLight dummyPointLight = PointLight(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	SpotLight dummySpotLight = SpotLight(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 };

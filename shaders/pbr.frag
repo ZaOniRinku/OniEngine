@@ -5,20 +5,18 @@
 #define MAX_POINT_LIGHTS 10
 #define MAX_SPOT_LIGHTS 10
 
-layout(constant_id = 0) const int numShadowmaps = 10;
+layout(constant_id = 0) const int numShadowmaps = MAX_DIR_LIGHTS + MAX_POINT_LIGHTS + MAX_SPOT_LIGHTS;
 
 layout(binding = 2) uniform Lights {
-	int fragNumDirLights;
-	vec3 fragDirLights[MAX_DIR_LIGHTS];
-	vec3 fragDirLightsColor[MAX_DIR_LIGHTS];
-	int fragNumPointLights;
-	vec3 fragPointLights[MAX_POINT_LIGHTS];
-	vec3 fragPointLightsColor[MAX_POINT_LIGHTS];
-	int fragNumSpotLights;
-	vec3 fragSpotLightsPos[MAX_SPOT_LIGHTS];
-	vec3 fragSpotLightsDir[MAX_SPOT_LIGHTS];
-	vec3 fragSpotLightsColor[MAX_SPOT_LIGHTS];
-	vec2 fragSpotLightsCutoffs[MAX_SPOT_LIGHTS];
+	vec3 numLights;
+	vec3 dirLightsDir[MAX_DIR_LIGHTS];
+	vec3 dirLightsColor[MAX_DIR_LIGHTS];
+	vec3 pointLightsPos[MAX_POINT_LIGHTS];
+	vec3 pointLightsColor[MAX_POINT_LIGHTS];
+	vec3 spotLightsPos[MAX_SPOT_LIGHTS];
+	vec3 spotLightsDir[MAX_SPOT_LIGHTS];
+	vec3 spotLightsColor[MAX_SPOT_LIGHTS];
+	vec2 spotLightsCutoffs[MAX_SPOT_LIGHTS];
 } lights;
 
 layout(binding = 4) uniform sampler2D shadowsTexSampler[numShadowmaps];
@@ -32,8 +30,9 @@ layout(location = 0) in vec3 fragNormal;
 layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 fragPos;
 layout(location = 3) in vec3 fragCamPos;
-layout(location = 4) in vec4 fragLightSpace[MAX_DIR_LIGHTS];
-layout(location = MAX_DIR_LIGHTS + 4) in mat3 fragTBN;
+layout(location = 4) in vec4 fragDirLightsSpace[MAX_DIR_LIGHTS];
+layout(location = MAX_DIR_LIGHTS + 4) in vec4 fragSpotLightsSpace[MAX_SPOT_LIGHTS];
+layout(location = MAX_SPOT_LIGHTS + MAX_DIR_LIGHTS + 4) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
@@ -101,8 +100,8 @@ vec3 shade(vec3 n, vec3 v, vec3 l, vec3 lc, vec3 diffuse, float metallic, float 
 	return ret;
 }
 
-float shadowsValue(int index, float bias) {
-	vec3 proj = fragLightSpace[index].xyz / fragLightSpace[index].w;
+float dirShadowsValue(int lightIndex, int shadowmapIndex, float bias) {
+	vec3 proj = fragDirLightsSpace[lightIndex].xyz / fragDirLightsSpace[lightIndex].w;
 	if (proj.z > 1.0) {
 		return 0.0;
 	}
@@ -110,10 +109,30 @@ float shadowsValue(int index, float bias) {
 	float curr = proj.z;
 	float shadows = 0.0;
 	
-	vec2 texelSize = 1.0 / textureSize(shadowsTexSampler[index], 0);
+	vec2 texelSize = 1.0 / textureSize(shadowsTexSampler[shadowmapIndex], 0);
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
-			float pcf = texture(shadowsTexSampler[index], proj.xy + vec2(x, y) * texelSize).x;
+			float pcf = texture(shadowsTexSampler[shadowmapIndex], proj.xy + vec2(x, y) * texelSize).x;
+			shadows += curr - bias > pcf ? 1.0 : 0.0;
+		}
+	}
+
+	return shadows / 9.0;
+}
+
+float spotShadowsValue(int lightIndex, int shadowmapIndex, float bias) {
+	vec3 proj = fragSpotLightsSpace[lightIndex].xyz / fragSpotLightsSpace[lightIndex].w;
+	if (proj.z > 1.0) {
+		return 0.0;
+	}
+	proj = proj * 0.5 + 0.5;
+	float curr = proj.z;
+	float shadows = 0.0;
+	
+	vec2 texelSize = 1.0 / textureSize(shadowsTexSampler[shadowmapIndex], 0);
+	for (int x = -1; x <= 1; x++) {
+		for (int y = -1; y <= 1; y++) {
+			float pcf = texture(shadowsTexSampler[shadowmapIndex], proj.xy + vec2(x, y) * texelSize).x;
 			shadows += curr - bias > pcf ? 1.0 : 0.0;
 		}
 	}
@@ -135,30 +154,43 @@ void main() {
 	vec3 l;
 	
 	vec3 color = vec3(0.0);
+	int numDirLights = int(lights.numLights.x);
+	int numPointLights = int(lights.numLights.y);
+	int numSpotLights = int(lights.numLights.z);
+	int shadowmapIndex = 0;
 	float shadows = 0.0;
-	for (int i = 0; i < lights.fragNumDirLights; i++) {
-		l = normalize(-lights.fragDirLights[i]);
-		color += shade(n, v, l, lights.fragDirLightsColor[i], d, metallic, roughness);
+	// Directional Lights
+	for (int i = 0; i < numDirLights; i++) {
+		l = normalize(-lights.dirLightsDir[i]);
+		color += shade(n, v, l, lights.dirLightsColor[i], d, metallic, roughness);
 		float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
-		shadows += shadowsValue(i, bias);
+		shadows += dirShadowsValue(i, shadowmapIndex, bias);
+		shadowmapIndex++;
 	}
-	for (int i = 0; i < lights.fragNumPointLights; i++) {
-		l = normalize(lights.fragPointLights[i] - fragPos);
-		float distance = length(lights.fragPointLights[i] - fragPos);
+	// Point Lights
+	for (int i = 0; i < numPointLights; i++) {
+		l = normalize(lights.pointLightsPos[i] - fragPos);
+		float distance = length(lights.pointLightsPos[i] - fragPos);
 		float attenuation = 1.0 / (distance * distance);
-		vec3 radiance = lights.fragPointLightsColor[i] * attenuation;
+		vec3 radiance = lights.pointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
 	}
-	for (int i = 0; i < lights.fragNumSpotLights; i++) {
-		l = normalize(lights.fragSpotLightsPos[i] - fragPos);
-		float theta = dot(l, normalize(-lights.fragSpotLightsDir[i]));
-		if (theta > lights.fragSpotLightsCutoffs[i].x) {
-			color += shade(n, v, l, lights.fragSpotLightsColor[i], d, metallic, roughness);
-		} else if (dot(normalize(lights.fragSpotLightsPos[i] - fragPos), normalize(-lights.fragSpotLightsDir[i])) > lights.fragSpotLightsCutoffs[i].y) {
-			float epsilon = lights.fragSpotLightsCutoffs[i].x - lights.fragSpotLightsCutoffs[i].y;
-			float intensity = clamp((theta - lights.fragSpotLightsCutoffs[i].y) / epsilon, 0.0, 1.0);
-			color += shade(n, v, l, lights.fragSpotLightsColor[i] * intensity, d * intensity, metallic * intensity, roughness);
+	// Spot Lights
+	for (int i = 0; i < numSpotLights; i++) {
+		l = normalize(lights.spotLightsPos[i] - fragPos);
+		float theta = dot(l, normalize(-lights.spotLightsDir[i]));
+		if (theta > lights.spotLightsCutoffs[i].x) {
+			color += shade(n, v, l, lights.spotLightsColor[i], d, metallic, roughness);
+			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
+			shadows += spotShadowsValue(i, shadowmapIndex, bias);
+		} else if (dot(normalize(lights.spotLightsPos[i] - fragPos), normalize(-lights.spotLightsDir[i])) > lights.spotLightsCutoffs[i].y) {
+			float epsilon = lights.spotLightsCutoffs[i].x - lights.spotLightsCutoffs[i].y;
+			float intensity = clamp((theta - lights.spotLightsCutoffs[i].y) / epsilon, 0.0, 1.0);
+			color += shade(n, v, l, lights.spotLightsColor[i] * intensity, d * intensity, metallic * intensity, roughness);
+			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
+			shadows += spotShadowsValue(i, shadowmapIndex, bias);
 		}
+		shadowmapIndex++;
 	}
 	shadows = clamp(shadows, 0.0, 1.0);
 	color *= (1.0 - shadows);
