@@ -89,7 +89,7 @@ int main() {
 	scene.addPointLight(&point3);
 	scene.addPointLight(&point4);
 	scene.addPointLight(&point5);
-	//scene.addSpotLight(&spot);
+	scene.addSpotLight(&spot);
 
 	// Meshes
 	Mesh skyboxMesh = Mesh("models/skybox.obj");

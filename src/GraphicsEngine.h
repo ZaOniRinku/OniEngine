@@ -24,8 +24,8 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-const int WIDTH = 1920;
-const int HEIGHT = 1080;
+const int WIDTH = 1280;
+const int HEIGHT = 720;
 const int SHADOWMAP_WIDTH = 2048;
 const int SHADOWMAP_HEIGHT = 2048;
 
