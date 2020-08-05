@@ -162,9 +162,9 @@ void main() {
 	// Directional Lights
 	for (int i = 0; i < numDirLights; i++) {
 		l = normalize(-lights.dirLightsDir[i]);
-		color += shade(n, v, l, lights.dirLightsColor[i], d, metallic, roughness);
 		float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
-		shadows += dirShadowsValue(i, shadowmapIndex, bias);
+		shadows = dirShadowsValue(i, shadowmapIndex, bias);
+		color += shade(n, v, l, lights.dirLightsColor[i], d, metallic, roughness) * (1.0 - shadows);
 		shadowmapIndex++;
 	}
 	// Point Lights
@@ -180,20 +180,18 @@ void main() {
 		l = normalize(lights.spotLightsPos[i] - fragPos);
 		float theta = dot(l, normalize(-lights.spotLightsDir[i]));
 		if (theta > lights.spotLightsCutoffs[i].x) {
-			color += shade(n, v, l, lights.spotLightsColor[i], d, metallic, roughness);
 			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
-			shadows += spotShadowsValue(i, shadowmapIndex, bias);
+			shadows = spotShadowsValue(i, shadowmapIndex, bias);
+			color += shade(n, v, l, lights.spotLightsColor[i], d, metallic, roughness) * (1.0 - shadows);
 		} else if (dot(normalize(lights.spotLightsPos[i] - fragPos), normalize(-lights.spotLightsDir[i])) > lights.spotLightsCutoffs[i].y) {
+			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
+			shadows = spotShadowsValue(i, shadowmapIndex, bias);
 			float epsilon = lights.spotLightsCutoffs[i].x - lights.spotLightsCutoffs[i].y;
 			float intensity = clamp((theta - lights.spotLightsCutoffs[i].y) / epsilon, 0.0, 1.0);
-			color += shade(n, v, l, lights.spotLightsColor[i] * intensity, d * intensity, metallic * intensity, roughness);
-			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
-			shadows += spotShadowsValue(i, shadowmapIndex, bias);
+			color += shade(n, v, l, lights.spotLightsColor[i] * intensity, d * intensity, metallic * intensity, roughness) * (1.0 - shadows);
 		}
 		shadowmapIndex++;
 	}
-	shadows = clamp(shadows, 0.0, 1.0);
-	color *= (1.0 - shadows);
 	vec3 ambient = vec3(0.03) * d * ao;
 	color += ambient;
 

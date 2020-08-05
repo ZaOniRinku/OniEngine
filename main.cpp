@@ -82,13 +82,14 @@ int main() {
 	PointLight point4 = PointLight(0.5f, 1.0f, 0.5f, 1.0f, 0.0f, 1.0f);
 	PointLight point5 = PointLight(0.25f, 1.0f, 0.25f, 1.0f, 1.0f, 0.0f);
 	SpotLight spot = SpotLight(0.0f, 2.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.86, 0.49, 0.0, 40.0f, 120.0f);
+	scene.addDirectionalLight(&ambient);
 	scene.addDirectionalLight(&ambient2);
 	scene.addPointLight(&point);
 	scene.addPointLight(&point2);
 	scene.addPointLight(&point3);
 	scene.addPointLight(&point4);
 	scene.addPointLight(&point5);
-	scene.addSpotLight(&spot);
+	//scene.addSpotLight(&spot);
 
 	// Meshes
 	Mesh skyboxMesh = Mesh("models/skybox.obj");

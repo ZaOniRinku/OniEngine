@@ -148,7 +148,7 @@ void GraphicsEngine::initWindow() {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	// Change the first nullptr to glfwGetPrimaryMonitor() for fullscreen
-	window = glfwCreateWindow(WIDTH, HEIGHT, "ONIEngine", nullptr, nullptr);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "ONIEngine", glfwGetPrimaryMonitor(), nullptr);
 	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -1864,8 +1864,13 @@ void GraphicsEngine::updateUniformBuffer(Object* obj, uint32_t currentImage) {
 	void* data;
 
 	ObjectBufferObject obo = {};
-	// Using T * R * S transformation for models, default rotate is 90 degrees on the X-axis so models got the angle they have on 3D modeling softwares
-	obo.model = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ())) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX()), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
+	// Using T * R * S transformation for models
+	glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(obj->getPositionX(), obj->getPositionY(), obj->getPositionZ()));
+	glm::mat4 rotateX = glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationX()), glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::mat4 rotateY = glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationY()), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 rotateZ = glm::rotate(glm::mat4(1.0f), glm::radians(obj->getRotationZ()), glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(obj->getScale()));
+	obo.model = translate * rotateX * rotateY * rotateZ * scale;
 
 	vkMapMemory(device, obj->getObjectBufferMemories()->at(currentImage), 0, sizeof(obo), 0, &data);
 	memcpy(data, &obo, sizeof(obo));
