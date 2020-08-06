@@ -2,10 +2,12 @@
 
 SGNode::SGNode() {
 	object = nullptr;
+	parent = nullptr;
 }
 
 SGNode::SGNode(Object* obj) {
 	object = obj;
+	parent = nullptr;
 	obj->setNode(this);
 }
 
@@ -30,6 +32,24 @@ Object* SGNode::getObject() {
 
 void SGNode::setObject(Object newObject) {
 	*object = newObject;
+}
+
+void SGNode::flatten(SGNode* node, std::vector<Object*>* elements) {
+	if (object) {
+		elements->push_back(object);
+	}
+	for (SGNode* child : children) {
+		child->flatten(child, elements);
+	}
+}
+
+void SGNode::flattenFrameEvent(SGNode* node, std::vector<Object*>* elementsFE) {
+	if (object && object->frameEvent) {
+		elementsFE->push_back(object);
+	}
+	for (SGNode* child : children) {
+		child->flattenFrameEvent(child, elementsFE);
+	}
 }
 
 void SGNode::viewSceneNode(int level) {

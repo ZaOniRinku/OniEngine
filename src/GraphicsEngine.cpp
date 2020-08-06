@@ -64,7 +64,7 @@ void GraphicsEngine::frameEvents(GLFWwindow* window) {
 			spotLight->frameEvent(spotLight, window, deltaTime);
 		}
 		if (spotLight->isTorchlight()) {
-			spotLight->setPosition(scene->getCamera()->getPositionX(), scene->getCamera()->getPositionY() - 0.5, scene->getCamera()->getPositionZ());
+			spotLight->setPosition(scene->getCamera()->getPositionX(), scene->getCamera()->getPositionY() - 0.5f, scene->getCamera()->getPositionZ());
 			spotLight->setDirection(scene->getCamera()->getFrontX(), scene->getCamera()->getFrontY(), scene->getCamera()->getFrontZ());
 		}
 	}
@@ -82,18 +82,8 @@ void GraphicsEngine::frameEvents(GLFWwindow* window) {
 	}
 
 	// Frame Events per object
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		Object *obj = elements.front()->getObject();
-		if (obj->frameEvent) {
-			obj->frameEvent(obj, window, deltaTime);
-		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			if (child->getObject()->frameEvent) {
-				elements.insert(elements.end(), child);
-			}
-		}
-		elements.erase(elements.begin());
+	for (Object* obj : scene->getElementsFE()) {
+		obj->frameEvent(obj, window, deltaTime);
 	}
 	
 	lastFrame = currentTime;
@@ -401,17 +391,11 @@ void GraphicsEngine::cleanupSwapChain() {
 	}
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		Object *obj = elements.front()->getObject();
+	for (Object* obj : scene->getElements()) {
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
 			vkFreeMemory(device, obj->getObjectBufferMemories()->at(i), nullptr);
 			vkDestroyBuffer(device, obj->getObjectBuffers()->at(i), nullptr);
 		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 
 	if (scene->getSkybox()) {
@@ -890,14 +874,8 @@ void GraphicsEngine::createGraphicsPipeline() {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		Object *obj = elements.front()->getObject();
+	for (Object* obj : scene->getElements()) {
 		obj->setGraphicsPipeline(&graphicsPipeline);
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 
 	vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -1262,18 +1240,13 @@ void GraphicsEngine::createDepthResources() {
 
 void GraphicsEngine::createTextures() {
 	// Create textures for all elements
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		if (!elements.front()->getObject()->getMaterial()->isConstructed()) {
-			elements.front()->getObject()->getMaterial()->constructedTrue();
-			createTextureImage(elements.front()->getObject());
-			createTextureImageView(elements.front()->getObject());
-			createTextureSampler(elements.front()->getObject());
+	for (Object* obj : scene->getElements()) {
+		if (!obj->getMaterial()->isConstructed()) {
+			obj->getMaterial()->constructedTrue();
+			createTextureImage(obj);
+			createTextureImageView(obj);
+			createTextureSampler(obj);
 		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 
 	// Create skybox texture
@@ -1309,18 +1282,13 @@ void GraphicsEngine::createTextures() {
 
 void GraphicsEngine::createModels() {
 	// Create models for all elements
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		if (!elements.front()->getObject()->getMesh()->isConstructed()) {
-			elements.front()->getObject()->getMesh()->constructedTrue();
-			loadModel(elements.front()->getObject());
-			createVertexBuffer(elements.front()->getObject());
-			createIndexBuffer(elements.front()->getObject());
+	for (Object* obj : scene->getElements()) {
+		if (!obj->getMesh()->isConstructed()) {
+			obj->getMesh()->constructedTrue();
+			loadModel(obj);
+			createVertexBuffer(obj);
+			createIndexBuffer(obj);
 		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 
 	// Create skybox model
@@ -1339,19 +1307,13 @@ void GraphicsEngine::createUniformBuffers() {
 	int nbElems = scene->nbElements();
 
 	VkDeviceSize bufferSize = sizeof(ObjectBufferObject);
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		Object *obj = elements.front()->getObject();
+	for (Object* obj : scene->getElements()) {
 		obj->getObjectBuffers()->resize(swapChainImages.size());
 		obj->getObjectBufferMemories()->resize(swapChainImages.size());
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, obj->getObjectBuffers()->at(i), obj->getObjectBufferMemories()->at(i));
 		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 
 	// Skybox
@@ -1433,7 +1395,6 @@ void GraphicsEngine::createDescriptorPool() {
 }
 
 void GraphicsEngine::createDescriptorSets() {
-	int nbElems = scene->nbElements();
 	std::vector<VkDescriptorSetLayout> layouts(swapChainImages.size(), descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1441,20 +1402,14 @@ void GraphicsEngine::createDescriptorSets() {
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
 	allocInfo.pSetLayouts = layouts.data();
 
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		Object* obj = elements.front()->getObject();
+	for (Object* obj : scene->getElements()) {
 		obj->getDescriptorSets()->resize(swapChainImages.size());
 		if (vkAllocateDescriptorSets(device, &allocInfo, obj->getDescriptorSets()->data()) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate descriptor sets!");
 		}
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			updateDescriptorSets(elements.front()->getObject(), (int)i);
+			updateDescriptorSets(obj, (int)i);
 		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 
 	// Skybox
@@ -1463,7 +1418,7 @@ void GraphicsEngine::createDescriptorSets() {
 		Object* skybox = scene->getSkybox();
 		skybox->getDescriptorSets()->resize(swapChainImages.size());
 		if (vkAllocateDescriptorSets(device, &allocInfo, skybox->getDescriptorSets()->data()) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate descriptor sets!");
+			throw std::runtime_error("failed to allocate skybox descriptor sets!");
 		}
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
 			updateDescriptorSets(skybox, (int)i);
@@ -1478,20 +1433,14 @@ void GraphicsEngine::createDescriptorSets() {
 	shadowsAllocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
 	shadowsAllocInfo.pSetLayouts = shadowsLayouts.data();
 
-	elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		Object* obj = elements.front()->getObject();
+	for (Object* obj : scene->getElements()) {
 		obj->getShadowsDescriptorSets()->resize(swapChainImages.size());
 		if (vkAllocateDescriptorSets(device, &shadowsAllocInfo, obj->getShadowsDescriptorSets()->data()) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate descriptor sets!");
+			throw std::runtime_error("failed to allocate shadows descriptor sets!");
 		}
 		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			updateShadowsDescriptorSets(elements.front()->getObject(), (int)i);
+			updateShadowsDescriptorSets(obj, (int)i);
 		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 }
 
@@ -1541,27 +1490,19 @@ void GraphicsEngine::createCommandBuffers() {
 
 		VkDeviceSize offsets[] = { 0 };
 
-		std::vector<SGNode*> elements;
-
 		// First passes : Shadows
 		for (int j = 0; j < scene->getDirectionalLights().size() + scene->getSpotLights().size(); j++) {
 			shadowsRenderPassInfo.framebuffer = shadowsFramebuffers[i][j];
 			vkCmdBeginRenderPass(commandBuffers[i], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsGraphicsPipeline);
 
-			elements = scene->getRoot()->getChildren();
-			while (!elements.empty()) {
-				Object* obj = elements.front()->getObject();
+			for (Object* obj : scene->getElements()) {
 				VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
 				vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 				vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsPipelineLayout, 0, 1, &obj->getShadowsDescriptorSets()->at(i), 0, nullptr);
 				vkCmdPushConstants(commandBuffers[i], shadowsPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
 				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
-				for (SGNode* child : elements.front()->getChildren()) {
-					elements.insert(elements.end(), child);
-				}
-				elements.erase(elements.begin());
 			}
 
 			vkCmdEndRenderPass(commandBuffers[i]);
@@ -1581,19 +1522,13 @@ void GraphicsEngine::createCommandBuffers() {
 			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(skybox->getMesh()->getIndices()->size()), 1, 0, 0, 0);
 		}
 		// For each 3D model, bind its vertex and indices and the right descriptor set for its texture
-		elements = scene->getRoot()->getChildren();
-		while (!elements.empty()) {
-			Object* obj = elements.front()->getObject();
+		for (Object* obj : scene->getElements()) {
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *obj->getGraphicsPipeline());
 			VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &obj->getDescriptorSets()->at(i), 0, nullptr);
 			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
-			for (SGNode* child : elements.front()->getChildren()) {
-				elements.insert(elements.end(), child);
-			}
-			elements.erase(elements.begin());
 		}
 
 		vkCmdEndRenderPass(commandBuffers[i]);
@@ -2141,12 +2076,12 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	if (obj->getMaterial()->getDiffusePath() != "") {
 		dPixels = stbi_load(obj->getMaterial()->getDiffusePath().c_str(), &diffuseTexWidth, &diffuseTexHeight, &diffuseTexChannels, STBI_rgb_alpha);
 		obj->getMaterial()->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
-		diffuseImageSize = diffuseTexWidth * diffuseTexHeight * 4;
+		diffuseImageSize = (uint64_t)diffuseTexWidth * diffuseTexHeight * 4;
 	} else {
-		unsigned char dRVal = round(obj->getMaterial()->getDiffuseRValue() * 255.0);
-		unsigned char dGVal = round(obj->getMaterial()->getDiffuseGValue() * 255.0);
-		unsigned char dBVal = round(obj->getMaterial()->getDiffuseBValue() * 255.0);
-		unsigned char dAVal = round(obj->getMaterial()->getDiffuseAValue() * 255.0);
+		unsigned char dRVal = round((float)obj->getMaterial()->getDiffuseRValue() * 255.0f);
+		unsigned char dGVal = round((float)obj->getMaterial()->getDiffuseGValue() * 255.0f);
+		unsigned char dBVal = round((float)obj->getMaterial()->getDiffuseBValue() * 255.0f);
+		unsigned char dAVal = round((float)obj->getMaterial()->getDiffuseAValue() * 255.0f);
 		std::array<unsigned char, 4> dArray = { dRVal, dGVal, dBVal, dAVal };
 		dPixels = dArray.data();
 		obj->getMaterial()->setDiffuseMipLevel(1);
@@ -2187,11 +2122,11 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	if (obj->getMaterial()->getNormalPath() != "") {
 		nPixels = stbi_load(obj->getMaterial()->getNormalPath().c_str(), &normalTexWidth, &normalTexHeight, &normalTexChannels, STBI_rgb_alpha);
 		obj->getMaterial()->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
-		normalImageSize = normalTexWidth * normalTexHeight * 4;
+		normalImageSize = (uint64_t)normalTexWidth * normalTexHeight * 4;
 	} else {
-		unsigned char nXVal = round(obj->getMaterial()->getNormalXValue() * 255.0);
-		unsigned char nYVal = round(obj->getMaterial()->getNormalYValue() * 255.0);
-		unsigned char nZVal = round(obj->getMaterial()->getNormalZValue() * 255.0);
+		unsigned char nXVal = round((float)obj->getMaterial()->getNormalXValue() * 255.0f);
+		unsigned char nYVal = round((float)obj->getMaterial()->getNormalYValue() * 255.0f);
+		unsigned char nZVal = round((float)obj->getMaterial()->getNormalZValue() * 255.0f);
 		std::array<unsigned char, 4> nArray = { nXVal, nYVal, nZVal, 255 };
 		nPixels = nArray.data();
 		obj->getMaterial()->setNormalMipLevel(1);
@@ -2232,9 +2167,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	if (obj->getMaterial()->getMetallicPath() != "") {
 		mPixels = stbi_load(obj->getMaterial()->getMetallicPath().c_str(), &metallicTexWidth, &metallicTexHeight, &metallicTexChannels, STBI_rgb_alpha);
 		obj->getMaterial()->setMetallicMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(metallicTexWidth, metallicTexHeight)))) + 1);
-		metallicImageSize = metallicTexWidth * metallicTexHeight * 4;
+		metallicImageSize = (uint64_t)metallicTexWidth * metallicTexHeight * 4;
 	} else {
-		unsigned char mVal = round(obj->getMaterial()->getMetallicValue() * 255.0);
+		unsigned char mVal = round((float)obj->getMaterial()->getMetallicValue() * 255.0f);
 		std::array<unsigned char, 4> mArray = { mVal, mVal, mVal, 255 };
 		mPixels = mArray.data();
 		obj->getMaterial()->setMetallicMipLevel(1);
@@ -2276,9 +2211,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	if (obj->getMaterial()->getRoughnessPath() != "") {
 		rPixels = stbi_load(obj->getMaterial()->getRoughnessPath().c_str(), &roughnessTexWidth, &roughnessTexHeight, &roughnessTexChannels, STBI_rgb_alpha);
 		obj->getMaterial()->setRoughnessMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(roughnessTexWidth, roughnessTexHeight)))) + 1);
-		roughnessImageSize = roughnessTexWidth * roughnessTexHeight * 4;
+		roughnessImageSize = (uint64_t)roughnessTexWidth * roughnessTexHeight * 4;
 	} else {
-		unsigned char rVal = round(obj->getMaterial()->getRoughnessValue() * 255.0);
+		unsigned char rVal = round((float)obj->getMaterial()->getRoughnessValue() * 255.0f);
 		std::array<unsigned char, 4> rArray = { rVal, rVal, rVal, 255 };
 		rPixels = rArray.data();
 		obj->getMaterial()->setRoughnessMipLevel(1);
@@ -2319,9 +2254,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 	if (obj->getMaterial()->getAOPath() != "") {
 		aPixels = stbi_load(obj->getMaterial()->getAOPath().c_str(), &AOTexWidth, &AOTexHeight, &AOTexChannels, STBI_rgb_alpha);
 		obj->getMaterial()->setAOMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(AOTexWidth, AOTexHeight)))) + 1);
-		AOImageSize = AOTexWidth * AOTexHeight * 4;
+		AOImageSize = (uint64_t)AOTexWidth * AOTexHeight * 4;
 	} else {
-		unsigned char aVal = round(obj->getMaterial()->getAOValue() * 255.0);
+		unsigned char aVal = round((float)obj->getMaterial()->getAOValue() * 255.0f);
 		std::array<unsigned char, 4> aArray = { aVal, aVal, aVal, 255 };
 		aPixels = aArray.data();
 		obj->getMaterial()->setAOMipLevel(1);
@@ -2743,13 +2678,8 @@ void GraphicsEngine::drawFrame() {
 		throw std::runtime_error("failed to acquire swap chain image!");
 	}
 
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		updateUniformBuffer(elements.front()->getObject(), imageIndex);
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
+	for (Object* obj : scene->getElements()) {
+		updateUniformBuffer(obj, imageIndex);
 	}
 
 	// Skybox
@@ -2777,18 +2707,18 @@ void GraphicsEngine::drawFrame() {
 	std::vector<DirectionalLight*> dirLights = scene->getDirectionalLights();
 	std::vector<PointLight*> pointLights = scene->getPointLights();
 	std::vector<SpotLight*> spotLights = scene->getSpotLights();
-	lbo.numLights.x = dirLights.size();
-	lbo.numLights.y = pointLights.size();
-	lbo.numLights.z = spotLights.size();
-	for (size_t i = 0; i < lbo.numLights.x; i++) {
+	lbo.numLights.x = (float)dirLights.size();
+	lbo.numLights.y = (float)pointLights.size();
+	lbo.numLights.z = (float)spotLights.size();
+	for (size_t i = 0; i < dirLights.size(); i++) {
 		lbo.dirLightsDir[i] = glm::vec3(dirLights[i]->getDirectionX(), dirLights[i]->getDirectionY(), dirLights[i]->getDirectionZ());
 		lbo.dirLightsColor[i] = glm::vec3(dirLights[i]->getColorR(), dirLights[i]->getColorG(), dirLights[i]->getColorB());
 	}
-	for (size_t i = 0; i < lbo.numLights.y; i++) {
+	for (size_t i = 0; i < pointLights.size(); i++) {
 		lbo.pointLightsPos[i] = glm::vec3(pointLights[i]->getPositionX(), pointLights[i]->getPositionY(), pointLights[i]->getPositionZ());
 		lbo.pointLightsColor[i] = glm::vec3(pointLights[i]->getColorR(), pointLights[i]->getColorG(), pointLights[i]->getColorB());
 	}
-	for (size_t i = 0; i < lbo.numLights.z; i++) {
+	for (size_t i = 0; i < spotLights.size(); i++) {
 		lbo.spotLightsPos[i] = glm::vec3(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ());
 		lbo.spotLightsDir[i] = glm::vec3(spotLights[i]->getDirectionX(), spotLights[i]->getDirectionY(), spotLights[i]->getDirectionZ());
 		lbo.spotLightsColor[i] = glm::vec3(spotLights[i]->getColorR(), spotLights[i]->getColorG(), spotLights[i]->getColorB());
@@ -2801,20 +2731,20 @@ void GraphicsEngine::drawFrame() {
 
 	// Shadows
 	ShadowsBufferObject sbo = {};
-	sbo.numLights.x = dirLights.size();
-	sbo.numLights.y = pointLights.size();
-	sbo.numLights.z = spotLights.size();
+	sbo.numLights.x = (float)dirLights.size();
+	sbo.numLights.y = (float)pointLights.size();
+	sbo.numLights.z = (float)spotLights.size();
 	glm::vec3 eye;
 	glm::vec3 up;
 	glm::mat4 shadowsView;
 	glm::mat4 shadowsProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 20.0f);
-	for (int i = 0; i < sbo.numLights.x; i++) {
+	for (int i = 0; i < dirLights.size(); i++) {
 		eye = glm::vec3(-dirLights[i]->getDirectionX(), -dirLights[i]->getDirectionY(), -dirLights[i]->getDirectionZ());
 		up = glm::dot(glm::vec3(0.0f, 1.0f, 0.0f), eye) == (glm::length(glm::vec3(0.0f, 1.0f, 0.0f)) * glm::length(eye)) ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
 		shadowsView = glm::lookAt(eye, glm::vec3(0.0f), up);
 		sbo.dirLightsSpace[i] = shadowsProj * shadowsView;
 	}
-	for (int i = 0; i < sbo.numLights.z; i++) {
+	for (int i = 0; i < spotLights.size(); i++) {
 		shadowsProj = glm::perspective(glm::radians(120.0f), SHADOWMAP_WIDTH / (float)SHADOWMAP_HEIGHT, 0.1f, 20.0f);
 		eye = glm::vec3(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ());
 		up = glm::dot(glm::vec3(0.0f, 1.0f, 0.0f), eye) == (glm::length(glm::vec3(0.0f, 1.0f, 0.0f)) * glm::length(eye)) ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
@@ -2876,9 +2806,8 @@ void GraphicsEngine::cleanup() {
 
 	cleanupSwapChain();
 
-	std::vector<SGNode*> elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		Material *material = elements.front()->getObject()->getMaterial();
+	for (Object* obj : scene->getElements()) {
+		Material *material = obj->getMaterial();
 		if (!material->isDestructed()) {
 			vkDestroySampler(device, *material->getDiffuseTextureSampler(), nullptr);
 			vkDestroyImageView(device, *material->getDiffuseTextureImageView(), nullptr);
@@ -2907,10 +2836,6 @@ void GraphicsEngine::cleanup() {
 
 			material->destructedTrue();
 		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 
 	if (scene->getSkybox()) {
@@ -2951,9 +2876,8 @@ void GraphicsEngine::cleanup() {
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(device, shadowsDescriptorSetLayout, nullptr);
 
-	elements = scene->getRoot()->getChildren();
-	while (!elements.empty()) {
-		Mesh *mesh = elements.front()->getObject()->getMesh();
+	for (Object* obj : scene->getElements()) {
+		Mesh *mesh = obj->getMesh();
 		if (!mesh->isDestructed()) {
 			vkDestroyBuffer(device, *mesh->getVertexBuffer(), nullptr);
 			vkFreeMemory(device, *mesh->getVertexBufferMemory(), nullptr);
@@ -2962,10 +2886,6 @@ void GraphicsEngine::cleanup() {
 
 			mesh->destructedTrue();
 		}
-		for (SGNode* child : elements.front()->getChildren()) {
-			elements.insert(elements.end(), child);
-		}
-		elements.erase(elements.begin());
 	}
 
 	if (scene->getSkybox()) {
@@ -2997,6 +2917,7 @@ void GraphicsEngine::cleanup() {
 }
 
 int GraphicsEngine::start() {
+	scene->flattenSG();
 	try {
 		run();
 	}

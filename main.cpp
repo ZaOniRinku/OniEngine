@@ -1,7 +1,7 @@
 #include "src/GraphicsEngine.h"
 
 void cameraControls(Camera* camera, GLFWwindow* window, double deltaTime) {
-	float movementSpeed = camera->getMovementSpeed() * deltaTime;
+	float movementSpeed = camera->getMovementSpeed() * (float)deltaTime;
 	glm::vec3 camPos = { camera->getPositionX(), camera->getPositionY(), camera->getPositionZ() };
 	glm::vec3 camFront = { camera->getFrontX(), camera->getFrontY(), camera->getFrontZ() };
 	glm::vec3 camUp = { camera->getUpX(), camera->getUpY(), camera->getUpZ() };
@@ -39,7 +39,7 @@ void cameraControls(Camera* camera, GLFWwindow* window, double deltaTime) {
 }
 
 void objectControls(Object* obj, GLFWwindow* window, double deltaTime) {
-	float movementObject = 1.0 * deltaTime;
+	float movementObject = 1.0 * (float)deltaTime;
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		obj->move(movementObject, 0.0f, 0.0f);
@@ -82,13 +82,13 @@ int main() {
 	PointLight point4 = PointLight(0.5f, 1.0f, 0.5f, 1.0f, 0.0f, 1.0f);
 	PointLight point5 = PointLight(0.25f, 1.0f, 0.25f, 1.0f, 1.0f, 0.0f);
 	SpotLight spot = SpotLight(0.0f, 5.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0, 1.0, 1.0, 5.0f, 20.0f);
-	/*scene.addDirectionalLight(&ambient);
+	scene.addDirectionalLight(&ambient);
 	scene.addDirectionalLight(&ambient2);
 	scene.addPointLight(&point);
 	scene.addPointLight(&point2);
 	scene.addPointLight(&point3);
 	scene.addPointLight(&point4);
-	scene.addPointLight(&point5);*/
+	scene.addPointLight(&point5);
 	scene.addSpotLight(&spot);
 
 	// Meshes
@@ -191,12 +191,12 @@ int main() {
 	scene.getRoot()->addChild(&houseNode);
 
 	// Ground
-	Object ground0 = Object(0.0, -0.1f, 0.0, 10.0f);
+	Object ground0 = Object(-10.0, -0.1f, -10.0, 1.0f);
 	SGNode groundNode0 = SGNode(&ground0);
 	scene.getRoot()->addChild(&groundNode0);
 	ground0.setMesh(&groundMesh);
 	ground0.setMaterial(&groundMaterial);
-	/*Object ground1 = Object(-10.0, -0.1f, -8.0, 1.0f);
+	Object ground1 = Object(-10.0, -0.1f, -8.0, 1.0f);
 	SGNode groundNode1 = SGNode(&ground1);
 	scene.getRoot()->addChild(&groundNode1);
 	ground1.setMesh(&groundMesh);
@@ -690,7 +690,7 @@ int main() {
 	SGNode groundNode99 = SGNode(&ground99);
 	scene.getRoot()->addChild(&groundNode99);
 	ground99.setMesh(&groundMesh);
-	ground99.setMaterial(&groundMaterial);*/
+	ground99.setMaterial(&groundMaterial);
 
 	// Visualize hierarchy
 	scene.viewSceneGraph();

@@ -29,6 +29,9 @@ public:
 	void setSkybox(Object* newSkybox);
 	void viewSceneGraph();
 	int nbElements();
+	std::vector<Object*>& getElements();
+	std::vector<Object*>& getElementsFE();
+	void flattenSG();
 	std::vector<DirectionalLight*>& getDirectionalLights();
 	void addDirectionalLight(DirectionalLight* newDirectionalLight);
 	std::vector<PointLight*>& getPointLights();
@@ -39,6 +42,9 @@ private:
 	SGNode sceneRoot;
 	Camera camera;
 	Object* skybox;
+
+	std::vector<Object*> elements;
+	std::vector<Object*> elementsFE;
 
 	// Lights
 	std::vector<DirectionalLight*> dirLights;

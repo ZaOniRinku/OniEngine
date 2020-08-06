@@ -15,6 +15,8 @@ public:
 	void setParent(SGNode parent);
 	Object* getObject();
 	void setObject(Object newObject);
+	void flatten(SGNode* node, std::vector<Object*>* elements);
+	void flattenFrameEvent(SGNode* node, std::vector<Object*>* elements);
 	void viewSceneNode(int level);
 	int nbElements();
 private:

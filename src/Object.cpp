@@ -1,17 +1,25 @@
 #include "Object.h"
 
 Object::Object(float x, float y, float z, float mScale) {
-	pos = { x, y, z };
+	posX = x;
+	posY = y;
+	posZ = z;
 	scale = mScale;
-	rot = { 0.0f, 0.0f, 0.0f };
+	rotX = 0.0f;
+	rotY = 0.0f;
+	rotZ = 0.0f;
 	node = nullptr;
 	frameEvent = nullptr;
 }
 
 Object::Object(float x, float y, float z, float mScale, float xRot, float yRot, float zRot) {
-	pos = { x, y, z };
+	posX = x;
+	posY = y;
+	posZ = z;
 	scale = mScale;
-	rot = { xRot, yRot, zRot };
+	rotX = xRot;
+	rotY = yRot;
+	rotZ = zRot;
 	node = nullptr;
 	frameEvent = nullptr;
 }
@@ -22,23 +30,27 @@ void Object::move(float x, float y, float z) {
 			child->getObject()->move(x, y, z);
 		}
 	}
-	pos = { pos.x + x, pos.y + y, pos.z + z };
+	posX = posX + x;
+	posY = posY + y;
+	posZ = posZ + z;
 }
 
 float Object::getPositionX() {
-	return pos.x;
+	return posX;
 }
 
 float Object::getPositionY() {
-	return pos.y;
+	return posY;
 }
 
 float Object::getPositionZ() {
-	return pos.z;
+	return posZ;
 }
 
 void Object::setPosition(float newX, float newY, float newZ) {
-	pos = { newX, newY, newZ };
+	posX = newX;
+	posY = newY;
+	posZ = newZ;
 }
 
 float Object::getScale() {
@@ -46,19 +58,21 @@ float Object::getScale() {
 }
 
 float Object::getRotationX() {
-	return rot.x;
+	return rotX;
 }
 
 float Object::getRotationY() {
-	return rot.y;
+	return rotY;
 }
 
 float Object::getRotationZ() {
-	return rot.z;
+	return rotZ;
 }
 
 void Object::setRotation(float newRotX, float newRotY, float newRotZ) {
-	rot = { newRotX, newRotY, newRotZ };
+	rotX = newRotX;
+	rotY = newRotY;
+	rotZ = newRotZ;
 }
 
 SGNode* Object::getNode() {

@@ -26,9 +26,9 @@ public:
 
 	void(*frameEvent)(SpotLight* spotLight, GLFWwindow* window, double deltaTime);
 private:
-	glm::vec3 position;
-	glm::vec3 direction;
-	glm::vec3 color;
+	alignas(glm::vec4) glm::vec3 position;
+	alignas(glm::vec4) glm::vec3 direction;
+	alignas(glm::vec4) glm::vec3 color;
 	float cutoff;
 	float outCutoff;
 

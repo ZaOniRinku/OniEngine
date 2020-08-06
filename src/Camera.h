@@ -23,8 +23,8 @@ public:
 	void setMovementSpeed(float newMS);
 	void(*frameEvent)(Camera *obj, GLFWwindow* window, double deltaTime);
 private:
-	glm::vec3 pos;
-	glm::vec3 front;
-	glm::vec3 up;
+	alignas(glm::vec4) glm::vec3 pos;
+	alignas(glm::vec4) glm::vec3 front;
+	alignas(glm::vec4) glm::vec3 up;
 	float movementSpeed;
 };

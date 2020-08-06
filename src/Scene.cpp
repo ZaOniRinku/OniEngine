@@ -27,7 +27,7 @@ void Scene::setCamera(Camera newCamera) {
 	camera = newCamera;
 }
 
-Object * Scene::getSkybox() {
+Object* Scene::getSkybox() {
 	return skybox;
 }
 
@@ -41,20 +41,27 @@ void Scene::viewSceneGraph() {
 }
 
 int Scene::nbElements() {
-	int nbElems = sceneRoot.nbElements();
-	if (skybox) {
-		return nbElems + 1;
-	}
-	return nbElems;
+	return skybox ? elements.size() + 1 : 0;
 }
 
-std::vector<DirectionalLight*>& Scene::getDirectionalLights()
-{
+std::vector<Object*>& Scene::getElements() {
+	return elements;
+}
+
+std::vector<Object*>& Scene::getElementsFE() {
+	return elementsFE;
+}
+
+void Scene::flattenSG() {
+	sceneRoot.flatten(&sceneRoot, &elements);
+	sceneRoot.flattenFrameEvent(&sceneRoot, &elementsFE);
+}
+
+std::vector<DirectionalLight*>& Scene::getDirectionalLights() {
 	return dirLights;
 }
 
-void Scene::addDirectionalLight(DirectionalLight* newDirectionalLight)
-{
+void Scene::addDirectionalLight(DirectionalLight* newDirectionalLight) {
 	if (dirLights.size() == 1 && dirLights[0] == &dummyDirLight) {
 		dirLights[0] = newDirectionalLight;
 	} else {
@@ -62,13 +69,11 @@ void Scene::addDirectionalLight(DirectionalLight* newDirectionalLight)
 	}
 }
 
-std::vector<PointLight*>& Scene::getPointLights()
-{
+std::vector<PointLight*>& Scene::getPointLights() {
 	return pointLights;
 }
 
-void Scene::addPointLight(PointLight* newPointLight)
-{
+void Scene::addPointLight(PointLight* newPointLight) {
 	if (pointLights.size() == 1 && pointLights[0] == &dummyPointLight) {
 		pointLights[0] = newPointLight;
 	}
@@ -77,13 +82,11 @@ void Scene::addPointLight(PointLight* newPointLight)
 	}
 }
 
-std::vector<SpotLight*>& Scene::getSpotLights()
-{
+std::vector<SpotLight*>& Scene::getSpotLights() {
 	return spotLights;
 }
 
-void Scene::addSpotLight(SpotLight* newSpotLight)
-{
+void Scene::addSpotLight(SpotLight* newSpotLight) {
 	if (spotLights.size() == 1 && spotLights[0] == &dummySpotLight) {
 		spotLights[0] = newSpotLight;
 	}

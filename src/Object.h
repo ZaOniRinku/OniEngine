@@ -41,19 +41,26 @@ public:
 
 	void (*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
 private:
-	std::vector<VkDescriptorSet> descriptorSets;
-	std::vector<VkDescriptorSet> shadowsDescriptorSets;
-
-	std::vector<VkBuffer> objectBuffers;
-	std::vector<VkDeviceMemory> objectBufferMemories;
-
 	Mesh *mesh;
 	Material *material;
 
 	std::string name = "";
-	glm::vec3 pos;
+
+	float posX;
+	float posY;
+	float posZ;
+
+	float rotX;
+	float rotY;
+	float rotZ;
+
 	float scale;
-	glm::vec3 rot;
+
+	std::vector<VkBuffer> objectBuffers;
+	std::vector<VkDeviceMemory> objectBufferMemories;
+
+	std::vector<VkDescriptorSet> descriptorSets;
+	std::vector<VkDescriptorSet> shadowsDescriptorSets;
 
 	SGNode* node;
 
