@@ -191,12 +191,12 @@ int main() {
 	scene.getRoot()->addChild(&houseNode);
 
 	// Ground
-	Object ground0 = Object(-10.0, -0.1f, -10.0, 1.0f);
+	Object ground0 = Object(0.0, -0.1f, 0.0, 10.0f);
 	SGNode groundNode0 = SGNode(&ground0);
 	scene.getRoot()->addChild(&groundNode0);
 	ground0.setMesh(&groundMesh);
 	ground0.setMaterial(&groundMaterial);
-	Object ground1 = Object(-10.0, -0.1f, -8.0, 1.0f);
+	/*Object ground1 = Object(-10.0, -0.1f, -8.0, 1.0f);
 	SGNode groundNode1 = SGNode(&ground1);
 	scene.getRoot()->addChild(&groundNode1);
 	ground1.setMesh(&groundMesh);
@@ -690,7 +690,7 @@ int main() {
 	SGNode groundNode99 = SGNode(&ground99);
 	scene.getRoot()->addChild(&groundNode99);
 	ground99.setMesh(&groundMesh);
-	ground99.setMaterial(&groundMaterial);
+	ground99.setMaterial(&groundMaterial);*/
 
 	// Visualize hierarchy
 	scene.viewSceneGraph();
