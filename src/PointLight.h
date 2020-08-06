@@ -16,6 +16,11 @@ public:
 
 	void(*frameEvent)(PointLight *pointLight, GLFWwindow* window, double deltaTime);
 private:
-	alignas(glm::vec4) glm::vec3 position;
-	alignas(glm::vec4) glm::vec3 color;
+	float positionX;
+	float positionY;
+	float positionZ;
+
+	float colorR;
+	float colorG;
+	float colorB;
 };

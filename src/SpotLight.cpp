@@ -1,9 +1,15 @@
 #include "SpotLight.h"
 
 SpotLight::SpotLight(float px, float py, float pz, float dx, float dy, float dz, float r, float g, float b, float co, float oCo) {
-	position = glm::vec3(px, py, pz);
-	direction = glm::vec3(dx, dy, dz);
-	color = glm::vec3(r, g, b);
+	positionX = px;
+	positionY = py;
+	positionZ = pz;
+	directionX = dx;
+	directionY = dy;
+	directionZ = dz;
+	colorR = r;
+	colorG = g;
+	colorB = b;
 	cutoff = glm::cos(glm::radians(co));
 	outCutoff = glm::cos(glm::radians(oCo));
 	torchlight = false;
@@ -11,51 +17,57 @@ SpotLight::SpotLight(float px, float py, float pz, float dx, float dy, float dz,
 }
 
 float SpotLight::getPositionX() {
-	return position.x;
+	return positionX;
 }
 
 float SpotLight::getPositionY() {
-	return position.y;
+	return positionY;
 }
 
 float SpotLight::getPositionZ() {
-	return position.z;
+	return positionZ;
 }
 
 void SpotLight::setPosition(float x, float y, float z) {
-	position = glm::vec3(x, y, z);
+	positionX = x;
+	positionY = y;
+	positionZ = z;
 }
 
 float SpotLight::getDirectionX() {
-	return direction.x;
+	return directionX;
 }
 
 float SpotLight::getDirectionY() {
-	return direction.y;
+	return directionY;
 }
 
 float SpotLight::getDirectionZ() {
-	return direction.z;
+	return directionZ;
 }
 
 void SpotLight::setDirection(float x, float y, float z) {
-	direction = glm::vec3(x, y, z);
+	directionX = x;
+	directionY = y;
+	directionZ = z;
 }
 
 float SpotLight::getColorR() {
-	return color.x;
+	return colorR;
 }
 
 float SpotLight::getColorG() {
-	return color.y;
+	return colorG;
 }
 
 float SpotLight::getColorB() {
-	return color.z;
+	return colorB;
 }
 
 void SpotLight::setColor(float r, float g, float b) {
-	color = glm::vec3(r, g, b);
+	colorR = r;
+	colorG = g;
+	colorB = b;
 }
 
 float SpotLight::getCutoff() {

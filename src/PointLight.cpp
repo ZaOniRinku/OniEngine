@@ -1,39 +1,47 @@
 #include "PointLight.h"
 
 PointLight::PointLight(float x, float y, float z, float r, float g, float b) {
-	position = glm::vec3(x, y, z);
-	color = glm::vec3(r, g, b);
+	positionX = x;
+	positionY = y;
+	positionZ = z;
+	colorR = r;
+	colorG = g;
+	colorB = b;
 	frameEvent = nullptr;
 }
 
 float PointLight::getPositionX() {
-	return position.x;
+	return positionX;
 }
 
 float PointLight::getPositionY() {
-	return position.y;
+	return positionY;
 }
 
 float PointLight::getPositionZ() {
-	return position.z;
+	return positionZ;
 }
 
 void PointLight::setPosition(float x, float y, float z) {
-	position = glm::vec3(x, y, z);
+	positionX = x;
+	positionY = y;
+	positionZ = z;
 }
 
 float PointLight::getColorR() {
-	return color.x;
+	return colorR;
 }
 
 float PointLight::getColorG() {
-	return color.y;
+	return colorG;
 }
 
 float PointLight::getColorB() {
-	return color.z;
+	return colorB;
 }
 
 void PointLight::setColor(float r, float g, float b) {
-	color = glm::vec3(r, g, b);
+	colorR = r;
+	colorG = g;
+	colorB = b;
 }

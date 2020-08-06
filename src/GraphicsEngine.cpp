@@ -2078,10 +2078,10 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
 		diffuseImageSize = (uint64_t)diffuseTexWidth * diffuseTexHeight * 4;
 	} else {
-		unsigned char dRVal = round((float)obj->getMaterial()->getDiffuseRValue() * 255.0f);
-		unsigned char dGVal = round((float)obj->getMaterial()->getDiffuseGValue() * 255.0f);
-		unsigned char dBVal = round((float)obj->getMaterial()->getDiffuseBValue() * 255.0f);
-		unsigned char dAVal = round((float)obj->getMaterial()->getDiffuseAValue() * 255.0f);
+		unsigned char dRVal = round(255.0f * obj->getMaterial()->getDiffuseRValue());
+		unsigned char dGVal = round(255.0f * obj->getMaterial()->getDiffuseGValue());
+		unsigned char dBVal = round(255.0f * obj->getMaterial()->getDiffuseBValue());
+		unsigned char dAVal = round(255.0f * obj->getMaterial()->getDiffuseAValue());
 		std::array<unsigned char, 4> dArray = { dRVal, dGVal, dBVal, dAVal };
 		dPixels = dArray.data();
 		obj->getMaterial()->setDiffuseMipLevel(1);
@@ -2124,9 +2124,9 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
 		normalImageSize = (uint64_t)normalTexWidth * normalTexHeight * 4;
 	} else {
-		unsigned char nXVal = round((float)obj->getMaterial()->getNormalXValue() * 255.0f);
-		unsigned char nYVal = round((float)obj->getMaterial()->getNormalYValue() * 255.0f);
-		unsigned char nZVal = round((float)obj->getMaterial()->getNormalZValue() * 255.0f);
+		unsigned char nXVal = round(255.0f * obj->getMaterial()->getNormalXValue());
+		unsigned char nYVal = round(255.0f * obj->getMaterial()->getNormalYValue());
+		unsigned char nZVal = round(255.0f * obj->getMaterial()->getNormalZValue());
 		std::array<unsigned char, 4> nArray = { nXVal, nYVal, nZVal, 255 };
 		nPixels = nArray.data();
 		obj->getMaterial()->setNormalMipLevel(1);
@@ -2169,7 +2169,7 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setMetallicMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(metallicTexWidth, metallicTexHeight)))) + 1);
 		metallicImageSize = (uint64_t)metallicTexWidth * metallicTexHeight * 4;
 	} else {
-		unsigned char mVal = round((float)obj->getMaterial()->getMetallicValue() * 255.0f);
+		unsigned char mVal = round(255.0f * obj->getMaterial()->getMetallicValue());
 		std::array<unsigned char, 4> mArray = { mVal, mVal, mVal, 255 };
 		mPixels = mArray.data();
 		obj->getMaterial()->setMetallicMipLevel(1);
@@ -2213,7 +2213,7 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setRoughnessMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(roughnessTexWidth, roughnessTexHeight)))) + 1);
 		roughnessImageSize = (uint64_t)roughnessTexWidth * roughnessTexHeight * 4;
 	} else {
-		unsigned char rVal = round((float)obj->getMaterial()->getRoughnessValue() * 255.0f);
+		unsigned char rVal = round(255.0f * obj->getMaterial()->getRoughnessValue());
 		std::array<unsigned char, 4> rArray = { rVal, rVal, rVal, 255 };
 		rPixels = rArray.data();
 		obj->getMaterial()->setRoughnessMipLevel(1);
@@ -2256,7 +2256,7 @@ void GraphicsEngine::createTextureImage(Object* obj) {
 		obj->getMaterial()->setAOMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(AOTexWidth, AOTexHeight)))) + 1);
 		AOImageSize = (uint64_t)AOTexWidth * AOTexHeight * 4;
 	} else {
-		unsigned char aVal = round((float)obj->getMaterial()->getAOValue() * 255.0f);
+		unsigned char aVal = round(255.0f * obj->getMaterial()->getAOValue());
 		std::array<unsigned char, 4> aArray = { aVal, aVal, aVal, 255 };
 		aPixels = aArray.data();
 		obj->getMaterial()->setAOMipLevel(1);

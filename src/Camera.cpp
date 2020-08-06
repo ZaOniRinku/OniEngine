@@ -1,79 +1,107 @@
 #include "Camera.h"
 
 Camera::Camera() {
-	pos = glm::vec3(-3.0f, 0.3f, 0.0f);
-	front = glm::vec3(1.0f, 0.0f, 0.0f);
-	up = glm::vec3(0.0f, 1.0f, 0.0f);
+	posX = -3.0f;
+	posY = 0.3f;
+	posZ = 0.0f;
+	frontX = 1.0f;
+	frontY = 0.0f;
+	frontZ = 0.0f;
+	upX = 0.0f;
+	upY = 1.0f;
+	upZ = 0.0f;
 	movementSpeed = 2.5;
 	frameEvent = nullptr;
 }
 
-Camera::Camera(float posX, float posY, float posZ) {
-	pos = glm::vec3(posX, posY, posZ);
-	front = glm::vec3(1.0f, 0.0f, 0.0f);
-	up = glm::vec3(0.0f, 1.0f, 0.0f);
+Camera::Camera(float xPos, float yPos, float zPos) {
+	posX = xPos;
+	posY = yPos;
+	posZ = zPos;
+	frontX = 1.0f;
+	frontY = 0.0f;
+	frontZ = 0.0f;
+	upX = 0.0f;
+	upY = 1.0f;
+	upZ = 0.0f;
 	movementSpeed = 2.5;
 	frameEvent = nullptr;
 }
 
-Camera::Camera(float posX, float posY, float posZ, float frontX, float frontY, float frontZ) {
-	pos = glm::vec3(posX, posY, posZ);
-	front = glm::vec3(frontX, frontY, frontZ);
-	up = glm::vec3(0.0f, 1.0f, 0.0f);
+Camera::Camera(float xPos, float yPos, float zPos, float xFront, float yFront, float zFront) {
+	posX = xPos;
+	posY = yPos;
+	posZ = zPos;
+	frontX = xFront;
+	frontY = yFront;
+	frontZ = zFront;
+	upX = 0.0f;
+	upY = 1.0f;
+	upZ = 0.0f;
 	movementSpeed = 2.5;
 	frameEvent = nullptr;
 }
 
-Camera::Camera(float posX, float posY, float posZ, float frontX, float frontY, float frontZ, float ms) {
-	pos = glm::vec3(posX, posY, posZ);
-	front = glm::vec3(frontX, frontY, frontZ);
-	up = glm::vec3(0.0f, 1.0f, 0.0f);
+Camera::Camera(float xPos, float yPos, float zPos, float xFront, float yFront, float zFront, float ms) {
+	posX = xPos;
+	posY = yPos;
+	posZ = zPos;
+	frontX = xFront;
+	frontY = yFront;
+	frontZ = zFront;
+	upX = 0.0f;
+	upY = 1.0f;
+	upZ = 0.0f;
 	movementSpeed = ms;
 	frameEvent = nullptr;
 }
 
 float Camera::getPositionX() {
-	return pos.x;
+	return posX;
 }
 
 float Camera::getPositionY() {
-	return pos.y;
+	return posY;
 }
 
 float Camera::getPositionZ() {
-	return pos.z;
+	return posZ;
 }
 
 void Camera::setPosition(float x, float y, float z) {
-	pos = { x, y, z };
+	posX = x;
+	posY = y;
+	posZ = z;
 }
 
 float Camera::getFrontX() {
-	return front.x;
+	return frontX;
 }
 
 float Camera::getFrontY() {
-	return front.y;
+	return frontY;
 }
 
 float Camera::getFrontZ() {
-	return front.z;
+	return frontZ;
 }
 
 void Camera::setFront(float x, float y, float z) {
-	front = { x, y, z };
+	frontX = x;
+	frontY = y;
+	frontZ = z;
 }
 
 float Camera::getUpX() {
-	return up.x;
+	return upX;
 }
 
 float Camera::getUpY() {
-	return up.y;
+	return upY;
 }
 
 float Camera::getUpZ() {
-	return up.z;
+	return upZ;
 }
 
 float Camera::getMovementSpeed() {

@@ -9,6 +9,8 @@ Object::Object(float x, float y, float z, float mScale) {
 	rotY = 0.0f;
 	rotZ = 0.0f;
 	node = nullptr;
+	mesh = nullptr;
+	material = nullptr;
 	frameEvent = nullptr;
 }
 
@@ -21,6 +23,8 @@ Object::Object(float x, float y, float z, float mScale, float xRot, float yRot, 
 	rotY = yRot;
 	rotZ = zRot;
 	node = nullptr;
+	mesh = nullptr;
+	material = nullptr;
 	frameEvent = nullptr;
 }
 

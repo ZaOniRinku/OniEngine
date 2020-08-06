@@ -1,39 +1,47 @@
 #include "DirectionalLight.h"
 
 DirectionalLight::DirectionalLight(float x, float y, float z, float r, float g, float b) {
-	direction = glm::vec3(x, y, z);
-	color = glm::vec3(r, g, b);
+	directionX = x;
+	directionY = y;
+	directionZ = z;
+	colorR = r;
+	colorG = g;
+	colorB = b;
 	frameEvent = nullptr;
 }
 
 float DirectionalLight::getDirectionX() {
-	return direction.x;
+	return directionX;
 }
 
 float DirectionalLight::getDirectionY() {
-	return direction.y;
+	return directionY;
 }
 
 float DirectionalLight::getDirectionZ() {
-	return direction.z;
+	return directionZ;
 }
 
 void DirectionalLight::setDirection(float x, float y, float z) {
-	direction = glm::vec3(x, y, z);
+	directionX = x;
+	directionY = y;
+	directionZ = z;
 }
 
 float DirectionalLight::getColorR() {
-	return color.x;
+	return colorR;
 }
 
 float DirectionalLight::getColorG() {
-	return color.y;
+	return colorG;
 }
 
 float DirectionalLight::getColorB() {
-	return color.z;
+	return colorB;
 }
 
 void DirectionalLight::setColor(float r, float g, float b) {
-	color = glm::vec3(r, g, b);
+	colorR = r;
+	colorG = g;
+	colorB = b;
 }

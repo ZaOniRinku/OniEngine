@@ -41,7 +41,7 @@ void Scene::viewSceneGraph() {
 }
 
 int Scene::nbElements() {
-	return skybox ? elements.size() + 1 : 0;
+	return skybox ? (int)elements.size() + 1 : 0;
 }
 
 std::vector<Object*>& Scene::getElements() {

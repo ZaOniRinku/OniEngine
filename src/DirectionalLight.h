@@ -16,7 +16,12 @@ public:
 
 	void(*frameEvent)(DirectionalLight *dirLight, GLFWwindow* window, double deltaTime);
 private:
-	glm::vec3 direction;
-	glm::vec3 color;
+	float directionX;
+	float directionY;
+	float directionZ;
+
+	float colorR;
+	float colorG;
+	float colorB;
 };
 
