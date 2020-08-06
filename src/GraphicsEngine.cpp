@@ -1,6 +1,8 @@
+#define STB_IMAGE_IMPLEMENTATION
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "../external/stb/stb_image.h"
+#include "../external/tinyobjloader/tiny_obj_loader.h"
 #include "GraphicsEngine.h"
-#include <stb_image.h>
-#include <tiny_obj_loader.h>
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,

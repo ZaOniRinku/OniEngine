@@ -4,10 +4,8 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#define STB_IMAGE_IMPLEMENTATION
-#define TINYOBJLOADER_IMPLEMENTATION
 
-#include <GLFW/glfw3.h>
+#include "../external/glfw/include/GLFW/glfw3.h"
 #include <stdexcept>
 #include <functional>
 #include <cstdlib>
@@ -16,7 +14,7 @@
 #include <set>
 #include <algorithm>
 #include <fstream>
-#include <glm/gtc/matrix_transform.hpp>
+#include "../external/glm/gtc/matrix_transform.hpp"
 #include <chrono>
 #include <array>
 #include <unordered_map>

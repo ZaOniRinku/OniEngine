@@ -1,6 +1,6 @@
 #pragma once
-#include <glm/gtx/hash.hpp>
-#include <glm/glm.hpp>
+#include "../external/glm/glm.hpp"
+#include "../external/glm/gtx/hash.hpp"
 #include <vulkan/vulkan.hpp>
 #include <string>
 #define GLM_ENABLE_EXPERIMENTAL

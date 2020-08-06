@@ -1,6 +1,6 @@
 #pragma once
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+#include "../external/glfw/include/GLFW/glfw3.h"
+#include "../external/glm/glm.hpp"
 
 class SpotLight {
 public:
