@@ -82,6 +82,7 @@ int main() {
 	PointLight point4 = PointLight(0.5f, 1.0f, 0.5f, 1.0f, 0.0f, 1.0f);
 	PointLight point5 = PointLight(0.25f, 1.0f, 0.25f, 1.0f, 1.0f, 0.0f);
 	SpotLight spot = SpotLight(0.0f, 5.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0, 1.0, 1.0, 5.0f, 20.0f);
+	//spot.actAsTorchlight(true);
 	scene.addDirectionalLight(&ambient);
 	scene.addDirectionalLight(&ambient2);
 	scene.addPointLight(&point);
@@ -106,40 +107,40 @@ int main() {
 	// Materials
 	Material emptyMaterial = Material("textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png");
 	Material skyboxMaterial = Material("textures/skybox.png", "", "", "", "");
-	skyboxMaterial.setNormalValues(1.0f, 1.0f, 1.0f);
+	skyboxMaterial.setNormalValues(0.5f, 0.5f, 1.0f);
 	skyboxMaterial.setMetallicValue(0.0f);
-	skyboxMaterial.setRoughnessValue(1.0f);
+	skyboxMaterial.setRoughnessValue(0.0f);
 	skyboxMaterial.setAOValue(1.0f);
 	Material groundMaterial = Material("textures/Ground037_2K_Color.jpg", "textures/Ground037_2K_Normal.jpg", "", "textures/Ground037_2K_Roughness.jpg", "textures/Ground037_2K_AmbientOcclusion.jpg");
 	groundMaterial.setMetallicValue(1.0f);
 	Material ground2Material = Material("textures/grass_basecolor.png", "textures/grass_normal.png", "", "textures/grass_roughness.png", "textures/grass_ambientOcclusion.png");
 	ground2Material.setMetallicValue(1.0f);
 	Material metal1Material = Material("textures/Metal012_2K_Color.jpg", "textures/Metal012_2K_Normal.jpg", "textures/Metal012_2K_Metalness.jpg", "textures/Metal012_2K_Roughness.jpg", "");
-	metal1Material.setAOValue(0.0f);
+	metal1Material.setAOValue(1.0f);
 	Material metal2Material = Material("textures/Metal006_2K_Color.jpg", "textures/Metal006_2K_Normal.jpg", "textures/Metal006_2K_Metalness.jpg", "textures/Metal006_2K_Roughness.jpg", "");
-	metal2Material.setAOValue(0.0f);
+	metal2Material.setAOValue(1.0f);
 	Material metal3Material = Material("textures/Metal022_2K_Color.jpg", "textures/Metal022_2K_Normal.jpg", "textures/Metal022_2K_Metalness.jpg", "textures/Metal022_2K_Roughness.jpg", "");
-	metal3Material.setAOValue(0.0f);
+	metal3Material.setAOValue(1.0f);
 	Material woodMaterial = Material("textures/WoodSiding009_2K_Color.jpg", "textures/WoodSiding009_2K_Normal.jpg", "textures/WoodSiding009_2K_Metalness.jpg", "textures/WoodSiding009_2K_Roughness.jpg", "textures/WoodSiding009_2K_AmbientOcclusion.jpg");
 	Material marbleMaterial = Material("textures/Marble009_2K_Color.jpg", "textures/Marble009_2K_Normal.jpg", "", "textures/Metal006_2K_Roughness.jpg", "");
 	marbleMaterial.setMetallicValue(1.0f);
-	marbleMaterial.setAOValue(0.0f);
+	marbleMaterial.setAOValue(1.0f);
 	Material deMaterial = Material("textures/texturede.png", "textures/normal.jpg", "textures/Metal022_2K_Metalness.jpg", "textures/Metal022_2K_Roughness.jpg", "");
 	deMaterial.setAOValue(0.0f);
 	Material swordMaterial = Material("textures/Big_Sword_Base_Color_Map.jpg", "textures/Big_Sword_Normal_Map.jpg", "textures/Big_Sword_Metalness.jpg", "textures/Big_Sword_Roughness_Map.jpg", "textures/Big_Sword_AO_Map.jpg");
 	Material roomMaterial = Material("textures/viking_room.png", "", "", "", "");
 	roomMaterial.setDiffuseValues(1.0f, 0.0f, 0.0f, 0.01f);
-	roomMaterial.setNormalValues(1.0f, 1.0f, 1.0f);
+	roomMaterial.setNormalValues(0.5f, 0.5f, 1.0f);
 	roomMaterial.setMetallicValue(0.0f);
 	roomMaterial.setRoughnessValue(1.0f);
-	roomMaterial.setAOValue(0.0f);
+	roomMaterial.setAOValue(1.0f);
 	Material carbonMaterial = Material("textures/Fabric004_2K_Color.jpg", "textures/Fabric004_2K_Normal.jpg", "textures/Fabric004_2K_Metalness.jpg", "textures/Fabric004_2K_Roughness.jpg", "textures/emptymaterial.png");
 	Material simpleWaterMaterial = Material("", "", "", "", "");
-	simpleWaterMaterial.setDiffuseValues(0.0f, 0.0f, 0.75f, 1.0f);
-	simpleWaterMaterial.setNormalValues(1.0f, 1.0f, 1.0f);
+	simpleWaterMaterial.setDiffuseValues(0.0f, 0.0f, 0.75f, 0.25f);
+	simpleWaterMaterial.setNormalValues(0.5f, 0.5f, 1.0f);
 	simpleWaterMaterial.setMetallicValue(0.75f);
-	simpleWaterMaterial.setRoughnessValue(0.5f);
-	simpleWaterMaterial.setAOValue(0.0f);
+	simpleWaterMaterial.setRoughnessValue(0.25f);
+	simpleWaterMaterial.setAOValue(1.0f);
 
 	// Skybox
 	Object skybox = Object(0.0f, 0.0f, 0.0f, 50.0f, 90.0f, 0.0f, 0.0f);
@@ -179,7 +180,7 @@ int main() {
 	Object sphere4 = Object(2.0f, 1.0f, -1.0f, 0.3f);
 	SGNode sphere4Node = SGNode(&sphere4);
 	sphere4.setMesh(&sphereMesh);
-	sphere4.setMaterial(&carbonMaterial);
+	sphere4.setMaterial(&simpleWaterMaterial);
 	scene.getRoot()->addChild(&sphere4Node);
 	sphere4.frameEvent = objectControls;
 
@@ -189,6 +190,12 @@ int main() {
 	house.setMesh(&houseMesh);
 	house.setMaterial(&marbleMaterial);
 	scene.getRoot()->addChild(&houseNode);
+
+	Object room = Object(-7.0f, 0.0f, -3.0f, 1.5f, 270.0f, 0.0f, 90.0f);
+	SGNode roomNode = SGNode(&room);
+	room.setMesh(&roomMesh);
+	room.setMaterial(&roomMaterial);
+	scene.getRoot()->addChild(&roomNode);
 
 	// Ground
 	Object ground0 = Object(-10.0, -0.1f, -10.0, 1.0f);

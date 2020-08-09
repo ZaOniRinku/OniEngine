@@ -27,7 +27,7 @@ layout(binding = 8) uniform sampler2D roughnessTexSampler;
 layout(binding = 9) uniform sampler2D AOTexSampler;
 
 layout(location = 0) in vec3 fragNormal;
-layout(location = 1) in vec2 fragTexCoord;
+layout(location = 1) in vec2 fragTexCoords;
 layout(location = 2) in vec3 fragPos;
 layout(location = 3) in vec3 fragCamPos;
 layout(location = 4) in vec4 fragDirLightsSpace[MAX_DIR_LIGHTS];
@@ -141,11 +141,11 @@ float spotShadowsValue(int lightIndex, int shadowmapIndex, float bias) {
 }
 
 void main() {
-	vec4 diffuse = texture(diffuseTexSampler, fragTexCoord);
-	vec3 normal = texture(normalTexSampler, fragTexCoord).xyz;
-	float metallic = texture(metallicTexSampler, fragTexCoord).x;
-	float roughness = texture(roughnessTexSampler, fragTexCoord).x;
-	float ao = texture(AOTexSampler, fragTexCoord).x;
+	vec4 diffuse = texture(diffuseTexSampler, fragTexCoords);
+	vec3 normal = texture(normalTexSampler, fragTexCoords).xyz;
+	float metallic = texture(metallicTexSampler, fragTexCoords).x;
+	float roughness = texture(roughnessTexSampler, fragTexCoords).x;
+	float ao = texture(AOTexSampler, fragTexCoords).x;
 
 	vec3 d = vec3(diffuse);
 	vec3 n = normal * 2.0 - 1.0;

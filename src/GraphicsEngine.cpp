@@ -906,7 +906,7 @@ void GraphicsEngine::createGraphicsPipeline() {
 
 		VkPipelineVertexInputStateCreateInfo skyboxVertexInputInfo = {};
 		auto skyboxBindingDescription = Vertex::getBindingDescription();
-		auto skyboxAttributeDescriptions = Vertex::getAttributeDescriptions();
+		auto skyboxAttributeDescriptions = Vertex::getSkyboxAttributeDescriptions();
 		skyboxVertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		skyboxVertexInputInfo.vertexBindingDescriptionCount = 1;
 		skyboxVertexInputInfo.pVertexBindingDescriptions = &skyboxBindingDescription;
@@ -1051,7 +1051,7 @@ void GraphicsEngine::createGraphicsPipeline() {
 
 	VkPipelineVertexInputStateCreateInfo shadowsVertexInputInfo = {};
 	auto shadowsBindingDescription = Vertex::getBindingDescription();
-	auto shadowsAttributeDescriptions = Vertex::getAttributeDescriptions();
+	auto shadowsAttributeDescriptions = Vertex::getShadowsAttributeDescriptions();
 	shadowsVertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	shadowsVertexInputInfo.vertexBindingDescriptionCount = 1;
 	shadowsVertexInputInfo.pVertexBindingDescriptions = &shadowsBindingDescription;
@@ -2378,7 +2378,7 @@ void GraphicsEngine::loadModel(Object* obj) {
 				attrib.vertices[3 * index.vertex_index + 1],
 				attrib.vertices[3 * index.vertex_index + 2]
 			};
-			vertex.texCoord = {
+			vertex.texCoords = {
 				attrib.texcoords[2 * index.texcoord_index + 0],
 				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 			};
@@ -2420,8 +2420,8 @@ void GraphicsEngine::loadModel(Object* obj) {
 		glm::vec3 dPos1 = vertex1->pos - vertex0->pos;
 		glm::vec3 dPos2 = vertex2->pos - vertex0->pos;
 
-		glm::vec2 dUV1 = vertex1->texCoord - vertex0->texCoord;
-		glm::vec2 dUV2 = vertex2->texCoord - vertex0->texCoord;
+		glm::vec2 dUV1 = vertex1->texCoords - vertex0->texCoords;
+		glm::vec2 dUV2 = vertex2->texCoords - vertex0->texCoords;
 
 		float r = 1.0f / (dUV1.x * dUV2.y - dUV1.y * dUV2.x);
 		glm::vec3 tangent = (dPos1 * dUV2.y - dPos2 * dUV1.y) * r;

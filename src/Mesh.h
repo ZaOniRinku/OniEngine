@@ -8,7 +8,7 @@
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 color;
-	glm::vec2 texCoord;
+	glm::vec2 texCoords;
 	glm::vec3 normal;
 	glm::vec3 tangent;
 	glm::vec3 bitangent;
@@ -37,7 +37,7 @@ struct Vertex {
 		attributeDescriptions[2].binding = 0;
 		attributeDescriptions[2].location = 2;
 		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+		attributeDescriptions[2].offset = offsetof(Vertex, texCoords);
 
 		attributeDescriptions[3].binding = 0;
 		attributeDescriptions[3].location = 3;
@@ -57,8 +57,33 @@ struct Vertex {
 		return attributeDescriptions;
 	}
 
+	static std::array<VkVertexInputAttributeDescription, 2> getSkyboxAttributeDescriptions() {
+		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions = {};
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(Vertex, texCoords);
+
+		return attributeDescriptions;
+	}
+
+	static std::array<VkVertexInputAttributeDescription, 1> getShadowsAttributeDescriptions() {
+		std::array<VkVertexInputAttributeDescription, 1> attributeDescriptions = {};
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+		return attributeDescriptions;
+	}
+
 	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && texCoord == other.texCoord && normal == other.normal;
+		return pos == other.pos && color == other.color && texCoords == other.texCoords && normal == other.normal;
 	}
 };
 
@@ -67,7 +92,7 @@ namespace std {
 		size_t operator()(Vertex const& vertex) const {
 			return ((hash<glm::vec3>()(vertex.pos) ^
 				(hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-				(hash<glm::vec2>()(vertex.texCoord) << 1) ^
+				(hash<glm::vec2>()(vertex.texCoords) << 1) ^
 				(hash<glm::vec3>()(vertex.normal) << 1);
 		}
 	};
