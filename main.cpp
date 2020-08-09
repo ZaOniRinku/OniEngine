@@ -107,40 +107,25 @@ int main() {
 	// Materials
 	Material emptyMaterial = Material("textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png");
 	Material skyboxMaterial = Material("textures/skybox.png", "", "", "", "");
-	skyboxMaterial.setNormalValues(0.5f, 0.5f, 1.0f);
-	skyboxMaterial.setMetallicValue(0.0f);
-	skyboxMaterial.setRoughnessValue(0.0f);
-	skyboxMaterial.setAOValue(1.0f);
 	Material groundMaterial = Material("textures/Ground037_2K_Color.jpg", "textures/Ground037_2K_Normal.jpg", "", "textures/Ground037_2K_Roughness.jpg", "textures/Ground037_2K_AmbientOcclusion.jpg");
 	groundMaterial.setMetallicValue(1.0f);
 	Material ground2Material = Material("textures/grass_basecolor.png", "textures/grass_normal.png", "", "textures/grass_roughness.png", "textures/grass_ambientOcclusion.png");
 	ground2Material.setMetallicValue(1.0f);
 	Material metal1Material = Material("textures/Metal012_2K_Color.jpg", "textures/Metal012_2K_Normal.jpg", "textures/Metal012_2K_Metalness.jpg", "textures/Metal012_2K_Roughness.jpg", "");
-	metal1Material.setAOValue(1.0f);
 	Material metal2Material = Material("textures/Metal006_2K_Color.jpg", "textures/Metal006_2K_Normal.jpg", "textures/Metal006_2K_Metalness.jpg", "textures/Metal006_2K_Roughness.jpg", "");
-	metal2Material.setAOValue(1.0f);
 	Material metal3Material = Material("textures/Metal022_2K_Color.jpg", "textures/Metal022_2K_Normal.jpg", "textures/Metal022_2K_Metalness.jpg", "textures/Metal022_2K_Roughness.jpg", "");
-	metal3Material.setAOValue(1.0f);
 	Material woodMaterial = Material("textures/WoodSiding009_2K_Color.jpg", "textures/WoodSiding009_2K_Normal.jpg", "textures/WoodSiding009_2K_Metalness.jpg", "textures/WoodSiding009_2K_Roughness.jpg", "textures/WoodSiding009_2K_AmbientOcclusion.jpg");
 	Material marbleMaterial = Material("textures/Marble009_2K_Color.jpg", "textures/Marble009_2K_Normal.jpg", "", "textures/Metal006_2K_Roughness.jpg", "");
 	marbleMaterial.setMetallicValue(1.0f);
-	marbleMaterial.setAOValue(1.0f);
 	Material deMaterial = Material("textures/texturede.png", "textures/normal.jpg", "textures/Metal022_2K_Metalness.jpg", "textures/Metal022_2K_Roughness.jpg", "");
-	deMaterial.setAOValue(0.0f);
 	Material swordMaterial = Material("textures/Big_Sword_Base_Color_Map.jpg", "textures/Big_Sword_Normal_Map.jpg", "textures/Big_Sword_Metalness.jpg", "textures/Big_Sword_Roughness_Map.jpg", "textures/Big_Sword_AO_Map.jpg");
 	Material roomMaterial = Material("textures/viking_room.png", "", "", "", "");
 	roomMaterial.setDiffuseValues(1.0f, 0.0f, 0.0f, 0.01f);
-	roomMaterial.setNormalValues(0.5f, 0.5f, 1.0f);
-	roomMaterial.setMetallicValue(0.0f);
-	roomMaterial.setRoughnessValue(1.0f);
-	roomMaterial.setAOValue(1.0f);
 	Material carbonMaterial = Material("textures/Fabric004_2K_Color.jpg", "textures/Fabric004_2K_Normal.jpg", "textures/Fabric004_2K_Metalness.jpg", "textures/Fabric004_2K_Roughness.jpg", "textures/emptymaterial.png");
 	Material simpleWaterMaterial = Material("", "", "", "", "");
 	simpleWaterMaterial.setDiffuseValues(0.0f, 0.0f, 0.75f, 0.25f);
-	simpleWaterMaterial.setNormalValues(0.5f, 0.5f, 1.0f);
 	simpleWaterMaterial.setMetallicValue(0.75f);
 	simpleWaterMaterial.setRoughnessValue(0.25f);
-	simpleWaterMaterial.setAOValue(1.0f);
 
 	// Skybox
 	Object skybox = Object(0.0f, 0.0f, 0.0f, 50.0f, 90.0f, 0.0f, 0.0f);

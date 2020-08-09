@@ -6,7 +6,24 @@ Material::Material(std::string dPath, std::string nPath, std::string mPath, std:
 	metallicPath = mPath;
 	roughnessPath = rPath;
 	AOPath = aPath;
+
+	diffuseRValue = 0.0f;
+	diffuseGValue = 0.0f;
+	diffuseBValue = 0.0f;
+	diffuseAValue = 0.0f;
+
+	normalXValue = 0.5f;
+	normalYValue = 0.5f;
+	normalZValue = 1.0f;
+
+	metallicValue = 0.0f;
+
+	roughnessValue = 0.0f;
+
+	AOValue = 1.0f;
+
 	constructed = false;
+	destructed = false;
 }
 
 std::string Material::getDiffusePath() {
