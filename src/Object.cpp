@@ -127,10 +127,10 @@ std::vector<VkDeviceMemory>* Object::getObjectBufferMemories() {
 	return &objectBufferMemories;
 }
 
-VkPipeline* Object::getGraphicsPipeline() {
-	return graphicsPipeline;
+int Object::getGraphicsPipelineIndex() {
+	return graphicsPipelineIndex;
 }
 
-void Object::setGraphicsPipeline(VkPipeline* newGraphicsPipeline) {
-	graphicsPipeline = newGraphicsPipeline;
+void Object::setGraphicsPipelineIndex(int newGraphicsPipelineIndex) {
+	graphicsPipelineIndex = newGraphicsPipelineIndex;
 }

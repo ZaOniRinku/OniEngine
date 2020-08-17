@@ -36,8 +36,8 @@ public:
 	std::vector<VkDescriptorSet>* getShadowsDescriptorSets();
 	std::vector<VkBuffer>* getObjectBuffers();
 	std::vector<VkDeviceMemory>* getObjectBufferMemories();
-	VkPipeline* getGraphicsPipeline();
-	void setGraphicsPipeline(VkPipeline* newGraphicsPipeline);
+	int getGraphicsPipelineIndex();
+	void setGraphicsPipelineIndex(int newGraphicsPipelineIndex);
 
 	void (*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
 private:
@@ -64,5 +64,5 @@ private:
 
 	SGNode* node;
 
-	VkPipeline* graphicsPipeline;
+	int graphicsPipelineIndex;
 };

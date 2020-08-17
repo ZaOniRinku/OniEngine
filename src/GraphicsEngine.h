@@ -224,12 +224,9 @@ private:
 	VkRenderPass shadowsRenderPass;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSetLayout shadowsDescriptorSetLayout;
-	VkPipeline graphicsPipeline;
-	VkPipeline shadowsGraphicsPipeline;
-	VkPipelineLayout pipelineLayout;
-	VkPipelineLayout shadowsPipelineLayout;
-	VkPipeline skyboxGraphicsPipeline;
-	VkPipelineLayout skyboxPipelineLayout;
+	int shadowsGraphicsPipelineIndex;
+	std::vector<VkPipeline> graphicsPipelines;
+	std::vector<VkPipelineLayout> graphicsPipelineLayouts;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<std::vector<VkFramebuffer>> shadowsFramebuffers;
 	VkCommandPool commandPool;

@@ -376,14 +376,15 @@ void GraphicsEngine::cleanupSwapChain() {
 	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
 	// Destroy pipelines
-	vkDestroyPipeline(device, graphicsPipeline, nullptr);
-	vkDestroyPipeline(device, skyboxGraphicsPipeline, nullptr);
-	vkDestroyPipeline(device, shadowsGraphicsPipeline, nullptr);
+	for (VkPipeline pipeline : graphicsPipelines) {
+		vkDestroyPipeline(device, pipeline, nullptr);
+	}
 
-	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+	for (VkPipelineLayout pipelineLayout : graphicsPipelineLayouts) {
+		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+	}
+
 	vkDestroyRenderPass(device, renderPass, nullptr);
-	vkDestroyPipelineLayout(device, skyboxPipelineLayout, nullptr);
-	vkDestroyPipelineLayout(device, shadowsPipelineLayout, nullptr);
 	vkDestroyRenderPass(device, shadowsRenderPass, nullptr);
 
 	for (auto imageView : swapChainImageViews) {
@@ -716,6 +717,136 @@ void GraphicsEngine::createDescriptorSetLayout() {
 }
 
 void GraphicsEngine::createGraphicsPipeline() {
+	int pipelinesSize = scene->getSkybox() ? 3 : 2;
+	graphicsPipelines.resize(pipelinesSize);
+	graphicsPipelineLayouts.resize(pipelinesSize);
+
+	// Shadows pipeline
+
+	auto shadowsVertShaderCode = readFile("shaders/shadows.vert.spv");
+
+	VkShaderModule shadowsVertShaderModule = createShaderModule(shadowsVertShaderCode);
+
+	VkPipelineShaderStageCreateInfo shadowsVertShaderStageInfo = {};
+	shadowsVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shadowsVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	shadowsVertShaderStageInfo.module = shadowsVertShaderModule;
+	shadowsVertShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shadowsShaderStages[] = { shadowsVertShaderStageInfo };
+
+	VkPipelineVertexInputStateCreateInfo shadowsVertexInputInfo = {};
+	auto shadowsBindingDescription = Vertex::getBindingDescription();
+	auto shadowsAttributeDescriptions = Vertex::getShadowsAttributeDescriptions();
+	shadowsVertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	shadowsVertexInputInfo.vertexBindingDescriptionCount = 1;
+	shadowsVertexInputInfo.pVertexBindingDescriptions = &shadowsBindingDescription;
+	shadowsVertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(shadowsAttributeDescriptions.size());
+	shadowsVertexInputInfo.pVertexAttributeDescriptions = shadowsAttributeDescriptions.data();
+
+	VkPipelineInputAssemblyStateCreateInfo shadowsInputAssembly = {};
+	shadowsInputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	shadowsInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	shadowsInputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	VkViewport shadowsViewport = {};
+	shadowsViewport.x = 0.0f;
+	shadowsViewport.y = 0.0f;
+	shadowsViewport.width = (float)SHADOWMAP_WIDTH;
+	shadowsViewport.height = (float)SHADOWMAP_HEIGHT;
+	shadowsViewport.minDepth = 0.0f;
+	shadowsViewport.maxDepth = 1.0f;
+
+	VkRect2D shadowsScissor = {};
+	shadowsScissor.offset = { 0, 0 };
+	shadowsScissor.extent.width = SHADOWMAP_WIDTH;
+	shadowsScissor.extent.height = SHADOWMAP_HEIGHT;
+
+	VkPipelineViewportStateCreateInfo shadowsViewportState = {};
+	shadowsViewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	shadowsViewportState.viewportCount = 1;
+	shadowsViewportState.pViewports = &shadowsViewport;
+	shadowsViewportState.scissorCount = 1;
+	shadowsViewportState.pScissors = &shadowsScissor;
+
+	VkPipelineRasterizationStateCreateInfo shadowsRasterizer = {};
+	shadowsRasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	shadowsRasterizer.depthClampEnable = VK_FALSE;
+	shadowsRasterizer.rasterizerDiscardEnable = VK_FALSE;
+	shadowsRasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	shadowsRasterizer.lineWidth = 1.0f;
+	shadowsRasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	shadowsRasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	shadowsRasterizer.depthBiasEnable = VK_FALSE;
+	shadowsRasterizer.depthBiasConstantFactor = 0.0f;
+	shadowsRasterizer.depthBiasClamp = 0.0f;
+	shadowsRasterizer.depthBiasSlopeFactor = 0.0f;
+
+	VkPipelineMultisampleStateCreateInfo shadowsMultisampling = {};
+	shadowsMultisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	shadowsMultisampling.sampleShadingEnable = VK_TRUE;
+	shadowsMultisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	shadowsMultisampling.minSampleShading = 0.1f;
+	shadowsMultisampling.pSampleMask = nullptr;
+	shadowsMultisampling.alphaToCoverageEnable = VK_FALSE;
+	shadowsMultisampling.alphaToOneEnable = VK_FALSE;
+
+	VkPipelineDepthStencilStateCreateInfo shadowsDepthStencil = {};
+	shadowsDepthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	shadowsDepthStencil.depthTestEnable = VK_TRUE;
+	shadowsDepthStencil.depthWriteEnable = VK_TRUE;
+	shadowsDepthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	shadowsDepthStencil.depthBoundsTestEnable = VK_FALSE;
+	shadowsDepthStencil.minDepthBounds = 0.0f;
+	shadowsDepthStencil.maxDepthBounds = 1.0f;
+	shadowsDepthStencil.stencilTestEnable = VK_FALSE;
+	shadowsDepthStencil.front = {};
+	shadowsDepthStencil.back = {};
+
+	VkPushConstantRange shadowsPushConstantRange = {};
+	shadowsPushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	shadowsPushConstantRange.offset = 0;
+	shadowsPushConstantRange.size = sizeof(int);
+
+	VkPipelineLayoutCreateInfo shadowsPipelineLayoutInfo = {};
+	shadowsPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	shadowsPipelineLayoutInfo.setLayoutCount = 1;
+	shadowsPipelineLayoutInfo.pSetLayouts = &shadowsDescriptorSetLayout;
+	shadowsPipelineLayoutInfo.pushConstantRangeCount = 1;
+	shadowsPipelineLayoutInfo.pPushConstantRanges = &shadowsPushConstantRange;
+
+	if (vkCreatePipelineLayout(device, &shadowsPipelineLayoutInfo, nullptr, &graphicsPipelineLayouts[0]) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create shadows pipeline layout!");
+	}
+
+	shadowsGraphicsPipelineIndex = 0;
+
+	VkGraphicsPipelineCreateInfo shadowsPipelineInfo = {};
+	shadowsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	shadowsPipelineInfo.stageCount = 1;
+	shadowsPipelineInfo.pStages = shadowsShaderStages;
+	shadowsPipelineInfo.pVertexInputState = &shadowsVertexInputInfo;
+	shadowsPipelineInfo.pInputAssemblyState = &shadowsInputAssembly;
+	shadowsPipelineInfo.pViewportState = &shadowsViewportState;
+	shadowsPipelineInfo.pRasterizationState = &shadowsRasterizer;
+	shadowsPipelineInfo.pMultisampleState = &shadowsMultisampling;
+	shadowsPipelineInfo.pDepthStencilState = &shadowsDepthStencil;
+	shadowsPipelineInfo.pColorBlendState = nullptr;
+	shadowsPipelineInfo.pDynamicState = nullptr;
+	shadowsPipelineInfo.layout = graphicsPipelineLayouts[0];
+	shadowsPipelineInfo.renderPass = shadowsRenderPass;
+	shadowsPipelineInfo.subpass = 0;
+	shadowsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	shadowsPipelineInfo.basePipelineIndex = -1;
+
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &shadowsPipelineInfo, nullptr, &graphicsPipelines[0]) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create shadows graphics pipeline!");
+	}
+
+	vkDestroyShaderModule(device, shadowsVertShaderModule, nullptr);
+
+	// PBR pipeline
+
 	auto vertShaderCode = readFile("shaders/pbr.vert.spv");
 	auto fragShaderCode = readFile("shaders/pbr.frag.spv");
 
@@ -848,7 +979,7 @@ void GraphicsEngine::createGraphicsPipeline() {
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipelineLayouts[1]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
@@ -864,18 +995,20 @@ void GraphicsEngine::createGraphicsPipeline() {
 	pipelineInfo.pDepthStencilState = &depthStencil;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr;
-	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.layout = graphicsPipelineLayouts[1];
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineInfo.basePipelineIndex = -1;
 
-	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+	VkPipeline pipeline;
+
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipelines[1]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 
 	for (Object* obj : scene->getElements()) {
-		obj->setGraphicsPipeline(&graphicsPipeline);
+		obj->setGraphicsPipelineIndex(1);
 	}
 
 	vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -1002,7 +1135,7 @@ void GraphicsEngine::createGraphicsPipeline() {
 		skyboxPipelineLayoutInfo.pushConstantRangeCount = 0;
 		skyboxPipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		if (vkCreatePipelineLayout(device, &skyboxPipelineLayoutInfo, nullptr, &skyboxPipelineLayout) != VK_SUCCESS) {
+		if (vkCreatePipelineLayout(device, &skyboxPipelineLayoutInfo, nullptr, &graphicsPipelineLayouts[2]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create skybox pipeline layout!");
 		}
 
@@ -1018,144 +1151,22 @@ void GraphicsEngine::createGraphicsPipeline() {
 		skyboxPipelineInfo.pDepthStencilState = &skyboxDepthStencil;
 		skyboxPipelineInfo.pColorBlendState = &skyboxColorBlending;
 		skyboxPipelineInfo.pDynamicState = nullptr;
-		skyboxPipelineInfo.layout = skyboxPipelineLayout;
+		skyboxPipelineInfo.layout = graphicsPipelineLayouts[2];
 		skyboxPipelineInfo.renderPass = renderPass;
 		skyboxPipelineInfo.subpass = 0;
 		skyboxPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		skyboxPipelineInfo.basePipelineIndex = -1;
 
-		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &skyboxPipelineInfo, nullptr, &skyboxGraphicsPipeline) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &skyboxPipelineInfo, nullptr, &graphicsPipelines[2]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create skybox graphics pipeline!");
 		}
 
 		Object* skybox = scene->getSkybox();
-		skybox->setGraphicsPipeline(&skyboxGraphicsPipeline);
+		skybox->setGraphicsPipelineIndex(2);
 
 		vkDestroyShaderModule(device, skyboxVertShaderModule, nullptr);
 		vkDestroyShaderModule(device, skyboxFragShaderModule, nullptr);
 	}
-
-	// Shadows pipeline
-
-	auto shadowsVertShaderCode = readFile("shaders/shadows.vert.spv");
-
-	VkShaderModule shadowsVertShaderModule = createShaderModule(shadowsVertShaderCode);
-
-	VkPipelineShaderStageCreateInfo shadowsVertShaderStageInfo = {};
-	shadowsVertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shadowsVertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shadowsVertShaderStageInfo.module = shadowsVertShaderModule;
-	shadowsVertShaderStageInfo.pName = "main";
-
-	VkPipelineShaderStageCreateInfo shadowsShaderStages[] = { shadowsVertShaderStageInfo };
-
-	VkPipelineVertexInputStateCreateInfo shadowsVertexInputInfo = {};
-	auto shadowsBindingDescription = Vertex::getBindingDescription();
-	auto shadowsAttributeDescriptions = Vertex::getShadowsAttributeDescriptions();
-	shadowsVertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	shadowsVertexInputInfo.vertexBindingDescriptionCount = 1;
-	shadowsVertexInputInfo.pVertexBindingDescriptions = &shadowsBindingDescription;
-	shadowsVertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(shadowsAttributeDescriptions.size());
-	shadowsVertexInputInfo.pVertexAttributeDescriptions = shadowsAttributeDescriptions.data();
-
-	VkPipelineInputAssemblyStateCreateInfo shadowsInputAssembly = {};
-	shadowsInputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	shadowsInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	shadowsInputAssembly.primitiveRestartEnable = VK_FALSE;
-
-	VkViewport shadowsViewport = {};
-	shadowsViewport.x = 0.0f;
-	shadowsViewport.y = 0.0f;
-	shadowsViewport.width = (float)SHADOWMAP_WIDTH;
-	shadowsViewport.height = (float)SHADOWMAP_HEIGHT;
-	shadowsViewport.minDepth = 0.0f;
-	shadowsViewport.maxDepth = 1.0f;
-
-	VkRect2D shadowsScissor = {};
-	shadowsScissor.offset = { 0, 0 };
-	shadowsScissor.extent.width = SHADOWMAP_WIDTH;
-	shadowsScissor.extent.height = SHADOWMAP_HEIGHT;
-
-	VkPipelineViewportStateCreateInfo shadowsViewportState = {};
-	shadowsViewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	shadowsViewportState.viewportCount = 1;
-	shadowsViewportState.pViewports = &shadowsViewport;
-	shadowsViewportState.scissorCount = 1;
-	shadowsViewportState.pScissors = &shadowsScissor;
-
-	VkPipelineRasterizationStateCreateInfo shadowsRasterizer = {};
-	shadowsRasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	shadowsRasterizer.depthClampEnable = VK_FALSE;
-	shadowsRasterizer.rasterizerDiscardEnable = VK_FALSE;
-	shadowsRasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-	shadowsRasterizer.lineWidth = 1.0f;
-	shadowsRasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	shadowsRasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	shadowsRasterizer.depthBiasEnable = VK_FALSE;
-	shadowsRasterizer.depthBiasConstantFactor = 0.0f;
-	shadowsRasterizer.depthBiasClamp = 0.0f;
-	shadowsRasterizer.depthBiasSlopeFactor = 0.0f;
-
-	VkPipelineMultisampleStateCreateInfo shadowsMultisampling = {};
-	shadowsMultisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	shadowsMultisampling.sampleShadingEnable = VK_TRUE;
-	shadowsMultisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	shadowsMultisampling.minSampleShading = 0.1f;
-	shadowsMultisampling.pSampleMask = nullptr;
-	shadowsMultisampling.alphaToCoverageEnable = VK_FALSE;
-	shadowsMultisampling.alphaToOneEnable = VK_FALSE;
-
-	VkPipelineDepthStencilStateCreateInfo shadowsDepthStencil = {};
-	shadowsDepthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	shadowsDepthStencil.depthTestEnable = VK_TRUE;
-	shadowsDepthStencil.depthWriteEnable = VK_TRUE;
-	shadowsDepthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-	shadowsDepthStencil.depthBoundsTestEnable = VK_FALSE;
-	shadowsDepthStencil.minDepthBounds = 0.0f;
-	shadowsDepthStencil.maxDepthBounds = 1.0f;
-	shadowsDepthStencil.stencilTestEnable = VK_FALSE;
-	shadowsDepthStencil.front = {};
-	shadowsDepthStencil.back = {};
-
-	VkPushConstantRange shadowsPushConstantRange = {};
-	shadowsPushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	shadowsPushConstantRange.offset = 0;
-	shadowsPushConstantRange.size = sizeof(int);
-
-	VkPipelineLayoutCreateInfo shadowsPipelineLayoutInfo = {};
-	shadowsPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	shadowsPipelineLayoutInfo.setLayoutCount = 1;
-	shadowsPipelineLayoutInfo.pSetLayouts = &shadowsDescriptorSetLayout;
-	shadowsPipelineLayoutInfo.pushConstantRangeCount = 1;
-	shadowsPipelineLayoutInfo.pPushConstantRanges = &shadowsPushConstantRange;
-
-	if (vkCreatePipelineLayout(device, &shadowsPipelineLayoutInfo, nullptr, &shadowsPipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create shadows pipeline layout!");
-	}
-
-	VkGraphicsPipelineCreateInfo shadowsPipelineInfo = {};
-	shadowsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	shadowsPipelineInfo.stageCount = 1;
-	shadowsPipelineInfo.pStages = shadowsShaderStages;
-	shadowsPipelineInfo.pVertexInputState = &shadowsVertexInputInfo;
-	shadowsPipelineInfo.pInputAssemblyState = &shadowsInputAssembly;
-	shadowsPipelineInfo.pViewportState = &shadowsViewportState;
-	shadowsPipelineInfo.pRasterizationState = &shadowsRasterizer;
-	shadowsPipelineInfo.pMultisampleState = &shadowsMultisampling;
-	shadowsPipelineInfo.pDepthStencilState = &shadowsDepthStencil;
-	shadowsPipelineInfo.pColorBlendState = nullptr;
-	shadowsPipelineInfo.pDynamicState = nullptr;
-	shadowsPipelineInfo.layout = shadowsPipelineLayout;
-	shadowsPipelineInfo.renderPass = shadowsRenderPass;
-	shadowsPipelineInfo.subpass = 0;
-	shadowsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-	shadowsPipelineInfo.basePipelineIndex = -1;
-
-	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &shadowsPipelineInfo, nullptr, &shadowsGraphicsPipeline) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create shadows graphics pipeline!");
-	}
-
-	vkDestroyShaderModule(device, shadowsVertShaderModule, nullptr);
 }
 
 void GraphicsEngine::createFramebuffers() {
@@ -1494,14 +1505,14 @@ void GraphicsEngine::createCommandBuffers() {
 		for (int j = 0; j < scene->getDirectionalLights().size() + scene->getSpotLights().size(); j++) {
 			shadowsRenderPassInfo.framebuffer = shadowsFramebuffers[i][j];
 			vkCmdBeginRenderPass(commandBuffers[i], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsGraphicsPipeline);
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[shadowsGraphicsPipelineIndex]);
 
 			for (Object* obj : scene->getElements()) {
 				VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
 				vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 				vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, shadowsPipelineLayout, 0, 1, &obj->getShadowsDescriptorSets()->at(i), 0, nullptr);
-				vkCmdPushConstants(commandBuffers[i], shadowsPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
+				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], 0, 1, &obj->getShadowsDescriptorSets()->at(i), 0, nullptr);
+				vkCmdPushConstants(commandBuffers[i], graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
 				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
 			}
 
@@ -1511,23 +1522,23 @@ void GraphicsEngine::createCommandBuffers() {
 		// Second pass : Objects
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		// Skybox if drawn first for color blending
+		// Skybox is drawn first for color blending
 		if (scene->getSkybox()) {
 			Object* skybox = scene->getSkybox();
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *skybox->getGraphicsPipeline());
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[skybox->getGraphicsPipelineIndex()]);
 			VkBuffer vertexCmdBuffers[] = { *skybox->getMesh()->getVertexBuffer() };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffers[i], *skybox->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipelineLayout, 0, 1, &skybox->getDescriptorSets()->at(i), 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[skybox->getGraphicsPipelineIndex()], 0, 1, &skybox->getDescriptorSets()->at(i), 0, nullptr);
 			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(skybox->getMesh()->getIndices()->size()), 1, 0, 0, 0);
 		}
 		// For each 3D model, bind its vertex and indices and the right descriptor set for its texture
 		for (Object* obj : scene->getElements()) {
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, *obj->getGraphicsPipeline());
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[obj->getGraphicsPipelineIndex()]);
 			VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &obj->getDescriptorSets()->at(i), 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[obj->getGraphicsPipelineIndex()], 0, 1, &obj->getDescriptorSets()->at(i), 0, nullptr);
 			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
 		}
 
