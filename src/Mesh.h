@@ -104,29 +104,21 @@ public:
 
 	std::string getModelPath();
 
-	std::vector<Vertex>* getVertices();
-	std::vector<uint32_t>* getIndices();
-
-	VkBuffer* getVertexBuffer();
-	VkDeviceMemory* getVertexBufferMemory();
-	VkBuffer* getIndexBuffer();
-	VkDeviceMemory* getIndexBufferMemory();
+	int getVertexOffset();
+	void setVertexOffset(int newVertexOffset);
+	int getIndexOffset();
+	void setIndexOffset(int newIndexOffset);
+	int getIndexSize();
+	void setIndexSize(int newIndexSize);
 
 	bool isConstructed();
 	void constructedTrue();
-	bool isDestructed();
-	void destructedTrue();
 private:
 	std::string modelPath;
 
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
-
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
+	int vertexOffset;
+	int indexOffset;
+	int indexSize;
 
 	bool constructed;
-	bool destructed;
 };

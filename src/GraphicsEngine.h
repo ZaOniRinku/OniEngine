@@ -197,9 +197,12 @@ private:
 	void createTextureImage(Object* obj);
 	void createTextureImageView(Object* obj);
 	void createTextureSampler(Object* obj);
-	void loadModel(Object* obj);
-	void createVertexBuffer(Object* obj);
-	void createIndexBuffer(Object* obj);
+	void loadModel(Mesh* mesh);
+	void loadSkyboxModel();
+	void createVertexBuffer();
+	void createIndexBuffer();
+	void createSkyboxVertexBuffer();
+	void createSkyboxIndexBuffer();
 	void updateDescriptorSets(Object* obj, int frame);
 	void updateShadowsDescriptorSets(Object* obj, int frame);
 	void mainLoop();
@@ -248,6 +251,22 @@ private:
 	VkImage colorImage;
 	VkDeviceMemory colorImageMemory;
 	VkImageView colorImageView;
+	std::vector<Vertex> vertices;
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+	std::vector<uint32_t> indices;
+	VkBuffer indexBuffer;
+	VkDeviceMemory indexBufferMemory;
+	int vertexSize = 0;
+	int indexSize = 0;
+	
+	// Skybox
+	std::vector<Vertex> skyboxVertices;
+	VkBuffer skyboxVertexBuffer;
+	VkDeviceMemory skyboxVertexBufferMemory;
+	std::vector<uint32_t> skyboxIndices;
+	VkBuffer skyboxIndexBuffer;
+	VkDeviceMemory skyboxIndexBufferMemory;
 
 	std::vector<VkBuffer> cameraBuffers;
 	std::vector<VkBuffer> lightsBuffers;
@@ -265,7 +284,7 @@ private:
 	// Camera
 	float savedZAxis = 0.3f;
 
-	// Movement speed
+	// Last frame
 	double lastFrame = 0.0f;
 
 	// Mouse movement

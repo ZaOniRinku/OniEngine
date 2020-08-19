@@ -1001,8 +1001,6 @@ void GraphicsEngine::createGraphicsPipeline() {
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineInfo.basePipelineIndex = -1;
 
-	VkPipeline pipeline;
-
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipelines[1]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
@@ -1296,20 +1294,20 @@ void GraphicsEngine::createModels() {
 	for (Object* obj : scene->getElements()) {
 		if (!obj->getMesh()->isConstructed()) {
 			obj->getMesh()->constructedTrue();
-			loadModel(obj);
-			createVertexBuffer(obj);
-			createIndexBuffer(obj);
+			loadModel(obj->getMesh());
 		}
 	}
+	createVertexBuffer();
+	createIndexBuffer();
 
 	// Create skybox model
 	if (scene->getSkybox()) {
 		Object* skybox = scene->getSkybox();
 		if (!skybox->getMesh()->isConstructed()) {
 			skybox->getMesh()->constructedTrue();
-			loadModel(skybox);
-			createVertexBuffer(skybox);
-			createIndexBuffer(skybox);
+			loadSkyboxModel();
+			createSkyboxVertexBuffer();
+			createSkyboxIndexBuffer();
 		}
 	}
 }
@@ -1499,7 +1497,9 @@ void GraphicsEngine::createCommandBuffers() {
 		shadowsRenderPassInfo.clearValueCount = 1;
 		shadowsRenderPassInfo.pClearValues = &clearValues[1];
 
-		VkDeviceSize offsets[] = { 0 };
+		VkBuffer vertexCmdBuffers[] = { vertexBuffer };
+		VkBuffer skyboxCmdBuffers[] = { skyboxVertexBuffer };
+		VkDeviceSize offset[] = { 0 };
 
 		// First passes : Shadows
 		for (int j = 0; j < scene->getDirectionalLights().size() + scene->getSpotLights().size(); j++) {
@@ -1507,13 +1507,12 @@ void GraphicsEngine::createCommandBuffers() {
 			vkCmdBeginRenderPass(commandBuffers[i], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[shadowsGraphicsPipelineIndex]);
 
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offset);
+			vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			for (Object* obj : scene->getElements()) {
-				VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
-				vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], 0, 1, &obj->getShadowsDescriptorSets()->at(i), 0, nullptr);
 				vkCmdPushConstants(commandBuffers[i], graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
-				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
+				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndexSize()), 1, obj->getMesh()->getIndexOffset(), obj->getMesh()->getVertexOffset(), 0);
 			}
 
 			vkCmdEndRenderPass(commandBuffers[i]);
@@ -1526,20 +1525,19 @@ void GraphicsEngine::createCommandBuffers() {
 		if (scene->getSkybox()) {
 			Object* skybox = scene->getSkybox();
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[skybox->getGraphicsPipelineIndex()]);
-			VkBuffer vertexCmdBuffers[] = { *skybox->getMesh()->getVertexBuffer() };
-			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
-			vkCmdBindIndexBuffer(commandBuffers[i], *skybox->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, skyboxCmdBuffers, offset);
+			vkCmdBindIndexBuffer(commandBuffers[i], skyboxIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[skybox->getGraphicsPipelineIndex()], 0, 1, &skybox->getDescriptorSets()->at(i), 0, nullptr);
-			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(skybox->getMesh()->getIndices()->size()), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(skybox->getMesh()->getIndexSize()), 1, 0, 0, 0);
 		}
-		// For each 3D model, bind its vertex and indices and the right descriptor set for its texture
+
+		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offset);
+		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
 		for (Object* obj : scene->getElements()) {
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[obj->getGraphicsPipelineIndex()]);
-			VkBuffer vertexCmdBuffers[] = { *obj->getMesh()->getVertexBuffer() };
-			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offsets);
-			vkCmdBindIndexBuffer(commandBuffers[i], *obj->getMesh()->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[obj->getGraphicsPipelineIndex()], 0, 1, &obj->getDescriptorSets()->at(i), 0, nullptr);
-			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndices()->size()), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndexSize()), 1, obj->getMesh()->getIndexOffset(), obj->getMesh()->getVertexOffset(), 0);
 		}
 
 		vkCmdEndRenderPass(commandBuffers[i]);
@@ -2369,16 +2367,18 @@ void GraphicsEngine::createTextureSampler(Object* obj) {
 	}
 }
 
-void GraphicsEngine::loadModel(Object* obj) {
+void GraphicsEngine::loadModel(Mesh* mesh) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 	std::string warn, err;
 
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, obj->getMesh()->getModelPath().c_str())) {
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, mesh->getModelPath().c_str())) {
 		throw std::runtime_error(warn + err);
 	}
 
+	std::vector<Vertex> meshVertex;
+	std::vector<uint32_t> meshIndex;
 	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
 
 	for (const auto& shape : shapes) {
@@ -2415,18 +2415,18 @@ void GraphicsEngine::loadModel(Object* obj) {
 			};
 
 			if (uniqueVertices.count(vertex) == 0) {
-				uniqueVertices[vertex] = static_cast<uint32_t>(obj->getMesh()->getVertices()->size());
-				obj->getMesh()->getVertices()->push_back(vertex);
+				uniqueVertices[vertex] = static_cast<uint32_t>(meshVertex.size());
+				meshVertex.push_back(vertex);
 			}
-			obj->getMesh()->getIndices()->push_back(uniqueVertices[vertex]);
+			meshIndex.push_back(uniqueVertices[vertex]);
 		}
 	}
 
 	// Tangents and bitangents for normal mapping
-	for (int i = 0; i < obj->getMesh()->getIndices()->size(); i += 3) {
-		Vertex* vertex0 = &obj->getMesh()->getVertices()->at(obj->getMesh()->getIndices()->at(i + 0));
-		Vertex* vertex1 = &obj->getMesh()->getVertices()->at(obj->getMesh()->getIndices()->at(i + 1));
-		Vertex* vertex2 = &obj->getMesh()->getVertices()->at(obj->getMesh()->getIndices()->at(i + 2));
+	for (int i = 0; i < meshIndex.size(); i += 3) {
+		Vertex* vertex0 = &meshVertex[meshIndex[i + 0]];
+		Vertex* vertex1 = &meshVertex[meshIndex[i + 1]];
+		Vertex* vertex2 = &meshVertex[meshIndex[i + 2]];
 		
 		glm::vec3 dPos1 = vertex1->pos - vertex0->pos;
 		glm::vec3 dPos2 = vertex2->pos - vertex0->pos;
@@ -2448,15 +2448,122 @@ void GraphicsEngine::loadModel(Object* obj) {
 	}
 
 	// Average tangents and bitangents
-	for (int i = 0; i < obj->getMesh()->getVertices()->size(); i++) {
-		Vertex* vert = &obj->getMesh()->getVertices()->at(i);
+	for (int i = 0; i < meshVertex.size(); i++) {
+		Vertex* vert = &meshVertex[i];
 		vert->tangent = glm::normalize(vert->tangent);
 		vert->bitangent = glm::normalize(vert->bitangent);
 	}
+
+	vertices.insert(std::end(vertices), std::begin(meshVertex), std::end(meshVertex));
+	indices.insert(std::end(indices), std::begin(meshIndex), std::end(meshIndex));
+
+	mesh->setVertexOffset(vertexSize);
+	mesh->setIndexOffset(indexSize);
+	mesh->setIndexSize(meshIndex.size());
+
+	vertexSize += meshVertex.size();
+	indexSize += meshIndex.size();
 }
 
-void GraphicsEngine::createVertexBuffer(Object* obj) {
-	VkDeviceSize bufferSize = sizeof(obj->getMesh()->getVertices()->front()) * obj->getMesh()->getVertices()->size();
+void GraphicsEngine::loadSkyboxModel() {
+	Mesh* mesh = scene->getSkybox()->getMesh();
+
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string warn, err;
+
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, mesh->getModelPath().c_str())) {
+		throw std::runtime_error(warn + err);
+	}
+
+	std::vector<Vertex> meshVertex;
+	std::vector<uint32_t> meshIndex;
+	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+
+	for (const auto& shape : shapes) {
+		for (const auto& index : shape.mesh.indices) {
+			Vertex vertex = {};
+			vertex.pos = {
+				attrib.vertices[3 * index.vertex_index + 0],
+				attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 2]
+			};
+			vertex.texCoords = {
+				attrib.texcoords[2 * index.texcoord_index + 0],
+				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+			vertex.normal = {
+				attrib.normals[3 * index.normal_index + 0],
+				attrib.normals[3 * index.normal_index + 1],
+				attrib.normals[3 * index.normal_index + 2]
+			};
+			vertex.color = {
+				1.0f,
+				1.0f,
+				1.0f
+			};
+			vertex.tangent = {
+				0.0f,
+				0.0f,
+				0.0f
+			};
+			vertex.bitangent = {
+				0.0f,
+				0.0f,
+				0.0f
+			};
+
+			if (uniqueVertices.count(vertex) == 0) {
+				uniqueVertices[vertex] = static_cast<uint32_t>(meshVertex.size());
+				meshVertex.push_back(vertex);
+			}
+			meshIndex.push_back(uniqueVertices[vertex]);
+		}
+	}
+
+	// Tangents and bitangents for normal mapping
+	for (int i = 0; i < meshIndex.size(); i += 3) {
+		Vertex* vertex0 = &meshVertex[meshIndex[i + 0]];
+		Vertex* vertex1 = &meshVertex[meshIndex[i + 1]];
+		Vertex* vertex2 = &meshVertex[meshIndex[i + 2]];
+		
+		glm::vec3 dPos1 = vertex1->pos - vertex0->pos;
+		glm::vec3 dPos2 = vertex2->pos - vertex0->pos;
+
+		glm::vec2 dUV1 = vertex1->texCoords - vertex0->texCoords;
+		glm::vec2 dUV2 = vertex2->texCoords - vertex0->texCoords;
+
+		float r = 1.0f / (dUV1.x * dUV2.y - dUV1.y * dUV2.x);
+		glm::vec3 tangent = (dPos1 * dUV2.y - dPos2 * dUV1.y) * r;
+		glm::vec3 bitangent = (dPos2 * dUV1.x - dPos1 * dUV2.x) * r;
+
+		vertex0->tangent += tangent;
+		vertex1->tangent += tangent;
+		vertex2->tangent += tangent;
+
+		vertex0->bitangent += bitangent;
+		vertex1->bitangent += bitangent;
+		vertex2->bitangent += bitangent;
+	}
+
+	// Average tangents and bitangents
+	for (int i = 0; i < meshVertex.size(); i++) {
+		Vertex* vert = &meshVertex[i];
+		vert->tangent = glm::normalize(vert->tangent);
+		vert->bitangent = glm::normalize(vert->bitangent);
+	}
+
+	skyboxVertices.insert(std::end(skyboxVertices), std::begin(meshVertex), std::end(meshVertex));
+	skyboxIndices.insert(std::end(skyboxIndices), std::begin(meshIndex), std::end(meshIndex));
+
+	mesh->setVertexOffset(0);
+	mesh->setIndexOffset(0);
+	mesh->setIndexSize(meshIndex.size());
+}
+
+void GraphicsEngine::createVertexBuffer() {
+	VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
@@ -2464,18 +2571,18 @@ void GraphicsEngine::createVertexBuffer(Object* obj) {
 
 	void* data;
 	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, obj->getMesh()->getVertices()->data(), (size_t)bufferSize);
+	memcpy(data, vertices.data(), (size_t)bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMesh()->getVertexBuffer(), *obj->getMesh()->getVertexBufferMemory());
-	copyBuffer(stagingBuffer, *obj->getMesh()->getVertexBuffer(), bufferSize);
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
 	vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
-void GraphicsEngine::createIndexBuffer(Object* obj) {
-	VkDeviceSize bufferSize = sizeof(obj->getMesh()->getIndices()->front()) * obj->getMesh()->getIndices()->size();
+void GraphicsEngine::createIndexBuffer() {
+	VkDeviceSize bufferSize = sizeof(uint32_t) * indices.size();
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
@@ -2483,11 +2590,49 @@ void GraphicsEngine::createIndexBuffer(Object* obj) {
 
 	void* data;
 	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, obj->getMesh()->getIndices()->data(), (size_t)bufferSize);
+	memcpy(data, indices.data(), (size_t)bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *obj->getMesh()->getIndexBuffer(), *obj->getMesh()->getIndexBufferMemory());
-	copyBuffer(stagingBuffer, *obj->getMesh()->getIndexBuffer(), bufferSize);
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+	vkDestroyBuffer(device, stagingBuffer, nullptr);
+	vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+void GraphicsEngine::createSkyboxVertexBuffer() {
+	VkDeviceSize bufferSize = sizeof(Vertex) * skyboxVertices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, skyboxVertices.data(), (size_t)bufferSize);
+	vkUnmapMemory(device, stagingBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, skyboxVertexBuffer, skyboxVertexBufferMemory);
+	copyBuffer(stagingBuffer, skyboxVertexBuffer, bufferSize);
+
+	vkDestroyBuffer(device, stagingBuffer, nullptr);
+	vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+void GraphicsEngine::createSkyboxIndexBuffer() {
+	VkDeviceSize bufferSize = sizeof(uint32_t) * skyboxIndices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, skyboxIndices.data(), (size_t)bufferSize);
+	vkUnmapMemory(device, stagingBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, skyboxIndexBuffer, skyboxIndexBufferMemory);
+	copyBuffer(stagingBuffer, skyboxIndexBuffer, bufferSize);
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
 	vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -2887,29 +3032,16 @@ void GraphicsEngine::cleanup() {
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(device, shadowsDescriptorSetLayout, nullptr);
 
-	for (Object* obj : scene->getElements()) {
-		Mesh *mesh = obj->getMesh();
-		if (!mesh->isDestructed()) {
-			vkDestroyBuffer(device, *mesh->getVertexBuffer(), nullptr);
-			vkFreeMemory(device, *mesh->getVertexBufferMemory(), nullptr);
-			vkDestroyBuffer(device, *mesh->getIndexBuffer(), nullptr);
-			vkFreeMemory(device, *mesh->getIndexBufferMemory(), nullptr);
-
-			mesh->destructedTrue();
-		}
-	}
+	vkDestroyBuffer(device, vertexBuffer, nullptr);
+	vkFreeMemory(device, vertexBufferMemory, nullptr);
+	vkDestroyBuffer(device, indexBuffer, nullptr);
+	vkFreeMemory(device, indexBufferMemory, nullptr);
 
 	if (scene->getSkybox()) {
-		Object* skybox = scene->getSkybox();
-		Mesh *mesh = skybox->getMesh();
-		if (!mesh->isDestructed()) {
-			vkDestroyBuffer(device, *skybox->getMesh()->getIndexBuffer(), nullptr);
-			vkFreeMemory(device, *skybox->getMesh()->getIndexBufferMemory(), nullptr);
-			vkDestroyBuffer(device, *skybox->getMesh()->getVertexBuffer(), nullptr);
-			vkFreeMemory(device, *skybox->getMesh()->getVertexBufferMemory(), nullptr);
-
-			mesh->destructedTrue();
-		}
+		vkDestroyBuffer(device, skyboxVertexBuffer, nullptr);
+		vkFreeMemory(device, skyboxVertexBufferMemory, nullptr);
+		vkDestroyBuffer(device, skyboxIndexBuffer, nullptr);
+		vkFreeMemory(device, skyboxIndexBufferMemory, nullptr);
 	}
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {

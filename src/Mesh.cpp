@@ -9,28 +9,28 @@ std::string Mesh::getModelPath() {
 	return modelPath;
 }
 
-std::vector<Vertex>* Mesh::getVertices() {
-	return &vertices;
+int Mesh::getVertexOffset() {
+	return vertexOffset;
 }
 
-std::vector<uint32_t>* Mesh::getIndices() {
-	return &indices;
+void Mesh::setVertexOffset(int newVertexOffset) {
+	vertexOffset = newVertexOffset;
 }
 
-VkBuffer* Mesh::getVertexBuffer() {
-	return &vertexBuffer;
+int Mesh::getIndexOffset() {
+	return indexOffset;
 }
 
-VkDeviceMemory* Mesh::getVertexBufferMemory() {
-	return &vertexBufferMemory;
+void Mesh::setIndexOffset(int newIndexOffset) {
+	indexOffset = newIndexOffset;
 }
 
-VkBuffer* Mesh::getIndexBuffer() {
-	return &indexBuffer;
+int Mesh::getIndexSize() {
+	return indexSize;
 }
 
-VkDeviceMemory* Mesh::getIndexBufferMemory() {
-	return &indexBufferMemory;
+void Mesh::setIndexSize(int newIndexSize) {
+	indexSize = newIndexSize;
 }
 
 bool Mesh::isConstructed() {
@@ -39,12 +39,4 @@ bool Mesh::isConstructed() {
 
 void Mesh::constructedTrue() {
 	constructed = true;
-}
-
-bool Mesh::isDestructed() {
-	return destructed;
-}
-
-void Mesh::destructedTrue() {
-	destructed = true;
 }

@@ -105,7 +105,7 @@ int main() {
 	Mesh sponzaMesh = Mesh("models/sponza.obj");
 
 	// Materials
-	Material emptyMaterial = Material("textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png", "textures/emptymaterial.png");
+	Material emptyMaterial = Material("", "", "", "", "");
 	Material skyboxMaterial = Material("textures/skybox.png", "", "", "", "");
 	Material groundMaterial = Material("textures/Ground037_2K_Color.jpg", "textures/Ground037_2K_Normal.jpg", "", "textures/Ground037_2K_Roughness.jpg", "textures/Ground037_2K_AmbientOcclusion.jpg");
 	groundMaterial.setMetallicValue(1.0f);
@@ -165,7 +165,7 @@ int main() {
 	Object sphere4 = Object(2.0f, 1.0f, -1.0f, 0.3f);
 	SGNode sphere4Node = SGNode(&sphere4);
 	sphere4.setMesh(&sphereMesh);
-	sphere4.setMaterial(&simpleWaterMaterial);
+	sphere4.setMaterial(&carbonMaterial);
 	scene.getRoot()->addChild(&sphere4Node);
 	sphere4.frameEvent = objectControls;
 
