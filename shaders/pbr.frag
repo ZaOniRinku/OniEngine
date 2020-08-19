@@ -183,7 +183,7 @@ void main() {
 			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
 			shadows = spotShadowsValue(i, shadowmapIndex, bias);
 			color += shade(n, v, l, lights.spotLightsColor[i], d, metallic, roughness) * (1.0 - shadows);
-		} else if (dot(normalize(lights.spotLightsPos[i] - fragPos), normalize(-lights.spotLightsDir[i])) > lights.spotLightsCutoffs[i].y) {
+		} else if (theta > lights.spotLightsCutoffs[i].y) {
 			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
 			shadows = spotShadowsValue(i, shadowmapIndex, bias);
 			float epsilon = lights.spotLightsCutoffs[i].x - lights.spotLightsCutoffs[i].y;
