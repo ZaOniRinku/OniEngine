@@ -100,28 +100,8 @@ vec3 shade(vec3 n, vec3 v, vec3 l, vec3 lc, vec3 diffuse, float metallic, float 
 	return ret;
 }
 
-float dirShadowsValue(int lightIndex, int shadowmapIndex, float bias) {
-	vec3 proj = fragDirLightsSpace[lightIndex].xyz / fragDirLightsSpace[lightIndex].w;
-	if (proj.z > 1.0) {
-		return 0.0;
-	}
-	proj = proj * 0.5 + 0.5;
-	float curr = proj.z;
-	float shadows = 0.0;
-	
-	vec2 texelSize = 1.0 / textureSize(shadowsTexSampler[shadowmapIndex], 0);
-	for (int x = -1; x <= 1; x++) {
-		for (int y = -1; y <= 1; y++) {
-			float pcf = texture(shadowsTexSampler[shadowmapIndex], proj.xy + vec2(x, y) * texelSize).x;
-			shadows += curr - bias > pcf ? 1.0 : 0.0;
-		}
-	}
-
-	return shadows / 9.0;
-}
-
-float spotShadowsValue(int lightIndex, int shadowmapIndex, float bias) {
-	vec3 proj = fragSpotLightsSpace[lightIndex].xyz / fragSpotLightsSpace[lightIndex].w;
+float shadowsValue(vec4 lightSpace, int shadowmapIndex, float bias) {
+	vec3 proj = lightSpace.xyz / lightSpace.w;
 	if (proj.z > 1.0) {
 		return 0.0;
 	}
@@ -163,7 +143,7 @@ void main() {
 	for (int i = 0; i < numDirLights; i++) {
 		l = normalize(-lights.dirLightsDir[i]);
 		float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
-		shadows = dirShadowsValue(i, shadowmapIndex, bias);
+		shadows = shadowsValue(fragDirLightsSpace[i] , shadowmapIndex, bias);
 		color += shade(n, v, l, lights.dirLightsColor[i], d, metallic, roughness) * (1.0 - shadows);
 		shadowmapIndex++;
 	}
@@ -181,11 +161,11 @@ void main() {
 		float theta = dot(l, normalize(-lights.spotLightsDir[i]));
 		if (theta > lights.spotLightsCutoffs[i].x) {
 			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
-			shadows = spotShadowsValue(i, shadowmapIndex, bias);
+			shadows = shadowsValue(fragSpotLightsSpace[i], shadowmapIndex, bias);
 			color += shade(n, v, l, lights.spotLightsColor[i], d, metallic, roughness) * (1.0 - shadows);
 		} else if (theta > lights.spotLightsCutoffs[i].y) {
 			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
-			shadows = spotShadowsValue(i, shadowmapIndex, bias);
+			shadows = shadowsValue(fragSpotLightsSpace[i], shadowmapIndex, bias);
 			float epsilon = lights.spotLightsCutoffs[i].x - lights.spotLightsCutoffs[i].y;
 			float intensity = clamp((theta - lights.spotLightsCutoffs[i].y) / epsilon, 0.0, 1.0);
 			color += shade(n, v, l, lights.spotLightsColor[i] * intensity, d * intensity, metallic, roughness) * (1.0 - shadows);
