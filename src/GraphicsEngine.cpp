@@ -1506,12 +1506,12 @@ void GraphicsEngine::createCommandBuffers() {
 			shadowsRenderPassInfo.framebuffer = shadowsFramebuffers[i][j];
 			vkCmdBeginRenderPass(commandBuffers[i], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[shadowsGraphicsPipelineIndex]);
+			vkCmdPushConstants(commandBuffers[i], graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
 
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offset);
 			vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			for (Object* obj : scene->getElements()) {
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], 0, 1, &obj->getShadowsDescriptorSets()->at(i), 0, nullptr);
-				vkCmdPushConstants(commandBuffers[i], graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
 				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndexSize()), 1, obj->getMesh()->getIndexOffset(), obj->getMesh()->getVertexOffset(), 0);
 			}
 
