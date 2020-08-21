@@ -363,11 +363,11 @@ void GraphicsEngine::cleanupSwapChain() {
 	for (int i = 0; i < scene->getDirectionalLights().size() + scene->getSpotLights().size(); i++) {
 		vkDestroyImageView(device, shadowsImageViews[i], nullptr);
 		vkDestroyImage(device, shadowsImages[i], nullptr);
-		vkFreeMemory(device, shadowsImageMemories[i], nullptr);
 		for (int j = 0; j < swapChainImages.size(); j++) {
 			vkDestroyFramebuffer(device, shadowsFramebuffers[j][i], nullptr);
 		}
 	}
+	vkFreeMemory(device, shadowsImageMemory, nullptr);
 
 	for (auto framebuffer : swapChainFramebuffers) {
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -1240,9 +1240,42 @@ void GraphicsEngine::createDepthResources() {
 
 	shadowsImages.resize(scene->getDirectionalLights().size() + scene->getSpotLights().size());
 	shadowsImageViews.resize(scene->getDirectionalLights().size() + scene->getSpotLights().size());
-	shadowsImageMemories.resize(scene->getDirectionalLights().size() + scene->getSpotLights().size());
+	VkMemoryRequirements shadowsMemRequirements;
 	for (int i = 0; i < scene->getDirectionalLights().size() + scene->getSpotLights().size(); i++) {
-		createImage(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowsImages[i], shadowsImageMemories[i]);
+		VkImageCreateInfo imageInfo = {};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = SHADOWMAP_WIDTH;
+		imageInfo.extent.height = SHADOWMAP_HEIGHT;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = VK_FORMAT_D16_UNORM;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+		if (vkCreateImage(device, &imageInfo, nullptr, &shadowsImages[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create shadows image!");
+		}
+	}
+	vkGetImageMemoryRequirements(device, shadowsImages[0], &shadowsMemRequirements);
+
+	VkMemoryAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = shadowsMemRequirements.size * (scene->getDirectionalLights().size() + scene->getSpotLights().size());
+	allocInfo.memoryTypeIndex = findMemoryType(shadowsMemRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	if (vkAllocateMemory(device, &allocInfo, nullptr, &shadowsImageMemory) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate shadows image memory!");
+	}
+
+	VkDeviceSize shadowsMemOffset = 0;
+	for (int i = 0; i < scene->getDirectionalLights().size() + scene->getSpotLights().size(); i++) {
+		vkBindImageMemory(device, shadowsImages[i], shadowsImageMemory, shadowsMemOffset);
+		shadowsMemOffset += shadowsMemRequirements.size;
 		shadowsImageViews[i] = createImageView(shadowsImages[i], VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
 }

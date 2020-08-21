@@ -245,7 +245,7 @@ private:
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
 	std::vector<VkImage> shadowsImages;
-	std::vector<VkDeviceMemory> shadowsImageMemories;
+	VkDeviceMemory shadowsImageMemory;
 	std::vector<VkImageView> shadowsImageViews;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImage colorImage;
