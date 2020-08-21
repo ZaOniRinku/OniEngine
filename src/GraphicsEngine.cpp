@@ -2365,26 +2365,26 @@ void GraphicsEngine::createTextureImage(Material* mat) {
 
 	// Memory allocation
 
-	VkDeviceSize diffuseSize = (diffuseMemRequirements.size + diffuseMemRequirements.alignment - 1) / diffuseMemRequirements.alignment * diffuseMemRequirements.alignment;
-	VkDeviceSize normalSize = (normalMemRequirements.size + normalMemRequirements.alignment - 1) / normalMemRequirements.alignment * normalMemRequirements.alignment;
-	VkDeviceSize metallicSize = (metallicMemRequirements.size + metallicMemRequirements.alignment - 1) / metallicMemRequirements.alignment * metallicMemRequirements.alignment;
-	VkDeviceSize roughnessSize = (roughnessMemRequirements.size + roughnessMemRequirements.alignment - 1) / roughnessMemRequirements.alignment * roughnessMemRequirements.alignment;
-	VkDeviceSize AOSize = (AOMemRequirements.size + AOMemRequirements.alignment - 1) / AOMemRequirements.alignment * AOMemRequirements.alignment;
+	VkDeviceSize diffuseOffset = 0;
+	VkDeviceSize normalOffset = (diffuseOffset + diffuseMemRequirements.size + normalMemRequirements.alignment - 1) / normalMemRequirements.alignment * normalMemRequirements.alignment;
+	VkDeviceSize metallicOffset = (normalOffset + normalMemRequirements.size + metallicMemRequirements.alignment - 1) / metallicMemRequirements.alignment * metallicMemRequirements.alignment;
+	VkDeviceSize roughnessOffset = (metallicOffset + metallicMemRequirements.size + roughnessMemRequirements.alignment - 1) / roughnessMemRequirements.alignment * roughnessMemRequirements.alignment;
+	VkDeviceSize AOOffset = (roughnessOffset + roughnessMemRequirements.size + AOMemRequirements.alignment - 1) / AOMemRequirements.alignment * AOMemRequirements.alignment;
 
 	VkMemoryAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = diffuseSize + normalSize + metallicSize + roughnessSize + AOSize;
+	allocInfo.allocationSize = AOOffset + AOMemRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(diffuseMemRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	if (vkAllocateMemory(device, &allocInfo, nullptr, mat->getImageMemory()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate image memory!");
 	}
 
-	vkBindImageMemory(device, *mat->getDiffuseTextureImage(), *mat->getImageMemory(), 0);
-	vkBindImageMemory(device, *mat->getNormalTextureImage(), *mat->getImageMemory(), diffuseSize);
-	vkBindImageMemory(device, *mat->getMetallicTextureImage(), *mat->getImageMemory(), diffuseSize + normalSize);
-	vkBindImageMemory(device, *mat->getRoughnessTextureImage(), *mat->getImageMemory(), diffuseSize + normalSize + metallicSize);
-	vkBindImageMemory(device, *mat->getAOTextureImage(), *mat->getImageMemory(), diffuseSize + normalSize + metallicSize + roughnessSize);
+	vkBindImageMemory(device, *mat->getDiffuseTextureImage(), *mat->getImageMemory(), diffuseOffset);
+	vkBindImageMemory(device, *mat->getNormalTextureImage(), *mat->getImageMemory(), normalOffset);
+	vkBindImageMemory(device, *mat->getMetallicTextureImage(), *mat->getImageMemory(), metallicOffset);
+	vkBindImageMemory(device, *mat->getRoughnessTextureImage(), *mat->getImageMemory(), roughnessOffset);
+	vkBindImageMemory(device, *mat->getAOTextureImage(), *mat->getImageMemory(), AOOffset);
 
 	transitionImageLayout(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getDiffuseMipLevel());
 	copyBufferToImage(diffuseStagingBuffer, *mat->getDiffuseTextureImage(), static_cast<uint32_t>(diffuseTexWidth), static_cast<uint32_t>(diffuseTexHeight));
