@@ -41,8 +41,8 @@ public:
 
 	void (*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
 private:
-	Mesh *mesh;
-	Material *material;
+	Mesh* mesh;
+	Material* material;
 
 	std::string name = "";
 

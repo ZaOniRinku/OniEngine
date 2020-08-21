@@ -137,7 +137,7 @@ int main() {
 	Object table = Object(0.0f, 0.0f, 0.0f, 0.5f);
 	SGNode tableNode = SGNode(&table);
 	table.setMesh(&tableMesh);
-	table.setMaterial(&metal2Material);
+	table.setMaterial(&emptyMaterial);
 	scene.getRoot()->addChild(&tableNode);
 
 	// Spheres

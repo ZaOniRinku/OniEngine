@@ -47,10 +47,11 @@ public:
 	uint32_t getAOMipLevel();
 	void setAOMipLevel(uint32_t newAOMipLevel);
 
+	VkDeviceMemory* getImageMemory();
+	void setImageMemory(VkDeviceMemory newImageMemory);
+
 	VkImage* getDiffuseTextureImage();
 	void setDiffuseTextureImage(VkImage newDiffuseTextureImage);
-	VkDeviceMemory* getDiffuseTextureImageMemory();
-	void setDiffuseTextureImageMemory(VkDeviceMemory newDiffuseTextureImageMemory);
 	VkImageView* getDiffuseTextureImageView();
 	void setDiffuseTextureImageView(VkImageView newDiffuseTextureImageView);
 	VkSampler* getDiffuseTextureSampler();
@@ -58,8 +59,6 @@ public:
 
 	VkImage* getNormalTextureImage();
 	void setNormalTextureImage(VkImage newNormalTextureImage);
-	VkDeviceMemory* getNormalTextureImageMemory();
-	void setNormalTextureImageMemory(VkDeviceMemory newNormalTextureImageMemory);
 	VkImageView* getNormalTextureImageView();
 	void setNormalTextureImageView(VkImageView newNormalTextureImageView);
 	VkSampler* getNormalTextureSampler();
@@ -67,8 +66,6 @@ public:
 
 	VkImage* getMetallicTextureImage();
 	void setMetallicTextureImage(VkImage newMetallicTextureImage);
-	VkDeviceMemory* getMetallicTextureImageMemory();
-	void setMetallicTextureImageMemory(VkDeviceMemory newMetallicTextureImageMemory);
 	VkImageView* getMetallicTextureImageView();
 	void setMetallicTextureImageView(VkImageView newMetallicTextureImageView);
 	VkSampler* getMetallicTextureSampler();
@@ -76,8 +73,6 @@ public:
 
 	VkImage* getRoughnessTextureImage();
 	void setRoughnessTextureImage(VkImage newRoughnessTextureImage);
-	VkDeviceMemory* getRoughnessTextureImageMemory();
-	void setRoughnessTextureImageMemory(VkDeviceMemory newRoughnessTextureImageMemory);
 	VkImageView* getRoughnessTextureImageView();
 	void setRoughnessTextureImageView(VkImageView newRoughnessTextureImageView);
 	VkSampler* getRoughnessTextureSampler();
@@ -85,8 +80,6 @@ public:
 
 	VkImage* getAOTextureImage();
 	void setAOTextureImage(VkImage newAOTextureImage);
-	VkDeviceMemory* getAOTextureImageMemory();
-	void setAOTextureImageMemory(VkDeviceMemory newAOTextureImageMemory);
 	VkImageView* getAOTextureImageView();
 	void setAOTextureImageView(VkImageView newAOTextureImageView);
 	VkSampler* getAOTextureSampler();
@@ -97,6 +90,8 @@ public:
 	bool isDestructed();
 	void destructedTrue();
 private:
+	VkDeviceMemory imageMemory;
+
 	std::string diffusePath;
 	float diffuseRValue;
 	float diffuseGValue;
@@ -104,7 +99,6 @@ private:
 	float diffuseAValue;
 
 	VkImage diffuseTextureImage;
-	VkDeviceMemory diffuseTextureImageMemory;
 	VkImageView diffuseTextureImageView;
 	VkSampler diffuseTextureSampler;
 	uint32_t diffuseMipLevel;
@@ -115,7 +109,6 @@ private:
 	float normalZValue;
 
 	VkImage normalTextureImage;
-	VkDeviceMemory normalTextureImageMemory;
 	VkImageView normalTextureImageView;
 	VkSampler normalTextureSampler;
 	uint32_t normalMipLevel;
@@ -124,7 +117,6 @@ private:
 	float metallicValue;
 
 	VkImage metallicTextureImage;
-	VkDeviceMemory metallicTextureImageMemory;
 	VkImageView metallicTextureImageView;
 	VkSampler metallicTextureSampler;
 	uint32_t metallicMipLevel;
@@ -133,7 +125,6 @@ private:
 	float roughnessValue;
 
 	VkImage roughnessTextureImage;
-	VkDeviceMemory roughnessTextureImageMemory;
 	VkImageView roughnessTextureImageView;
 	VkSampler roughnessTextureSampler;
 	uint32_t roughnessMipLevel;
@@ -142,7 +133,6 @@ private:
 	float AOValue;
 
 	VkImage AOTextureImage;
-	VkDeviceMemory AOTextureImageMemory;
 	VkImageView AOTextureImageView;
 	VkSampler AOTextureSampler;
 	uint32_t AOMipLevel;

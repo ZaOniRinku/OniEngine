@@ -172,6 +172,14 @@ void Material::setAOMipLevel(uint32_t newAOMipLevel) {
 	AOMipLevel = newAOMipLevel;
 }
 
+VkDeviceMemory* Material::getImageMemory() {
+	return &imageMemory;
+}
+
+void Material::setImageMemory(VkDeviceMemory newImageMemory) {
+	imageMemory = newImageMemory;
+}
+
 // Diffuse
 
 VkImage* Material::getDiffuseTextureImage() {
@@ -180,14 +188,6 @@ VkImage* Material::getDiffuseTextureImage() {
 
 void Material::setDiffuseTextureImage(VkImage newDiffuseTextureImage) {
 	diffuseTextureImage = newDiffuseTextureImage;
-}
-
-VkDeviceMemory* Material::getDiffuseTextureImageMemory() {
-	return &diffuseTextureImageMemory;
-}
-
-void Material::setDiffuseTextureImageMemory(VkDeviceMemory newDiffuseTextureImageMemory) {
-	diffuseTextureImageMemory = newDiffuseTextureImageMemory;
 }
 
 VkImageView* Material::getDiffuseTextureImageView() {
@@ -216,14 +216,6 @@ void Material::setNormalTextureImage(VkImage newNormalTextureImage) {
 	normalTextureImage = newNormalTextureImage;
 }
 
-VkDeviceMemory* Material::getNormalTextureImageMemory() {
-	return &normalTextureImageMemory;
-}
-
-void Material::setNormalTextureImageMemory(VkDeviceMemory newNormalTextureImageMemory) {
-	normalTextureImageMemory = newNormalTextureImageMemory;
-}
-
 VkImageView* Material::getNormalTextureImageView() {
 	return &normalTextureImageView;
 }
@@ -248,14 +240,6 @@ VkImage* Material::getMetallicTextureImage() {
 
 void Material::setMetallicTextureImage(VkImage newMetallicTextureImage) {
 	metallicTextureImage = newMetallicTextureImage;
-}
-
-VkDeviceMemory* Material::getMetallicTextureImageMemory() {
-	return &metallicTextureImageMemory;
-}
-
-void Material::setMetallicTextureImageMemory(VkDeviceMemory newMetallicTextureImageMemory) {
-	metallicTextureImageMemory = newMetallicTextureImageMemory;
 }
 
 VkImageView* Material::getMetallicTextureImageView() {
@@ -284,14 +268,6 @@ void Material::setRoughnessTextureImage(VkImage newRoughnessTextureImage) {
 	roughnessTextureImage = newRoughnessTextureImage;
 }
 
-VkDeviceMemory* Material::getRoughnessTextureImageMemory() {
-	return &roughnessTextureImageMemory;
-}
-
-void Material::setRoughnessTextureImageMemory(VkDeviceMemory newRoughnessTextureImageMemory) {
-	roughnessTextureImageMemory = newRoughnessTextureImageMemory;
-}
-
 VkImageView* Material::getRoughnessTextureImageView() {
 	return &roughnessTextureImageView;
 }
@@ -316,14 +292,6 @@ VkImage* Material::getAOTextureImage() {
 
 void Material::setAOTextureImage(VkImage newAOTextureImage) {
 	AOTextureImage = newAOTextureImage;
-}
-
-VkDeviceMemory* Material::getAOTextureImageMemory() {
-	return &AOTextureImageMemory;
-}
-
-void Material::setAOTextureImageMemory(VkDeviceMemory newAOTextureImageMemory) {
-	AOTextureImageMemory = newAOTextureImageMemory;
 }
 
 VkImageView* Material::getAOTextureImageView() {

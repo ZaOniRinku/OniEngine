@@ -194,9 +194,9 @@ private:
 	bool hasStencilComponent(VkFormat format);
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 	VkSampleCountFlagBits getMaxUsableSampleCount();
-	void createTextureImage(Object* obj);
-	void createTextureImageView(Object* obj);
-	void createTextureSampler(Object* obj);
+	void createTextureImage(Material* mat);
+	void createTextureImageView(Material* mat);
+	void createTextureSampler(Material* mat);
 	void loadModel(Mesh* mesh);
 	void loadSkyboxModel();
 	void createVertexBuffer();
