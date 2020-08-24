@@ -22,8 +22,6 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-const int WIDTH = 1280;
-const int HEIGHT = 720;
 const int SHADOWMAP_WIDTH = 2048;
 const int SHADOWMAP_HEIGHT = 2048;
 
@@ -71,6 +69,8 @@ struct SwapChainSupportDetails {
 class GraphicsEngine {
 public:
 	void setScene(Scene* newScene);
+	void setFullscreen(bool newIsFullscreen);
+	void setResolution(int newWidth, int newHeight);
 	int start();
 private:
 	void run();
@@ -275,6 +275,10 @@ private:
 	std::vector<VkDeviceMemory> lightsBuffersMemory;
 	std::vector<VkDeviceMemory> shadowsBuffersMemory;
 
+	// Size
+	int width = 1280;
+	int height = 720;
+
 	// Game scene
 	Scene* scene;
 
@@ -290,8 +294,11 @@ private:
 	// Mouse movement
 	float firstMouse = true;
 	float sensitivity = 0.05f;
-	double xMouseLast = WIDTH / 2.f;
-	double yMouseLast = HEIGHT / 2.f;
+	double xMouseLast = width / 2.f;
+	double yMouseLast = height / 2.f;
 	float pitch = 0.0f;
 	float yaw = 0.0f;
+
+	// Fullscreen
+	bool isFullscreen = false;;
 };

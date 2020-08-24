@@ -32,6 +32,15 @@ void GraphicsEngine::setScene(Scene* newScene) {
 	scene = newScene;
 }
 
+void GraphicsEngine::setFullscreen(bool newIsFullscreen) {
+	isFullscreen = newIsFullscreen;
+}
+
+void GraphicsEngine::setResolution(int newWidth, int newHeight){
+	width = newWidth;
+	height = newHeight;
+}
+
 void GraphicsEngine::run() {
 	initWindow();
 	initVulkan();
@@ -139,8 +148,12 @@ void GraphicsEngine::initWindow() {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-	// Change the first nullptr to glfwGetPrimaryMonitor() for fullscreen
-	window = glfwCreateWindow(WIDTH, HEIGHT, "ONIEngine", nullptr, nullptr);
+	if (isFullscreen) {
+		window = glfwCreateWindow(width, height, "ONIEngine", glfwGetPrimaryMonitor(), nullptr);
+	}
+	else {
+		window = glfwCreateWindow(width, height, "ONIEngine", nullptr, nullptr);
+	}
 	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
