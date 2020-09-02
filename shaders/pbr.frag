@@ -177,6 +177,6 @@ void main() {
 
 	// HDR
 	color = color / (color + vec3(1.0));
-	color = pow(color, vec3(1.0/2.2));
+	color = pow(color, vec3(1.0/2.4));
 	outColor = vec4(color, diffuse.w);
 }
