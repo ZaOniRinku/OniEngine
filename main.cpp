@@ -1,4 +1,4 @@
-#include "src/GraphicsEngine.h"
+#include "src/Renderer.h"
 
 void cameraControls(Camera* camera, GLFWwindow* window, double deltaTime) {
 	float movementSpeed = camera->getMovementSpeed() * (float)deltaTime;
@@ -192,7 +192,7 @@ int main() {
 	// Visualize hierarchy
 	scene.viewSceneGraph();
 
-	GraphicsEngine app;
+	Renderer app;
 
 	// Set the scene
 	app.setScene(&scene);
