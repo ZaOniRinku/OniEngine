@@ -23,7 +23,6 @@ struct Chunk {
 
 class MemoryAllocator {
 public:
-	MemoryAllocator();
 	void setDevice(VkDevice* newDevice);
 	void setPhysicalDeviceMemoryProperties(VkPhysicalDeviceMemoryProperties newPhysicalDeviceMemoryProperties);
 	VkDeviceSize allocate(VkBuffer* bufferToAllocate, VkMemoryPropertyFlags flags);

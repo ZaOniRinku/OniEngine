@@ -73,8 +73,6 @@ VkDeviceSize Chunk::allocate(VkMemoryRequirements memRequirements) {
     return -1;
 }
 
-MemoryAllocator::MemoryAllocator() { }
-
 void MemoryAllocator::setDevice(VkDevice* newDevice) {
     device = newDevice;
 }
