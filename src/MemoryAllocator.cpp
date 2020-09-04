@@ -5,7 +5,6 @@ Chunk::Chunk(VkDevice* device, int32_t memoryType, VkDeviceSize size) {
 
     VkMemoryAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    // Default 256 MB size
     allocInfo.allocationSize = size;
     allocInfo.memoryTypeIndex = memoryType;
     if (vkAllocateMemory(*device, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
@@ -87,12 +86,12 @@ void MemoryAllocator::setPhysicalDeviceMemoryProperties(VkPhysicalDeviceMemoryPr
 }
 
 VkDeviceSize MemoryAllocator::allocate(VkBuffer* bufferToAllocate, VkMemoryPropertyFlags flags) {
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(*device, *bufferToAllocate, &memRequirements);
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(*device, *bufferToAllocate, &memRequirements);
     int32_t properties = findProperties(memRequirements.memoryTypeBits, flags);
 
     // Look for the first block with enough space
-	for (Chunk chunk : chunks) {
+    for (Chunk chunk : chunks) {
         if (chunk.type == properties) {
             VkDeviceSize offset;
             offset = chunk.allocate(memRequirements);
@@ -102,7 +101,7 @@ VkDeviceSize MemoryAllocator::allocate(VkBuffer* bufferToAllocate, VkMemoryPrope
                 return 1;
             }
         }
-	}
+    }
 
     // No block has been found, create a new chunk
     Chunk newChunk = Chunk(device, properties, std::max(CHUNK_SIZE, (int)memRequirements.size));

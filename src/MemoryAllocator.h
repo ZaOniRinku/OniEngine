@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 
+// 256 MB
 #define CHUNK_SIZE 268435456
 
 struct Block {
