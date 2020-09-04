@@ -166,6 +166,7 @@ void Renderer::initVulkan() {
 	createSurface();
 	pickPhysicalDevice();
 	createLogicalDevice();
+	createMemoryAllocator();
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
@@ -263,15 +264,6 @@ void Renderer::setupDebugMessenger() {
 	}
 }
 
-void Renderer::createMemoryAllocator() {
-	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
-	memoryAllocator = MemoryAllocator();
-	memoryAllocator.setDevice(&device);
-	memoryAllocator.setPhysicalDeviceMemoryProperties(memProperties);
-}
-
 void Renderer::createSurface() {
 	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create window surface!");
@@ -349,6 +341,15 @@ void Renderer::createLogicalDevice() {
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
+void Renderer::createMemoryAllocator() {
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+	memoryAllocator = MemoryAllocator();
+	memoryAllocator.setDevice(&device);
+	memoryAllocator.setPhysicalDeviceMemoryProperties(memProperties);
+}
+
 void Renderer::recreateSwapChain() {
 	int width = 0, height = 0;
 	while (width == 0 || height == 0) {
@@ -389,7 +390,6 @@ void Renderer::cleanupSwapChain() {
 			vkDestroyFramebuffer(device, shadowsFramebuffers[j][i], nullptr);
 		}
 	}
-	vkFreeMemory(device, shadowsImageMemory, nullptr);
 
 	for (auto framebuffer : swapChainFramebuffers) {
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -440,6 +440,8 @@ void Renderer::cleanupSwapChain() {
 	
 	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 	vkDestroyDescriptorPool(device, shadowsDescriptorPool, nullptr);
+
+	memoryAllocator.free();
 }
 
 void Renderer::createSwapChain() {
@@ -1247,6 +1249,7 @@ void Renderer::createCommandPool() {
 
 void Renderer::createColorResources() {
 	VkFormat colorFormat = swapChainImageFormat;
+
 	createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
 	colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	transitionImageLayout(colorImage, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
@@ -1282,22 +1285,9 @@ void Renderer::createDepthResources() {
 		if (vkCreateImage(device, &imageInfo, nullptr, &shadowsImages[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create shadows image!");
 		}
-	}
-	vkGetImageMemoryRequirements(device, shadowsImages[0], &shadowsMemRequirements);
 
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = shadowsMemRequirements.size * (scene->getDirectionalLights().size() + scene->getSpotLights().size());
-	allocInfo.memoryTypeIndex = findMemoryType(shadowsMemRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		memoryAllocator.allocate(&shadowsImages[i], VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	if (vkAllocateMemory(device, &allocInfo, nullptr, &shadowsImageMemory) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate shadows image memory!");
-	}
-
-	VkDeviceSize shadowsMemOffset = 0;
-	for (int i = 0; i < scene->getDirectionalLights().size() + scene->getSpotLights().size(); i++) {
-		vkBindImageMemory(device, shadowsImages[i], shadowsImageMemory, shadowsMemOffset);
-		shadowsMemOffset += shadowsMemRequirements.size;
 		shadowsImageViews[i] = createImageView(shadowsImages[i], VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
 }
@@ -2189,9 +2179,6 @@ void Renderer::createTextureImage(Material* mat) {
 		throw std::runtime_error("failed to create diffuse texture image!");
 	}
 
-	VkMemoryRequirements diffuseMemRequirements;
-	vkGetImageMemoryRequirements(device, *mat->getDiffuseTextureImage(), &diffuseMemRequirements);
-
 	// Normal Texture
 	VkBuffer normalStagingBuffer;
 	VkDeviceMemory normalStagingBufferMemory;
@@ -2247,9 +2234,6 @@ void Renderer::createTextureImage(Material* mat) {
 		throw std::runtime_error("failed to create normal texture image!");
 	}
 
-	VkMemoryRequirements normalMemRequirements;
-	vkGetImageMemoryRequirements(device, *mat->getNormalTextureImage(), &normalMemRequirements);
-
 	// Metallic Texture
 	VkBuffer metallicStagingBuffer;
 	VkDeviceMemory metallicStagingBufferMemory;
@@ -2302,9 +2286,6 @@ void Renderer::createTextureImage(Material* mat) {
 	if (vkCreateImage(device, &imageInfo, nullptr, mat->getMetallicTextureImage()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create metallic texture image!");
 	}
-
-	VkMemoryRequirements metallicMemRequirements;
-	vkGetImageMemoryRequirements(device, *mat->getMetallicTextureImage(), &metallicMemRequirements);
 
 	// Roughness Texture
 	VkBuffer roughnessStagingBuffer;
@@ -2359,9 +2340,6 @@ void Renderer::createTextureImage(Material* mat) {
 		throw std::runtime_error("failed to create roughness texture image!");
 	}
 
-	VkMemoryRequirements roughnessMemRequirements;
-	vkGetImageMemoryRequirements(device, *mat->getRoughnessTextureImage(), &roughnessMemRequirements);
-
 	// AO Texture
 	VkBuffer AOStagingBuffer;
 	VkDeviceMemory AOStagingBufferMemory;
@@ -2415,31 +2393,12 @@ void Renderer::createTextureImage(Material* mat) {
 		throw std::runtime_error("failed to create AO texture image!");
 	}
 
-	VkMemoryRequirements AOMemRequirements;
-	vkGetImageMemoryRequirements(device, *mat->getAOTextureImage(), &AOMemRequirements);
-
 	// Memory allocation
-
-	VkDeviceSize diffuseOffset = 0;
-	VkDeviceSize normalOffset = (diffuseOffset + diffuseMemRequirements.size + normalMemRequirements.alignment - 1) / normalMemRequirements.alignment * normalMemRequirements.alignment;
-	VkDeviceSize metallicOffset = (normalOffset + normalMemRequirements.size + metallicMemRequirements.alignment - 1) / metallicMemRequirements.alignment * metallicMemRequirements.alignment;
-	VkDeviceSize roughnessOffset = (metallicOffset + metallicMemRequirements.size + roughnessMemRequirements.alignment - 1) / roughnessMemRequirements.alignment * roughnessMemRequirements.alignment;
-	VkDeviceSize AOOffset = (roughnessOffset + roughnessMemRequirements.size + AOMemRequirements.alignment - 1) / AOMemRequirements.alignment * AOMemRequirements.alignment;
-
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = AOOffset + AOMemRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(diffuseMemRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	if (vkAllocateMemory(device, &allocInfo, nullptr, mat->getImageMemory()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate image memory!");
-	}
-
-	vkBindImageMemory(device, *mat->getDiffuseTextureImage(), *mat->getImageMemory(), diffuseOffset);
-	vkBindImageMemory(device, *mat->getNormalTextureImage(), *mat->getImageMemory(), normalOffset);
-	vkBindImageMemory(device, *mat->getMetallicTextureImage(), *mat->getImageMemory(), metallicOffset);
-	vkBindImageMemory(device, *mat->getRoughnessTextureImage(), *mat->getImageMemory(), roughnessOffset);
-	vkBindImageMemory(device, *mat->getAOTextureImage(), *mat->getImageMemory(), AOOffset);
+	memoryAllocator.allocate(mat->getDiffuseTextureImage(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	memoryAllocator.allocate(mat->getNormalTextureImage(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	memoryAllocator.allocate(mat->getMetallicTextureImage(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	memoryAllocator.allocate(mat->getRoughnessTextureImage(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	memoryAllocator.allocate(mat->getAOTextureImage(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	transitionImageLayout(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getDiffuseMipLevel());
 	copyBufferToImage(diffuseStagingBuffer, *mat->getDiffuseTextureImage(), static_cast<uint32_t>(diffuseTexWidth), static_cast<uint32_t>(diffuseTexHeight));
@@ -2754,7 +2713,18 @@ void Renderer::createVertexBuffer() {
 	memcpy(data, vertices.data(), (size_t)bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+	VkBufferCreateInfo bufferInfo = {};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = bufferSize;
+	bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(device, &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create vertex buffer!");
+	}
+
+	memoryAllocator.allocate(&vertexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	
 	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -2773,7 +2743,18 @@ void Renderer::createIndexBuffer() {
 	memcpy(data, indices.data(), (size_t)bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+	VkBufferCreateInfo bufferInfo = {};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = bufferSize;
+	bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(device, &bufferInfo, nullptr, &indexBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create index buffer!");
+	}
+
+	memoryAllocator.allocate(&indexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
 	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -2792,7 +2773,18 @@ void Renderer::createSkyboxVertexBuffer() {
 	memcpy(data, skyboxVertices.data(), (size_t)bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, skyboxVertexBuffer, skyboxVertexBufferMemory);
+	VkBufferCreateInfo bufferInfo = {};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = bufferSize;
+	bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(device, &bufferInfo, nullptr, &skyboxVertexBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create index buffer!");
+	}
+
+	memoryAllocator.allocate(&skyboxVertexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
 	copyBuffer(stagingBuffer, skyboxVertexBuffer, bufferSize);
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -2811,7 +2803,18 @@ void Renderer::createSkyboxIndexBuffer() {
 	memcpy(data, skyboxIndices.data(), (size_t)bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, skyboxIndexBuffer, skyboxIndexBufferMemory);
+	VkBufferCreateInfo bufferInfo = {};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = bufferSize;
+	bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(device, &bufferInfo, nullptr, &skyboxIndexBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create index buffer!");
+	}
+
+	memoryAllocator.allocate(&skyboxIndexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
 	copyBuffer(stagingBuffer, skyboxIndexBuffer, bufferSize);
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -3165,8 +3168,6 @@ void Renderer::cleanup() {
 			vkDestroyImageView(device, *mat->getAOTextureImageView(), nullptr);
 			vkDestroyImage(device, *mat->getAOTextureImage(), nullptr);
 
-			vkFreeMemory(device, *mat->getImageMemory(), nullptr);
-
 			mat->destructedTrue();
 		}
 	}
@@ -3195,8 +3196,6 @@ void Renderer::cleanup() {
 			vkDestroyImageView(device, *mat->getAOTextureImageView(), nullptr);
 			vkDestroyImage(device, *mat->getAOTextureImage(), nullptr);
 
-			vkFreeMemory(device, *mat->getImageMemory(), nullptr);
-
 			mat->destructedTrue();
 		}
 	}
@@ -3207,15 +3206,11 @@ void Renderer::cleanup() {
 	vkDestroyDescriptorSetLayout(device, shadowsDescriptorSetLayout, nullptr);
 
 	vkDestroyBuffer(device, vertexBuffer, nullptr);
-	vkFreeMemory(device, vertexBufferMemory, nullptr);
 	vkDestroyBuffer(device, indexBuffer, nullptr);
-	vkFreeMemory(device, indexBufferMemory, nullptr);
 
 	if (scene->getSkybox()) {
 		vkDestroyBuffer(device, skyboxVertexBuffer, nullptr);
-		vkFreeMemory(device, skyboxVertexBufferMemory, nullptr);
 		vkDestroyBuffer(device, skyboxIndexBuffer, nullptr);
-		vkFreeMemory(device, skyboxIndexBufferMemory, nullptr);
 	}
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {

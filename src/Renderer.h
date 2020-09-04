@@ -27,7 +27,8 @@ const int SHADOWMAP_WIDTH = 2048;
 const int SHADOWMAP_HEIGHT = 2048;
 
 const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
+	"VK_LAYER_KHRONOS_validation",
+	"VK_LAYER_LUNARG_monitor"
 };
 
 const std::vector<const char*> deviceExtensions = {
@@ -151,10 +152,10 @@ private:
 	void initVulkan();
 	void createInstance();
 	void setupDebugMessenger();
-	void createMemoryAllocator();
 	void createSurface();
 	void pickPhysicalDevice();
 	void createLogicalDevice();
+	void createMemoryAllocator();
 	void recreateSwapChain();
 	void cleanupSwapChain();
 	void createSwapChain();

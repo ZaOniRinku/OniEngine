@@ -1,6 +1,10 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 #include <vector>
+#include <iostream>
+#include <algorithm>
+
+#define CHUNK_SIZE 268435456
 
 struct Block {
 	Block* next;
@@ -13,12 +17,11 @@ struct Block {
 struct Chunk {
 	VkDeviceMemory memory;
 	int32_t type;
-	VkDeviceSize chunkSize;
-	VkDeviceSize chunkSpace;
-	Block initialBlock;
+	Block* head;
 
-	Chunk(VkDevice* device, int32_t memoryType);
+	Chunk(VkDevice* device, int32_t memoryType, VkDeviceSize size);
 	VkDeviceSize allocate(VkMemoryRequirements memRequirements);
+	void freeBlocks();
 };
 
 class MemoryAllocator {
