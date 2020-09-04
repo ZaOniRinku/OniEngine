@@ -376,11 +376,9 @@ void Renderer::recreateSwapChain() {
 void Renderer::cleanupSwapChain() {
 	vkDestroyImageView(device, colorImageView, nullptr);
 	vkDestroyImage(device, colorImage, nullptr);
-	vkFreeMemory(device, colorImageMemory, nullptr);
 
 	vkDestroyImageView(device, depthImageView, nullptr);
 	vkDestroyImage(device, depthImage, nullptr);
-	vkFreeMemory(device, depthImageMemory, nullptr);
 
 	for (int i = 0; i < scene->getDirectionalLights().size() + scene->getSpotLights().size(); i++) {
 		vkDestroyImageView(device, shadowsImageViews[i], nullptr);
@@ -1106,7 +1104,7 @@ void Renderer::createGraphicsPipeline() {
 
 		VkPipelineMultisampleStateCreateInfo skyboxMultisampling = {};
 		skyboxMultisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		skyboxMultisampling.sampleShadingEnable = VK_TRUE;
+		skyboxMultisampling.sampleShadingEnable = VK_FALSE;
 		skyboxMultisampling.rasterizationSamples = msaaSamples;
 		skyboxMultisampling.minSampleShading = 0.1f;
 		skyboxMultisampling.pSampleMask = nullptr;
@@ -1249,14 +1247,55 @@ void Renderer::createCommandPool() {
 void Renderer::createColorResources() {
 	VkFormat colorFormat = swapChainImageFormat;
 
-	createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = swapChainExtent.width;
+	imageInfo.extent.height = swapChainExtent.height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = colorFormat;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.samples = msaaSamples;
+
+	if (vkCreateImage(device, &imageInfo, nullptr, &colorImage) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create color image!");
+	}
+
+	memoryAllocator.allocate(&colorImage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
 	colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	transitionImageLayout(colorImage, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
 }
 
 void Renderer::createDepthResources() {
 	VkFormat depthFormat = findDepthFormat();
-	createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = swapChainExtent.width;
+	imageInfo.extent.height = swapChainExtent.height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = depthFormat;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.samples = msaaSamples;
+
+	if (vkCreateImage(device, &imageInfo, nullptr, &depthImage) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create depth image!");
+	}
+
+	memoryAllocator.allocate(&depthImage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
 	depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	transitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 

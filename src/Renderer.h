@@ -245,31 +245,24 @@ private:
 	VkDescriptorPool descriptorPool;
 	VkDescriptorPool shadowsDescriptorPool;
 	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
 	std::vector<VkImage> shadowsImages;
-	VkDeviceMemory shadowsImageMemory;
 	std::vector<VkImageView> shadowsImageViews;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImage colorImage;
-	VkDeviceMemory colorImageMemory;
 	VkImageView colorImageView;
 	std::vector<Vertex> vertices;
 	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
 	std::vector<uint32_t> indices;
 	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
 	int vertexSize = 0;
 	int indexSize = 0;
 	
 	// Skybox
 	std::vector<Vertex> skyboxVertices;
 	VkBuffer skyboxVertexBuffer;
-	VkDeviceMemory skyboxVertexBufferMemory;
 	std::vector<uint32_t> skyboxIndices;
 	VkBuffer skyboxIndexBuffer;
-	VkDeviceMemory skyboxIndexBufferMemory;
 
 	std::vector<VkBuffer> cameraBuffers;
 	std::vector<VkBuffer> lightsBuffers;
