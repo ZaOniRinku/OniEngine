@@ -2438,9 +2438,9 @@ void Renderer::createTextureImage(Material* mat) {
 	memoryAllocator.allocate(mat->getRoughnessTextureImage(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	memoryAllocator.allocate(mat->getAOTextureImage(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	transitionImageLayout(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getDiffuseMipLevel());
+	transitionImageLayout(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getDiffuseMipLevel());
 	copyBufferToImage(diffuseStagingBuffer, *mat->getDiffuseTextureImage(), static_cast<uint32_t>(diffuseTexWidth), static_cast<uint32_t>(diffuseTexHeight));
-	generateMipmaps(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, diffuseTexWidth, diffuseTexHeight, mat->getDiffuseMipLevel());
+	generateMipmaps(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, diffuseTexWidth, diffuseTexHeight, mat->getDiffuseMipLevel());
 
 	vkDestroyBuffer(device, diffuseStagingBuffer, nullptr);
 	vkFreeMemory(device, diffuseStagingBufferMemory, nullptr);
