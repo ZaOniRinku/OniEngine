@@ -345,7 +345,6 @@ void Renderer::createMemoryAllocator() {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
-	memoryAllocator = MemoryAllocator();
 	memoryAllocator.setDevice(&device);
 	memoryAllocator.setPhysicalDeviceMemoryProperties(memProperties);
 }

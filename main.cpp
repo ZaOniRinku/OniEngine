@@ -163,7 +163,7 @@ int main() {
 	sphere4.frameEvent = objectControls;
 
 	// House
-	Object house = Object(5.0f, -0.1f, 3.0f, 1.0f);
+	Object house = Object(5.0f, -0.11f, 3.0f, 1.0f);
 	SGNode houseNode = SGNode(&house);
 	house.setMesh(&houseMesh);
 	house.setMaterial(&marbleMaterial);
