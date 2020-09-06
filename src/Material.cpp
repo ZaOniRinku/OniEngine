@@ -10,7 +10,7 @@ Material::Material(std::string dPath, std::string nPath, std::string mPath, std:
 	diffuseRValue = 0.0f;
 	diffuseGValue = 0.0f;
 	diffuseBValue = 0.0f;
-	diffuseAValue = 0.0f;
+	diffuseAValue = 1.0f;
 
 	normalXValue = 0.5f;
 	normalYValue = 0.5f;
