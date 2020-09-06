@@ -104,7 +104,7 @@ VkDeviceSize MemoryAllocator::allocate(VkBuffer* bufferToAllocate, VkMemoryPrope
     }
 
     // No block has been found, create a new chunk
-    Chunk newChunk = Chunk(device, properties, std::max(CHUNK_SIZE, (int)memRequirements.size));
+    Chunk newChunk = Chunk(device, properties, std::max((VkDeviceSize)CHUNK_SIZE, memRequirements.size));
 
     // Add to this chunk
     VkDeviceSize offset;
