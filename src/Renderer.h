@@ -186,10 +186,13 @@ private:
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void updateUniformBuffer(Object* obj, uint32_t currentImage);
+	void updateSkyboxUniformBuffer(uint32_t currentImage);
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+	void transitionCubemapLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	void copyBufferToCubemap(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	VkFormat findDepthFormat();
@@ -199,13 +202,15 @@ private:
 	void createTextureImage(Material* mat);
 	void createTextureImageView(Material* mat);
 	void createTextureSampler(Material* mat);
+	void createSkyboxTextureImage();
+	void createSkyboxTextureImageView();
+	void createSkyboxTextureSampler();
 	void loadModel(Mesh* mesh);
 	void loadSkyboxModel();
 	void createVertexBuffer();
 	void createIndexBuffer();
-	void createSkyboxVertexBuffer();
-	void createSkyboxIndexBuffer();
 	void updateDescriptorSets(Object* obj, int frame);
+	void updateSkyboxDescriptorSets(int frame);
 	void updateShadowsDescriptorSets(Object* obj, int frame);
 	void mainLoop();
 	void drawFrame();
@@ -225,11 +230,12 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
-	VkSampler shadowsSampler;
 	VkRenderPass renderPass;
 	VkRenderPass shadowsRenderPass;
 	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayout skyboxDescriptorSetLayout;
 	VkDescriptorSetLayout shadowsDescriptorSetLayout;
+	int skyboxGraphicsPipelineIndex;
 	int shadowsGraphicsPipelineIndex;
 	std::vector<VkPipeline> graphicsPipelines;
 	std::vector<VkPipelineLayout> graphicsPipelineLayouts;
@@ -243,14 +249,19 @@ private:
 	size_t currentFrame = 0;
 	bool framebufferResized = false;
 	VkDescriptorPool descriptorPool;
+	VkDescriptorPool skyboxDescriptorPool;
 	VkDescriptorPool shadowsDescriptorPool;
-	VkImage depthImage;
-	VkImageView depthImageView;
-	std::vector<VkImage> shadowsImages;
-	std::vector<VkImageView> shadowsImageViews;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImage colorImage;
 	VkImageView colorImageView;
+	VkImage depthImage;
+	VkImageView depthImageView;
+	VkImage skyboxImage;
+	VkImageView skyboxImageView;
+	VkSampler skyboxSampler;
+	std::vector<VkImage> shadowsImages;
+	std::vector<VkImageView> shadowsImageViews;
+	VkSampler shadowsSampler;
 	std::vector<Vertex> vertices;
 	VkBuffer vertexBuffer;
 	std::vector<uint32_t> indices;
@@ -259,10 +270,12 @@ private:
 	int indexSize = 0;
 	
 	// Skybox
-	std::vector<Vertex> skyboxVertices;
-	VkBuffer skyboxVertexBuffer;
-	std::vector<uint32_t> skyboxIndices;
-	VkBuffer skyboxIndexBuffer;
+	std::vector<VkBuffer> skyboxBuffers;
+	std::vector<VkDeviceMemory> skyboxBufferMemories;
+	std::vector<VkDescriptorSet> skyboxDescriptorSets;
+	int skyboxVertexOffset;
+	int skyboxIndexOffset;
+	int skyboxIndexSize;
 
 	std::vector<VkBuffer> cameraBuffers;
 	std::vector<VkBuffer> lightsBuffers;

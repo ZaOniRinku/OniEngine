@@ -1,14 +1,16 @@
 #include "Scene.h"
 
 Scene::Scene() {
-	sceneRoot = SGNode();
-	camera = Camera();
 	dirLights.push_back(&dummyDirLight);
 }
 
 Scene::Scene(Camera sceneCamera) {
-	sceneRoot = SGNode();
 	camera = sceneCamera;
+}
+
+Scene::Scene(Camera sceneCamera, Skybox sceneSkybox) {
+	camera = sceneCamera;
+	skybox = sceneSkybox;
 }
 
 SGNode* Scene::getRoot() {
@@ -27,11 +29,11 @@ void Scene::setCamera(Camera newCamera) {
 	camera = newCamera;
 }
 
-Object* Scene::getSkybox() {
-	return skybox;
+Skybox* Scene::getSkybox() {
+	return &skybox;
 }
 
-void Scene::setSkybox(Object* newSkybox) {
+void Scene::setSkybox(Skybox newSkybox) {
 	skybox = newSkybox;
 }
 
@@ -41,7 +43,7 @@ void Scene::viewSceneGraph() {
 }
 
 int Scene::nbElements() {
-	return skybox ? (int)elements.size() + 1 : 0;
+	return (int)elements.size();
 }
 
 std::vector<Object*>& Scene::getElements() {

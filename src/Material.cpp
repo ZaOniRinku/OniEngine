@@ -172,14 +172,6 @@ void Material::setAOMipLevel(uint32_t newAOMipLevel) {
 	AOMipLevel = newAOMipLevel;
 }
 
-VkDeviceMemory* Material::getImageMemory() {
-	return &imageMemory;
-}
-
-void Material::setImageMemory(VkDeviceMemory newImageMemory) {
-	imageMemory = newImageMemory;
-}
-
 // Diffuse
 
 VkImage* Material::getDiffuseTextureImage() {

@@ -47,9 +47,6 @@ public:
 	uint32_t getAOMipLevel();
 	void setAOMipLevel(uint32_t newAOMipLevel);
 
-	VkDeviceMemory* getImageMemory();
-	void setImageMemory(VkDeviceMemory newImageMemory);
-
 	VkImage* getDiffuseTextureImage();
 	void setDiffuseTextureImage(VkImage newDiffuseTextureImage);
 	VkImageView* getDiffuseTextureImageView();
@@ -90,8 +87,6 @@ public:
 	bool isDestructed();
 	void destructedTrue();
 private:
-	VkDeviceMemory imageMemory;
-
 	std::string diffusePath;
 	float diffuseRValue;
 	float diffuseGValue;

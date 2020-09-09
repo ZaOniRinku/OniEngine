@@ -1,5 +1,6 @@
 #pragma once
 #include "SGNode.h"
+#include "Skybox.h"
 #include "Camera.h"
 #include "DirectionalLight.h"
 #include "PointLight.h"
@@ -21,12 +22,13 @@ class Scene {
 public:
 	Scene();
 	Scene(Camera sceneCamera);
+	Scene(Camera sceneCamera, Skybox sceneSkybox);
 	SGNode* getRoot();
 	void setRoot(SGNode newRoot);
 	Camera* getCamera();
 	void setCamera(Camera newCamera);
-	Object* getSkybox();
-	void setSkybox(Object* newSkybox);
+	Skybox* getSkybox();
+	void setSkybox(Skybox newSkybox);
 	void viewSceneGraph();
 	int nbElements();
 	std::vector<Object*>& getElements();
@@ -41,7 +43,7 @@ public:
 private:
 	SGNode sceneRoot;
 	Camera camera;
-	Object* skybox;
+	Skybox skybox;
 
 	std::vector<Object*> elements;
 	std::vector<Object*> elementsFE;

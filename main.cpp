@@ -93,7 +93,6 @@ int main() {
 	scene.addSpotLight(&spot);
 
 	// Meshes
-	Mesh skyboxMesh = Mesh("models/skybox.obj");
 	Mesh groundMesh = Mesh("models/ground.obj");
 	Mesh tableMesh = Mesh("models/table.obj");
 	Mesh swordMesh = Mesh("models/Big_Sword_OBJ.obj");
@@ -106,7 +105,6 @@ int main() {
 
 	// Materials
 	Material emptyMaterial = Material("", "", "", "", "");
-	Material skyboxMaterial = Material("textures/skybox.png", "", "", "", "");
 	Material groundMaterial = Material("textures/Ground037_2K_Color.jpg", "textures/Ground037_2K_Normal.jpg", "", "textures/Ground037_2K_Roughness.jpg", "textures/Ground037_2K_AmbientOcclusion.jpg");
 	groundMaterial.setMetallicValue(1.0f);
 	Material ground2Material = Material("textures/grass_basecolor.png", "textures/grass_normal.png", "", "textures/grass_roughness.png", "textures/grass_ambientOcclusion.png");
@@ -128,10 +126,8 @@ int main() {
 	simpleWaterMaterial.setRoughnessValue(0.25f);
 
 	// Skybox
-	Object skybox = Object(0.0f, 0.0f, 0.0f, 50.0f, 90.0f, 0.0f, 0.0f);
-	skybox.setMesh(&skyboxMesh);
-	skybox.setMaterial(&skyboxMaterial);
-	scene.setSkybox(&skybox);
+	Skybox skybox = Skybox("textures/Yokohama3/posx.jpg", "textures/Yokohama3/negx.jpg", "textures/Yokohama3/posy.jpg", "textures/Yokohama3/negy.jpg", "textures/Yokohama3/posz.jpg", "textures/Yokohama3/negz.jpg");
+	scene.setSkybox(skybox);
 
 	// Spheres
 	Object sphere1 = Object(2.0f, 1.0f, 2.0f, 0.3f);
