@@ -1840,23 +1840,6 @@ void Renderer::updateUniformBuffer(Object* obj, uint32_t currentImage) {
 	vkUnmapMemory(device, obj->getObjectBufferMemories()->at(currentImage));
 }
 
-void Renderer::updateSkyboxUniformBuffer(uint32_t currentImage) {
-	void* data;
-
-	ObjectBufferObject obo = {};
-	// Using T * R * S transformation for models
-	glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-	glm::mat4 rotateX = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glm::mat4 rotateY = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 rotateZ = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
-	obo.model = translate * rotateX * rotateY * rotateZ * scale;
-
-	vkMapMemory(device, skyboxBufferMemories[currentImage], 0, sizeof(obo), 0, &data);
-	memcpy(data, &obo, sizeof(obo));
-	vkUnmapMemory(device, skyboxBufferMemories[currentImage]);
-}
-
 VkCommandBuffer Renderer::beginSingleTimeCommands() {
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -2047,7 +2030,7 @@ void Renderer::copyBufferToCubemap(VkBuffer buffer, VkImage image, uint32_t widt
 	std::vector<VkBufferImageCopy> regions;
 	for (uint32_t i = 0; i < 6; i++) {
 		VkBufferImageCopy region = {};
-		region.bufferOffset = width * height * i * 4;
+		region.bufferOffset = (VkDeviceSize)width * height * i * 4;
 		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		region.imageSubresource.mipLevel = 0;
 		region.imageSubresource.baseArrayLayer = i;
@@ -2758,18 +2741,18 @@ void Renderer::loadModel(Mesh* mesh) {
 		for (const auto& index : shape.mesh.indices) {
 			Vertex vertex = {};
 			vertex.pos = {
-				attrib.vertices[3 * index.vertex_index + 0],
-				attrib.vertices[3 * index.vertex_index + 1],
-				attrib.vertices[3 * index.vertex_index + 2]
+				attrib.vertices[(uint64_t)3 * index.vertex_index + 0],
+				attrib.vertices[(uint64_t)3 * index.vertex_index + 1],
+				attrib.vertices[(uint64_t)3 * index.vertex_index + 2]
 			};
 			vertex.texCoords = {
-				attrib.texcoords[2 * index.texcoord_index + 0],
-				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+				attrib.texcoords[(uint64_t)2 * index.texcoord_index + 0],
+				1.0f - attrib.texcoords[(uint64_t)2 * index.texcoord_index + 1]
 			};
 			vertex.normal = {
-				attrib.normals[3 * index.normal_index + 0],
-				attrib.normals[3 * index.normal_index + 1],
-				attrib.normals[3 * index.normal_index + 2]
+				attrib.normals[(uint64_t)3 * index.normal_index + 0],
+				attrib.normals[(uint64_t)3 * index.normal_index + 1],
+				attrib.normals[(uint64_t)3 * index.normal_index + 2]
 			};
 			vertex.color = {
 				1.0f,
@@ -2797,9 +2780,9 @@ void Renderer::loadModel(Mesh* mesh) {
 
 	// Tangents and bitangents for normal mapping
 	for (int i = 0; i < meshIndex.size(); i += 3) {
-		Vertex* vertex0 = &meshVertex[meshIndex[i + 0]];
-		Vertex* vertex1 = &meshVertex[meshIndex[i + 1]];
-		Vertex* vertex2 = &meshVertex[meshIndex[i + 2]];
+		Vertex* vertex0 = &meshVertex[meshIndex[(uint64_t)i + 0]];
+		Vertex* vertex1 = &meshVertex[meshIndex[(uint64_t)i + 1]];
+		Vertex* vertex2 = &meshVertex[meshIndex[(uint64_t)i + 2]];
 		
 		glm::vec3 dPos1 = vertex1->pos - vertex0->pos;
 		glm::vec3 dPos2 = vertex2->pos - vertex0->pos;
@@ -2888,9 +2871,9 @@ void Renderer::loadSkyboxModel() {
 	for (int i = 0; i < cubeData.size() / 3; i++) {
 		Vertex vertex = {};
 		vertex.pos = {
-			cubeData[3 * i + 0],
-			cubeData[3 * i + 1],
-			cubeData[3 * i + 2]
+			cubeData[(uint64_t)3 * i + 0],
+			cubeData[(uint64_t)3 * i + 1],
+			cubeData[(uint64_t)3 * i + 2]
 		};
 		vertex.texCoords = {
 			0.0f,
@@ -3226,9 +3209,6 @@ void Renderer::drawFrame() {
 	for (Object* obj : scene->getElements()) {
 		updateUniformBuffer(obj, imageIndex);
 	}
-
-	// Skybox
-	updateSkyboxUniformBuffer(imageIndex);
 
 	void *data;
 
