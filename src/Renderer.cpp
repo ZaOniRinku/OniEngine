@@ -274,7 +274,7 @@ void Renderer::pickPhysicalDevice() {
 
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-
+	
 	for (const auto& device : devices) {
 		if (isDeviceSuitable(device)) {
 			physicalDevice = device;
@@ -282,6 +282,10 @@ void Renderer::pickPhysicalDevice() {
 			break;
 		}
 	}
+
+	VkPhysicalDeviceProperties properties;
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+	std::cout << properties.deviceName << std::endl;
 
 	if (physicalDevice == VK_NULL_HANDLE) {
 		throw std::runtime_error("failed to find a suitable GPU!");
@@ -1261,7 +1265,7 @@ void Renderer::createColorResources() {
 	createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage);
 
 	colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	transitionImageLayout(colorImage, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
+	transitionImageLayout(colorImage, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
 }
 
 void Renderer::createDepthResources() {
@@ -1270,13 +1274,12 @@ void Renderer::createDepthResources() {
 	createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage);
 
 	depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-	transitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+	transitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, 1);
 
 	// Shadows
 
 	shadowsImages.resize(scene->getDirectionalLights().size() + scene->getSpotLights().size());
 	shadowsImageViews.resize(scene->getDirectionalLights().size() + scene->getSpotLights().size());
-	VkMemoryRequirements shadowsMemRequirements;
 	for (int i = 0; i < scene->getDirectionalLights().size() + scene->getSpotLights().size(); i++) {
 		createImage(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_D16_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowsImages[i]);
 
@@ -1873,7 +1876,7 @@ void Renderer::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-void Renderer::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
+void Renderer::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layers) {
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
 	VkImageMemoryBarrier barrier = {};
@@ -1897,7 +1900,7 @@ void Renderer::transitionImageLayout(VkImage image, VkFormat format, VkImageLayo
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = mipLevels;
 	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = layers;
 
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
@@ -1939,96 +1942,11 @@ void Renderer::transitionImageLayout(VkImage image, VkFormat format, VkImageLayo
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Renderer::transitionCubemapLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-	VkImageMemoryBarrier barrier = {};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = oldLayout;
-	barrier.newLayout = newLayout;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = image;
-
-	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		if (hasStencilComponent(format)) {
-			barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-		}
-	}
-	else {
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	}
-
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = mipLevels;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 6;
-
-	VkPipelineStageFlags sourceStage;
-	VkPipelineStageFlags destinationStage;
-
-	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	}
-	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	}
-	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	}
-	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
-		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	}
-	else {
-		throw std::invalid_argument("unsupported layout transition!");
-	}
-
-	vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-	endSingleTimeCommands(commandBuffer);
-}
-
-void Renderer::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-	VkBufferImageCopy region = {};
-	region.bufferOffset = 0;
-	region.bufferRowLength = 0;
-	region.bufferImageHeight = 0;
-	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	region.imageSubresource.mipLevel = 0;
-	region.imageSubresource.baseArrayLayer = 0;
-	region.imageSubresource.layerCount = 1;
-	region.imageOffset = { 0, 0, 0 };
-	region.imageExtent = { width, height, 1 };
-
-	vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-	endSingleTimeCommands(commandBuffer);
-}
-
-void Renderer::copyBufferToCubemap(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
+void Renderer::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layers) {
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
 	std::vector<VkBufferImageCopy> regions;
-	for (uint32_t i = 0; i < 6; i++) {
+	for (uint32_t i = 0; i < layers; i++) {
 		VkBufferImageCopy region = {};
 		region.bufferOffset = (VkDeviceSize)width * height * i * 4;
 		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -2369,36 +2287,36 @@ void Renderer::createTextureImage(Material* mat) {
 
 	createImage(AOTexWidth, AOTexHeight, mat->getAOMipLevel(), VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *mat->getAOTextureImage());
 
-	transitionImageLayout(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getDiffuseMipLevel());
-	copyBufferToImage(diffuseStagingBuffer, *mat->getDiffuseTextureImage(), static_cast<uint32_t>(diffuseTexWidth), static_cast<uint32_t>(diffuseTexHeight));
+	transitionImageLayout(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getDiffuseMipLevel(), 1);
+	copyBufferToImage(diffuseStagingBuffer, *mat->getDiffuseTextureImage(), static_cast<uint32_t>(diffuseTexWidth), static_cast<uint32_t>(diffuseTexHeight), 1);
 	generateMipmaps(*mat->getDiffuseTextureImage(), VK_FORMAT_R8G8B8A8_SRGB, diffuseTexWidth, diffuseTexHeight, mat->getDiffuseMipLevel());
 
 	vkDestroyBuffer(device, diffuseStagingBuffer, nullptr);
 	vkFreeMemory(device, diffuseStagingBufferMemory, nullptr);
 
-	transitionImageLayout(*mat->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getNormalMipLevel());
-	copyBufferToImage(normalStagingBuffer, *mat->getNormalTextureImage(), static_cast<uint32_t>(normalTexWidth), static_cast<uint32_t>(normalTexHeight));
+	transitionImageLayout(*mat->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getNormalMipLevel(), 1);
+	copyBufferToImage(normalStagingBuffer, *mat->getNormalTextureImage(), static_cast<uint32_t>(normalTexWidth), static_cast<uint32_t>(normalTexHeight), 1);
 	generateMipmaps(*mat->getNormalTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, normalTexWidth, normalTexHeight, mat->getNormalMipLevel());
 
 	vkDestroyBuffer(device, normalStagingBuffer, nullptr);
 	vkFreeMemory(device, normalStagingBufferMemory, nullptr);
 
-	transitionImageLayout(*mat->getMetallicTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getMetallicMipLevel());
-	copyBufferToImage(metallicStagingBuffer, *mat->getMetallicTextureImage(), static_cast<uint32_t>(metallicTexWidth), static_cast<uint32_t>(metallicTexHeight));
+	transitionImageLayout(*mat->getMetallicTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getMetallicMipLevel(), 1);
+	copyBufferToImage(metallicStagingBuffer, *mat->getMetallicTextureImage(), static_cast<uint32_t>(metallicTexWidth), static_cast<uint32_t>(metallicTexHeight), 1);
 	generateMipmaps(*mat->getMetallicTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, metallicTexWidth, metallicTexHeight, mat->getMetallicMipLevel());
 
 	vkDestroyBuffer(device, metallicStagingBuffer, nullptr);
 	vkFreeMemory(device, metallicStagingBufferMemory, nullptr);
 
-	transitionImageLayout(*mat->getRoughnessTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getRoughnessMipLevel());
-	copyBufferToImage(roughnessStagingBuffer, *mat->getRoughnessTextureImage(), static_cast<uint32_t>(roughnessTexWidth), static_cast<uint32_t>(roughnessTexHeight));
+	transitionImageLayout(*mat->getRoughnessTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getRoughnessMipLevel(), 1);
+	copyBufferToImage(roughnessStagingBuffer, *mat->getRoughnessTextureImage(), static_cast<uint32_t>(roughnessTexWidth), static_cast<uint32_t>(roughnessTexHeight), 1);
 	generateMipmaps(*mat->getRoughnessTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, roughnessTexWidth, roughnessTexHeight, mat->getRoughnessMipLevel());
 
 	vkDestroyBuffer(device, roughnessStagingBuffer, nullptr);
 	vkFreeMemory(device, roughnessStagingBufferMemory, nullptr);
 
-	transitionImageLayout(*mat->getAOTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getAOMipLevel());
-	copyBufferToImage(AOStagingBuffer, *mat->getAOTextureImage(), static_cast<uint32_t>(AOTexWidth), static_cast<uint32_t>(AOTexHeight));
+	transitionImageLayout(*mat->getAOTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mat->getAOMipLevel(), 1);
+	copyBufferToImage(AOStagingBuffer, *mat->getAOTextureImage(), static_cast<uint32_t>(AOTexWidth), static_cast<uint32_t>(AOTexHeight), 1);
 	generateMipmaps(*mat->getAOTextureImage(), VK_FORMAT_R8G8B8A8_UNORM, AOTexWidth, AOTexHeight, mat->getAOMipLevel());
 
 	vkDestroyBuffer(device, AOStagingBuffer, nullptr);
@@ -2488,7 +2406,7 @@ void Renderer::createSkyboxTextureImage() {
 	stbi_uc* sPixels;
 	void* ddata;
 	void* pOffset;
-	uint32_t offset;
+	VkDeviceSize offset;
 
 	// Right Face Texture
 	if (skybox->getRightFacePath() != "") {
@@ -2499,7 +2417,7 @@ void Renderer::createSkyboxTextureImage() {
 		unsigned char rVal = round(255.0f * skybox->getRightFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getRightFaceGValue());
 		unsigned char bVal = round(255.0f * skybox->getRightFaceBValue());
-		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 1.0f };
+		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 		skyboxTexWidth = 1;
 		skyboxTexHeight = 1;
@@ -2533,7 +2451,7 @@ void Renderer::createSkyboxTextureImage() {
 		unsigned char rVal = round(255.0f * skybox->getLeftFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getLeftFaceGValue());
 		unsigned char bVal = round(255.0f * skybox->getLeftFaceBValue());
-		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 1.0f };
+		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
 
@@ -2559,7 +2477,7 @@ void Renderer::createSkyboxTextureImage() {
 		unsigned char rVal = round(255.0f * skybox->getTopFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getTopFaceGValue());
 		unsigned char bVal = round(255.0f * skybox->getTopFaceBValue());
-		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 1.0f };
+		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
 
@@ -2585,7 +2503,7 @@ void Renderer::createSkyboxTextureImage() {
 		unsigned char rVal = round(255.0f * skybox->getBottomFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getBottomFaceGValue());
 		unsigned char bVal = round(255.0f * skybox->getBottomFaceBValue());
-		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 1.0f };
+		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
 
@@ -2611,7 +2529,7 @@ void Renderer::createSkyboxTextureImage() {
 		unsigned char rVal = round(255.0f * skybox->getBackFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getBackFaceGValue());
 		unsigned char bVal = round(255.0f * skybox->getBackFaceBValue());
-		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 1.0f };
+		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
 
@@ -2637,7 +2555,7 @@ void Renderer::createSkyboxTextureImage() {
 		unsigned char rVal = round(255.0f * skybox->getFrontFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getFrontFaceGValue());
 		unsigned char bVal = round(255.0f * skybox->getFrontFaceBValue());
-		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 1.0f };
+		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
 
@@ -2674,9 +2592,9 @@ void Renderer::createSkyboxTextureImage() {
 
 	memoryAllocator.allocate(&skyboxImage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	transitionCubemapLayout(skyboxImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
-	copyBufferToCubemap(skyboxStagingBuffer, skyboxImage, skyboxTexWidth, skyboxTexHeight);
-	transitionCubemapLayout(skyboxImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+	transitionImageLayout(skyboxImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 6);
+	copyBufferToImage(skyboxStagingBuffer, skyboxImage, skyboxTexWidth, skyboxTexHeight, 6);
+	transitionImageLayout(skyboxImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 6);
 
 	vkDestroyBuffer(device, skyboxStagingBuffer, nullptr);
 	vkFreeMemory(device, skyboxStagingBufferMemory, nullptr);

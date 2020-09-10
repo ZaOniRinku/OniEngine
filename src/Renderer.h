@@ -188,10 +188,8 @@ private:
 	void updateUniformBuffer(Object* obj, uint32_t currentImage);
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-	void transitionCubemapLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	void copyBufferToCubemap(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layers);
+	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layers);
 	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	VkFormat findDepthFormat();
@@ -265,16 +263,16 @@ private:
 	VkBuffer vertexBuffer;
 	std::vector<uint32_t> indices;
 	VkBuffer indexBuffer;
-	int vertexSize = 0;
-	int indexSize = 0;
+	VkDeviceSize vertexSize = 0;
+	VkDeviceSize indexSize = 0;
 	
 	// Skybox
 	std::vector<VkBuffer> skyboxBuffers;
 	std::vector<VkDeviceMemory> skyboxBufferMemories;
 	std::vector<VkDescriptorSet> skyboxDescriptorSets;
-	int skyboxVertexOffset;
-	int skyboxIndexOffset;
-	int skyboxIndexSize;
+	VkDeviceSize skyboxVertexOffset;
+	VkDeviceSize skyboxIndexOffset;
+	VkDeviceSize skyboxIndexSize;
 
 	std::vector<VkBuffer> cameraBuffers;
 	std::vector<VkBuffer> lightsBuffers;
