@@ -285,10 +285,6 @@ void Renderer::pickPhysicalDevice() {
 				msaaSamples = getMaxUsableSampleCount();
 				break;
 			}
-			else if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
-				// Chipset
-				break;
-			}
 		}
 	}
 
