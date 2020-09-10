@@ -8,14 +8,14 @@
 layout(constant_id = 0) const int numShadowmaps = MAX_DIR_LIGHTS + MAX_POINT_LIGHTS + MAX_SPOT_LIGHTS;
 
 layout(binding = 2) uniform Lights {
-	vec4 numLights;
-	vec4 dirLightsDir[MAX_DIR_LIGHTS];
-	vec4 dirLightsColor[MAX_DIR_LIGHTS];
-	vec4 pointLightsPos[MAX_POINT_LIGHTS];
-	vec4 pointLightsColor[MAX_POINT_LIGHTS];
-	vec4 spotLightsPos[MAX_SPOT_LIGHTS];
-	vec4 spotLightsDir[MAX_SPOT_LIGHTS];
-	vec4 spotLightsColor[MAX_SPOT_LIGHTS];
+	vec3 numLights;
+	vec3 dirLightsDir[MAX_DIR_LIGHTS];
+	vec3 dirLightsColor[MAX_DIR_LIGHTS];
+	vec3 pointLightsPos[MAX_POINT_LIGHTS];
+	vec3 pointLightsColor[MAX_POINT_LIGHTS];
+	vec3 spotLightsPos[MAX_SPOT_LIGHTS];
+	vec3 spotLightsDir[MAX_SPOT_LIGHTS];
+	vec3 spotLightsColor[MAX_SPOT_LIGHTS];
 	vec2 spotLightsCutoffs[MAX_SPOT_LIGHTS];
 } lights;
 
@@ -141,34 +141,34 @@ void main() {
 	float shadows = 0.0;
 	// Directional Lights
 	for (int i = 0; i < numDirLights; i++) {
-		l = normalize(vec3(-lights.dirLightsDir[i]));
+		l = normalize(-lights.dirLightsDir[i]);
 		float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
 		shadows = shadowsValue(fragDirLightsSpace[i] , shadowmapIndex, bias);
-		color += shade(n, v, l, vec3(lights.dirLightsColor[i]), d, metallic, roughness) * (1.0 - shadows);
+		color += shade(n, v, l, lights.dirLightsColor[i], d, metallic, roughness) * (1.0 - shadows);
 		shadowmapIndex++;
 	}
 	// Point Lights
 	for (int i = 0; i < numPointLights; i++) {
-		l = normalize(vec3(lights.pointLightsPos[i]) - fragPos);
-		float distance = length(vec3(lights.pointLightsPos[i]) - fragPos);
+		l = normalize(lights.pointLightsPos[i] - fragPos);
+		float distance = length(lights.pointLightsPos[i] - fragPos);
 		float attenuation = 1.0 / (distance * distance);
-		vec3 radiance = vec3(lights.pointLightsColor[i]) * attenuation;
+		vec3 radiance = lights.pointLightsColor[i] * attenuation;
 		color += shade(n, v, l, radiance, d, metallic, roughness);
 	}
 	// Spot Lights
 	for (int i = 0; i < numSpotLights; i++) {
-		l = normalize(vec3(lights.spotLightsPos[i]) - fragPos);
-		float theta = dot(l, normalize(vec3(-lights.spotLightsDir[i])));
+		l = normalize(lights.spotLightsPos[i] - fragPos);
+		float theta = dot(l, normalize(-lights.spotLightsDir[i]));
 		if (theta > lights.spotLightsCutoffs[i].x) {
 			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
 			shadows = shadowsValue(fragSpotLightsSpace[i], shadowmapIndex, bias);
-			color += shade(n, v, l, vec3(lights.spotLightsColor[i]), d, metallic, roughness) * (1.0 - shadows);
+			color += shade(n, v, l, lights.spotLightsColor[i], d, metallic, roughness) * (1.0 - shadows);
 		} else if (theta > lights.spotLightsCutoffs[i].y) {
 			float bias = max(0.0005 * (1.0 - dot(n, l)), 0.00005);
 			shadows = shadowsValue(fragSpotLightsSpace[i], shadowmapIndex, bias);
 			float epsilon = lights.spotLightsCutoffs[i].x - lights.spotLightsCutoffs[i].y;
 			float intensity = clamp((theta - lights.spotLightsCutoffs[i].y) / epsilon, 0.0, 1.0);
-			color += shade(n, v, l, vec3(lights.spotLightsColor[i]) * intensity, d * intensity, metallic, roughness) * (1.0 - shadows);
+			color += shade(n, v, l, lights.spotLightsColor[i] * intensity, d * intensity, metallic, roughness) * (1.0 - shadows);
 		}
 		shadowmapIndex++;
 	}

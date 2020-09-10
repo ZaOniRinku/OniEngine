@@ -16,7 +16,7 @@ layout(binding = 1) uniform CameraBufferObject {
 } cbo;
 
 layout(binding = 3) uniform ShadowsBufferObject {
-	vec4 numLights;
+	vec3 numLights;
 	mat4 dirLightsSpace[MAX_DIR_LIGHTS];
 	mat4 spotLightsSpace[MAX_SPOT_LIGHTS];
 } sbo;
