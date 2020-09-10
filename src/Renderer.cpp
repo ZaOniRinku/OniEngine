@@ -100,7 +100,7 @@ bool Renderer::checkValidationLayerSupport() {
 	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
 	// List validation layers
-	std::cout << "available validation layers:" << std::endl;
+	std::cout << "Available validation layers:" << std::endl;
 	for (const auto& availableLayer : availableLayers) {
 		std::cout << "\t" << availableLayer.layerName << std::endl;
 	}
@@ -2017,7 +2017,7 @@ void Renderer::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texW
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-		throw std::runtime_error("texture image format does not support linear blitting!");
+		throw std::runtime_error("Texture image format does not support linear blitting!");
 	}
 
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
@@ -2446,12 +2446,12 @@ void Renderer::createSkyboxTextureImage() {
 	if (skybox->getLeftFacePath() != "") {
 		sPixels = stbi_load(skybox->getLeftFacePath().c_str(), &tmpTexWidth, &tmpTexHeight, &skyboxTexChannels, STBI_rgb_alpha);
 		if (skyboxTexWidth != tmpTexWidth || skyboxTexHeight != tmpTexHeight) {
-			throw std::runtime_error("all skybox textures must have the same width and height (left face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (left face)!");
 		}
 	}
 	else {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
-			throw std::runtime_error("all skybox textures must have the same width and height (left face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (left face)!");
 		}
 		unsigned char rVal = round(255.0f * skybox->getLeftFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getLeftFaceGValue());
@@ -2472,12 +2472,12 @@ void Renderer::createSkyboxTextureImage() {
 	if (skybox->getTopFacePath() != "") {
 		sPixels = stbi_load(skybox->getTopFacePath().c_str(), &tmpTexWidth, &tmpTexHeight, &skyboxTexChannels, STBI_rgb_alpha);
 		if (skyboxTexWidth != tmpTexWidth || skyboxTexHeight != tmpTexHeight) {
-			throw std::runtime_error("all skybox textures must have the same width and height (top face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (top face)!");
 		}
 	}
 	else {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
-			throw std::runtime_error("all skybox textures must have the same width and height (top face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (top face)!");
 		}
 		unsigned char rVal = round(255.0f * skybox->getTopFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getTopFaceGValue());
@@ -2498,12 +2498,12 @@ void Renderer::createSkyboxTextureImage() {
 	if (skybox->getBottomFacePath() != "") {
 		sPixels = stbi_load(skybox->getBottomFacePath().c_str(), &tmpTexWidth, &tmpTexHeight, &skyboxTexChannels, STBI_rgb_alpha);
 		if (skyboxTexWidth != tmpTexWidth || skyboxTexHeight != tmpTexHeight) {
-			throw std::runtime_error("all skybox textures must have the same width and height (bottom face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (bottom face)!");
 		}
 	}
 	else {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
-			throw std::runtime_error("all skybox textures must have the same width and height (bottom face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (bottom face)!");
 		}
 		unsigned char rVal = round(255.0f * skybox->getBottomFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getBottomFaceGValue());
@@ -2524,12 +2524,12 @@ void Renderer::createSkyboxTextureImage() {
 	if (skybox->getBackFacePath() != "") {
 		sPixels = stbi_load(skybox->getBackFacePath().c_str(), &tmpTexWidth, &tmpTexHeight, &skyboxTexChannels, STBI_rgb_alpha);
 		if (skyboxTexWidth != tmpTexWidth || skyboxTexHeight != tmpTexHeight) {
-			throw std::runtime_error("all skybox textures must have the same width and height (back face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (back face)!");
 		}
 	}
 	else {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
-			throw std::runtime_error("all skybox textures must have the same width and height (back face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (back face)!");
 		}
 		unsigned char rVal = round(255.0f * skybox->getBackFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getBackFaceGValue());
@@ -2550,12 +2550,12 @@ void Renderer::createSkyboxTextureImage() {
 	if (skybox->getFrontFacePath() != "") {
 		sPixels = stbi_load(skybox->getFrontFacePath().c_str(), &tmpTexWidth, &tmpTexHeight, &skyboxTexChannels, STBI_rgb_alpha);
 		if (skyboxTexWidth != tmpTexWidth || skyboxTexHeight != tmpTexHeight) {
-			throw std::runtime_error("all skybox textures must have the same width and height (front face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (front face)!");
 		}
 	}
 	else {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
-			throw std::runtime_error("all skybox textures must have the same width and height (front face)!");
+			throw std::runtime_error("All skybox textures must have the same width and height (front face)!");
 		}
 		unsigned char rVal = round(255.0f * skybox->getFrontFaceRValue());
 		unsigned char gVal = round(255.0f * skybox->getFrontFaceGValue());

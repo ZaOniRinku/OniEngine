@@ -8,7 +8,7 @@ Chunk::Chunk(VkDevice* device, int32_t memoryType, VkDeviceSize size) {
     allocInfo.allocationSize = size;
     allocInfo.memoryTypeIndex = memoryType;
     if (vkAllocateMemory(*device, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate memory (chunk creation)!");
+        throw std::runtime_error("Failed to allocate memory (chunk creation)!");
     }
 
     Block* block = new Block();
@@ -111,7 +111,7 @@ VkDeviceSize MemoryAllocator::allocate(VkBuffer* bufferToAllocate, VkMemoryPrope
     offset = newChunk.allocate(memRequirements);
 
     if (offset == -1) {
-        throw std::runtime_error("failed to allocate memory (block allocation)!");
+        throw std::runtime_error("Failed to allocate memory (block allocation)!");
     }
 
     vkBindBufferMemory(*device, *bufferToAllocate, newChunk.memory, offset);
@@ -147,7 +147,7 @@ VkDeviceSize MemoryAllocator::allocate(VkImage* imageToAllocate, VkMemoryPropert
     offset = newChunk.allocate(memRequirements);
 
     if (offset == -1) {
-        throw std::runtime_error("failed to allocate memory (block allocation)!");
+        throw std::runtime_error("Failed to allocate memory (block allocation)!");
     }
 
     vkBindImageMemory(*device, *imageToAllocate, newChunk.memory, offset);
@@ -177,5 +177,5 @@ int32_t MemoryAllocator::findProperties(uint32_t memoryTypeBitsRequirement, VkMe
             return static_cast<int32_t>(memoryIndex);
         }
     }
-    throw std::runtime_error("failed to find suitable memory type!");
+    throw std::runtime_error("Failed to find suitable memory type!");
 }
