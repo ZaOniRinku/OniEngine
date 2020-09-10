@@ -752,7 +752,7 @@ void Renderer::createDescriptorSetLayout() {
 }
 
 void Renderer::createGraphicsPipeline() {
-	int pipelinesSize = scene->getSkybox() ? 3 : 2;
+	int pipelinesSize = 3;
 	graphicsPipelines.resize(pipelinesSize);
 	graphicsPipelineLayouts.resize(pipelinesSize);
 
