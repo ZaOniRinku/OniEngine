@@ -4,7 +4,7 @@ ONIEngine is a graphics engine developed in C++ with the Vulkan API.
 This project has been started as a school project during the third year at Université Paul Sabatier in Toulouse.
 This version is extended.
 
-![ONIEngine](https://i.imgur.com/KBKnlOL.png)
+![ONIEngine](https://i.imgur.com/hXeszZX.png)
 
 ## Dependencies
 ### To install

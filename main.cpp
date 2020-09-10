@@ -112,6 +112,8 @@ int main() {
 	Material metal1Material = Material("textures/Metal012_2K_Color.jpg", "textures/Metal012_2K_Normal.jpg", "textures/Metal012_2K_Metalness.jpg", "textures/Metal012_2K_Roughness.jpg", "");
 	Material metal2Material = Material("textures/Metal006_2K_Color.jpg", "textures/Metal006_2K_Normal.jpg", "textures/Metal006_2K_Metalness.jpg", "textures/Metal006_2K_Roughness.jpg", "");
 	Material metal3Material = Material("textures/Metal022_2K_Color.jpg", "textures/Metal022_2K_Normal.jpg", "textures/Metal022_2K_Metalness.jpg", "textures/Metal022_2K_Roughness.jpg", "");
+	Material metal4Material = Material("textures/Metal032_2K_Color.jpg", "textures/Metal032_2K_Normal.jpg", "textures/Metal032_2K_Metalness.jpg", "textures/Metal032_2K_Roughness.jpg", "");
+	Material metal5Material = Material("textures/Metal035_2K_Color.jpg", "textures/Metal035_2K_Normal.jpg", "textures/Metal035_2K_Metalness.jpg", "textures/Metal035_2K_Roughness.jpg", "");
 	Material woodMaterial = Material("textures/WoodSiding009_2K_Color.jpg", "textures/WoodSiding009_2K_Normal.jpg", "textures/WoodSiding009_2K_Metalness.jpg", "textures/WoodSiding009_2K_Roughness.jpg", "textures/WoodSiding009_2K_AmbientOcclusion.jpg");
 	Material marbleMaterial = Material("textures/Marble009_2K_Color.jpg", "textures/Marble009_2K_Normal.jpg", "", "textures/Metal006_2K_Roughness.jpg", "");
 	marbleMaterial.setMetallicValue(1.0f);
@@ -157,6 +159,20 @@ int main() {
 	sphere4.setMaterial(&carbonMaterial);
 	scene.getRoot()->addChild(&sphere4Node);
 	sphere4.frameEvent = objectControls;
+
+	Object sphere5 = Object(2.0f, 1.0f, -2.0f, 0.3f);
+	SGNode sphere5Node = SGNode(&sphere5);
+	sphere5.setMesh(&sphereMesh);
+	sphere5.setMaterial(&metal4Material);
+	scene.getRoot()->addChild(&sphere5Node);
+	sphere5.frameEvent = objectControls;
+
+	Object sphere6 = Object(2.0f, 1.0f, -3.0f, 0.3f);
+	SGNode sphere6Node = SGNode(&sphere6);
+	sphere6.setMesh(&sphereMesh);
+	sphere6.setMaterial(&metal5Material);
+	scene.getRoot()->addChild(&sphere6Node);
+	sphere6.frameEvent = objectControls;
 
 	// House
 	Object house = Object(5.0f, -0.11f, 3.0f, 1.0f);
