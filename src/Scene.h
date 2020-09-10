@@ -7,15 +7,15 @@
 #include "SpotLight.h"
 
 struct LightsBufferObject {
-	alignas(16) glm::vec3 numLights;
-	alignas(16) glm::vec3 dirLightsDir[10];
-	alignas(16) glm::vec3 dirLightsColor[10];
-	alignas(16) glm::vec3 pointLightsPos[10];
-	alignas(16) glm::vec3 pointLightsColor[10];
-	alignas(16) glm::vec3 spotLightsPos[10];
-	alignas(16) glm::vec3 spotLightsDir[10];
-	alignas(16) glm::vec3 spotLightsColor[10];
-	alignas(16) glm::vec2 spotLightsCutoffs[10];
+	glm::vec4 numLights;
+	glm::vec4 dirLightsDir[10];
+	glm::vec4 dirLightsColor[10];
+	glm::vec4 pointLightsPos[10];
+	glm::vec4 pointLightsColor[10];
+	glm::vec4 spotLightsPos[10];
+	glm::vec4 spotLightsDir[10];
+	glm::vec4 spotLightsColor[10];
+	glm::vec2 spotLightsCutoffs[10];
 };
 
 class Scene {

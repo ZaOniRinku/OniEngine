@@ -3,7 +3,6 @@
 #define GLFW_INCLUDE_VULKAN
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 
 #include "../external/glfw/include/GLFW/glfw3.h"
 #include <stdexcept>
@@ -27,7 +26,8 @@ const int SHADOWMAP_WIDTH = 2048;
 const int SHADOWMAP_HEIGHT = 2048;
 
 const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
+	"VK_LAYER_KHRONOS_validation",
+	"VK_LAYER_LUNARG_monitor"
 };
 
 const std::vector<const char*> deviceExtensions = {
@@ -47,7 +47,7 @@ struct CameraBufferObject {
 };
 
 struct ShadowsBufferObject {
-	alignas(16) glm::vec3 numLights;
+	alignas(16) glm::vec4 numLights;
 	alignas(16) glm::mat4 dirLightsSpace[10];
 	alignas(16) glm::mat4 spotLightsSpace[10];
 };

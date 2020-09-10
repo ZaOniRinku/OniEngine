@@ -3156,17 +3156,17 @@ void Renderer::drawFrame() {
 	lbo.numLights.y = (float)pointLights.size();
 	lbo.numLights.z = (float)spotLights.size();
 	for (size_t i = 0; i < dirLights.size(); i++) {
-		lbo.dirLightsDir[i] = glm::vec3(dirLights[i]->getDirectionX(), dirLights[i]->getDirectionY(), dirLights[i]->getDirectionZ());
-		lbo.dirLightsColor[i] = glm::vec3(dirLights[i]->getColorR(), dirLights[i]->getColorG(), dirLights[i]->getColorB());
+		lbo.dirLightsDir[i] = glm::vec4(dirLights[i]->getDirectionX(), dirLights[i]->getDirectionY(), dirLights[i]->getDirectionZ(), 0.0f);
+		lbo.dirLightsColor[i] = glm::vec4(dirLights[i]->getColorR(), dirLights[i]->getColorG(), dirLights[i]->getColorB(), 0.0f);
 	}
 	for (size_t i = 0; i < pointLights.size(); i++) {
-		lbo.pointLightsPos[i] = glm::vec3(pointLights[i]->getPositionX(), pointLights[i]->getPositionY(), pointLights[i]->getPositionZ());
-		lbo.pointLightsColor[i] = glm::vec3(pointLights[i]->getColorR(), pointLights[i]->getColorG(), pointLights[i]->getColorB());
+		lbo.pointLightsPos[i] = glm::vec4(pointLights[i]->getPositionX(), pointLights[i]->getPositionY(), pointLights[i]->getPositionZ(), 0.0f);
+		lbo.pointLightsColor[i] = glm::vec4(pointLights[i]->getColorR(), pointLights[i]->getColorG(), pointLights[i]->getColorB(), 0.0f);
 	}
 	for (size_t i = 0; i < spotLights.size(); i++) {
-		lbo.spotLightsPos[i] = glm::vec3(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ());
-		lbo.spotLightsDir[i] = glm::vec3(spotLights[i]->getDirectionX(), spotLights[i]->getDirectionY(), spotLights[i]->getDirectionZ());
-		lbo.spotLightsColor[i] = glm::vec3(spotLights[i]->getColorR(), spotLights[i]->getColorG(), spotLights[i]->getColorB());
+		lbo.spotLightsPos[i] = glm::vec4(spotLights[i]->getPositionX(), spotLights[i]->getPositionY(), spotLights[i]->getPositionZ(), 0.0f);
+		lbo.spotLightsDir[i] = glm::vec4(spotLights[i]->getDirectionX(), spotLights[i]->getDirectionY(), spotLights[i]->getDirectionZ(), 0.0f);
+		lbo.spotLightsColor[i] = glm::vec4(spotLights[i]->getColorR(), spotLights[i]->getColorG(), spotLights[i]->getColorB(), 0.0f);
 		lbo.spotLightsCutoffs[i] = glm::vec2(spotLights[i]->getCutoff(), spotLights[i]->getOutCutoff());
 	}
 

@@ -10,7 +10,7 @@ layout(binding = 0) uniform ObjectBufferObject {
 } obo;
 
 layout(binding = 1) uniform ShadowsBufferObject {
-	vec3 numLights;
+	vec4 numLights;
 	mat4 dirLightsSpace[MAX_DIR_LIGHTS];
 	mat4 spotLightsSpace[MAX_SPOT_LIGHTS];
 } sbo;
