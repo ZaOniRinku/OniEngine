@@ -26,8 +26,7 @@ const int SHADOWMAP_WIDTH = 2048;
 const int SHADOWMAP_HEIGHT = 2048;
 
 const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation",
-	"VK_LAYER_LUNARG_monitor"
+	"VK_LAYER_KHRONOS_validation"
 };
 
 const std::vector<const char*> deviceExtensions = {
@@ -114,7 +113,7 @@ private:
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 		if (!file.is_open()) {
-			throw std::runtime_error("failed to open file!");
+			throw std::runtime_error("Failed to open file!");
 		}
 
 		size_t fileSize = (size_t)file.tellg();
@@ -136,7 +135,7 @@ private:
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData) {
-		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+		std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;
 	}
