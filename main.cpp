@@ -82,7 +82,7 @@ int main() {
 	PointLight point4 = PointLight(0.5f, 1.0f, 0.5f, 1.0f, 0.0f, 1.0f);
 	PointLight point5 = PointLight(0.25f, 1.0f, 0.25f, 1.0f, 1.0f, 0.0f);
 	SpotLight spot = SpotLight(0.0f, 5.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0, 1.0, 1.0, 5.0f, 20.0f);
-	//spot.actAsTorchlight(true);
+	spot.actAsTorchlight(true);
 	scene.addDirectionalLight(&ambient);
 	scene.addDirectionalLight(&ambient2);
 	scene.addPointLight(&point);
@@ -106,7 +106,7 @@ int main() {
 	// Materials
 	Material emptyMaterial = Material("", "", "", "", "");
 	Material groundMaterial = Material("textures/Ground037_2K_Color.jpg", "textures/Ground037_2K_Normal.jpg", "", "textures/Ground037_2K_Roughness.jpg", "textures/Ground037_2K_AmbientOcclusion.jpg");
-	groundMaterial.setMetallicValue(1.0f);
+	//groundMaterial.setMetallicValue(1.0f);
 	Material ground2Material = Material("textures/grass_basecolor.png", "textures/grass_normal.png", "", "textures/grass_roughness.png", "textures/grass_ambientOcclusion.png");
 	ground2Material.setMetallicValue(1.0f);
 	Material metal1Material = Material("textures/Metal012_2K_Color.jpg", "textures/Metal012_2K_Normal.jpg", "textures/Metal012_2K_Metalness.jpg", "textures/Metal012_2K_Roughness.jpg", "");
