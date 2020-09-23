@@ -95,9 +95,14 @@ namespace std {
 
 class Mesh {
 public:
+	Mesh();
 	Mesh(std::string mPath);
 
 	std::string getModelPath();
+	void addParametricMeshVertex(double x, double y, double z);
+	std::vector<double>& getParametricMeshVertices();
+	void addParametricMeshIndex(uint32_t index);
+	std::vector<uint32_t>& getParametricMeshIndices();
 
 	int getVertexOffset();
 	void setVertexOffset(int newVertexOffset);
@@ -110,6 +115,8 @@ public:
 	void constructedTrue();
 private:
 	std::string modelPath;
+	std::vector<double> parametricMeshVertices;
+	std::vector<uint32_t> parametricMeshIndices;
 
 	int vertexOffset;
 	int indexOffset;

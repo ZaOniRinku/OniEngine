@@ -82,7 +82,7 @@ int main() {
 	PointLight point4 = PointLight(0.5f, 1.0f, 0.5f, 1.0f, 0.0f, 1.0f);
 	PointLight point5 = PointLight(0.25f, 1.0f, 0.25f, 1.0f, 1.0f, 0.0f);
 	SpotLight spot = SpotLight(0.0f, 5.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0, 1.0, 1.0, 5.0f, 20.0f);
-	spot.actAsTorchlight(true);
+	//spot.actAsTorchlight(true);
 	scene.addDirectionalLight(&ambient);
 	scene.addDirectionalLight(&ambient2);
 	scene.addPointLight(&point);
@@ -102,6 +102,14 @@ int main() {
 	Mesh houseMesh = Mesh("models/maison.obj");
 	Mesh roomMesh = Mesh("models/viking_room.obj");
 	Mesh sponzaMesh = Mesh("models/sponza.obj");
+
+	Mesh triangleMesh = Mesh();
+	triangleMesh.addParametricMeshVertex(0.0f, 0.0f, 1.0f);
+	triangleMesh.addParametricMeshIndex(2);
+	triangleMesh.addParametricMeshVertex(0.0f, 1.0f, 0.0f);
+	triangleMesh.addParametricMeshIndex(1);
+	triangleMesh.addParametricMeshVertex(0.0f, 0.0f, -1.0f);
+	triangleMesh.addParametricMeshIndex(0);
 
 	// Materials
 	Material emptyMaterial = Material("", "", "", "", "");
@@ -130,6 +138,12 @@ int main() {
 	// Skybox
 	Skybox skybox = Skybox("textures/Yokohama3/posx.jpg", "textures/Yokohama3/negx.jpg", "textures/Yokohama3/posy.jpg", "textures/Yokohama3/negy.jpg", "textures/Yokohama3/posz.jpg", "textures/Yokohama3/negz.jpg");
 	scene.setSkybox(skybox);
+
+	Object triangle = Object(2.0f, 1.5f, 1.0f, 1.0f);
+	SGNode triangleNode = SGNode(&triangle);
+	triangle.setMesh(&triangleMesh);
+	triangle.setMaterial(&emptyMaterial);
+	scene.getRoot()->addChild(&triangleNode);
 
 	// Spheres
 	Object sphere1 = Object(2.0f, 1.0f, 2.0f, 0.3f);

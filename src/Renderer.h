@@ -201,7 +201,8 @@ private:
 	void createSkyboxTextureImage();
 	void createSkyboxTextureImageView();
 	void createSkyboxTextureSampler();
-	void loadModel(Mesh* mesh);
+	void loadModelFromFile(Mesh* mesh);
+	void loadModelFromList(Mesh* mesh);
 	void loadSkyboxModel();
 	void createVertexBuffer();
 	void createIndexBuffer();

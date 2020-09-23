@@ -1335,9 +1335,15 @@ void Renderer::createModels() {
 
 	// Create models for all elements
 	for (Object* obj : scene->getElements()) {
-		if (!obj->getMesh()->isConstructed()) {
-			obj->getMesh()->constructedTrue();
-			loadModel(obj->getMesh());
+		Mesh* mesh = obj->getMesh();
+		if (!mesh->isConstructed()) {
+			mesh->constructedTrue();
+			if (mesh->getModelPath() != "") {
+				loadModelFromFile(mesh);
+			}
+			else {
+				loadModelFromList(mesh);
+			}
 		}
 	}
 	createVertexBuffer();
@@ -2646,7 +2652,7 @@ void Renderer::createSkyboxTextureSampler() {
 	}
 }
 
-void Renderer::loadModel(Mesh* mesh) {
+void Renderer::loadModelFromFile(Mesh* mesh) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
@@ -2731,6 +2737,61 @@ void Renderer::loadModel(Mesh* mesh) {
 		Vertex* vert = &meshVertex[i];
 		vert->tangent = glm::normalize(vert->tangent);
 		vert->bitangent = glm::normalize(vert->bitangent);
+	}
+
+	vertices.insert(std::end(vertices), std::begin(meshVertex), std::end(meshVertex));
+	indices.insert(std::end(indices), std::begin(meshIndex), std::end(meshIndex));
+
+	mesh->setVertexOffset(vertexSize);
+	mesh->setIndexOffset(indexSize);
+	mesh->setIndexSize(meshIndex.size());
+
+	vertexSize += meshVertex.size();
+	indexSize += meshIndex.size();
+}
+
+void Renderer::loadModelFromList(Mesh* mesh) {
+	std::vector<Vertex> meshVertex;
+	std::vector<uint32_t> meshIndex;
+	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+
+	std::vector<double> parametricMeshVertices = mesh->getParametricMeshVertices();
+	std::vector<uint32_t> parametricMeshIndices = mesh->getParametricMeshIndices();
+	meshIndex.insert(std::begin(meshIndex), std::begin(parametricMeshIndices), std::end(parametricMeshIndices));
+
+	for (int i = 0; i < parametricMeshVertices.size(); i += 3) {
+		Vertex vertex = {};
+		vertex.pos = {
+			parametricMeshVertices[(uint64_t)i + 0],
+			parametricMeshVertices[(uint64_t)i + 1],
+			parametricMeshVertices[(uint64_t)i + 2]
+		};
+		vertex.texCoords = {
+			0.0f,
+			0.0f
+		};
+		vertex.normal = {
+			0.0f,
+			0.0f,
+			0.0f
+		};
+		vertex.color = {
+			1.0f,
+			1.0f,
+			1.0f
+		};
+		vertex.tangent = {
+			0.0f,
+			0.0f,
+			0.0f
+		};
+		vertex.bitangent = {
+			0.0f,
+			0.0f,
+			0.0f
+		};
+
+		meshVertex.push_back(vertex);
 	}
 
 	vertices.insert(std::end(vertices), std::begin(meshVertex), std::end(meshVertex));
