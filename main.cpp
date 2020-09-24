@@ -105,11 +105,11 @@ int main() {
 
 	Mesh triangleMesh = Mesh();
 	triangleMesh.addParametricMeshVertex(0.0f, 0.0f, 1.0f);
-	triangleMesh.addParametricMeshIndex(2);
+	triangleMesh.addParametricMeshIndex(0);
 	triangleMesh.addParametricMeshVertex(0.0f, 1.0f, 0.0f);
 	triangleMesh.addParametricMeshIndex(1);
 	triangleMesh.addParametricMeshVertex(0.0f, 0.0f, -1.0f);
-	triangleMesh.addParametricMeshIndex(0);
+	triangleMesh.addParametricMeshIndex(2);
 
 	// Materials
 	Material emptyMaterial = Material("", "", "", "", "");

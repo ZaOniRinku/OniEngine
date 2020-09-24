@@ -204,6 +204,9 @@ private:
 	void loadModelFromFile(Mesh* mesh);
 	void loadModelFromList(Mesh* mesh);
 	void loadSkyboxModel();
+	void createPBRGraphicsPipeline();
+	void createSkyboxGraphicsPipeline();
+	void createShadowsGraphicsPipeline();
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void updateDescriptorSets(Object* obj, int frame);
