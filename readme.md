@@ -13,7 +13,7 @@ This version is extended.
 ### Provided
  - [glfw](https://www.glfw.org/)
  - [glm](https://github.com/g-truc/glm)
- - [tinyobjloader](https://github.com/tinyobjloader)
+ - [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader)
  - [stb](https://github.com/nothings/stb)
  
 ## Download
