@@ -92,7 +92,7 @@ int main() {
 	scene.addPointLight(&point5);
 	scene.addSpotLight(&spot);
 
-	// Modeles
+	// Models
 	Model groundModel = Model("models/ground.obj");
 	Model tableModel = Model("models/table.obj");
 	Model swordModel = Model("models/Big_Sword_OBJ.obj");

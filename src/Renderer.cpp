@@ -391,7 +391,7 @@ void Renderer::cleanupSwapChain() {
 		}
 	}
 
-	for (auto framebuffer : swapChainFramebuffers) {
+	for (VkFramebuffer framebuffer : swapChainFramebuffers) {
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
 	}
 
@@ -409,7 +409,7 @@ void Renderer::cleanupSwapChain() {
 	vkDestroyRenderPass(device, renderPass, nullptr);
 	vkDestroyRenderPass(device, shadowsRenderPass, nullptr);
 
-	for (auto imageView : swapChainImageViews) {
+	for (VkImageView imageView : swapChainImageViews) {
 		vkDestroyImageView(device, imageView, nullptr);
 	}
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
@@ -2521,7 +2521,7 @@ void Renderer::createPBRGraphicsPipeline() {
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
-	auto bindingDescription = Vertex::getBindingDescription();
+	VkVertexInputBindingDescription bindingDescription = Vertex::getBindingDescription();
 	auto attributeDescriptions = Vertex::getAttributeDescriptions();
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -2670,7 +2670,7 @@ void Renderer::createSkyboxGraphicsPipeline() {
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
-	auto bindingDescription = Vertex::getBindingDescription();
+	VkVertexInputBindingDescription bindingDescription = Vertex::getBindingDescription();
 	auto attributeDescriptions = Vertex::getSkyboxAttributeDescriptions();
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -2811,7 +2811,7 @@ void Renderer::createShadowsGraphicsPipeline() {
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo };
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
-	auto bindingDescription = Vertex::getBindingDescription();
+	VkVertexInputBindingDescription bindingDescription = Vertex::getBindingDescription();
 	auto attributeDescriptions = Vertex::getShadowsAttributeDescriptions();
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;

@@ -13,10 +13,17 @@ This version is extended.
 ### Provided
  - [glfw](https://www.glfw.org/)
  - [glm](https://github.com/g-truc/glm)
- - [tiny_obj_loader.h](https://github.com/tinyobjloader/tinyobjloader/blob/master/tiny_obj_loader.h)
- - [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.h)
+ - [tinyobjloader](https://github.com/tinyobjloader)
+ - [stb](https://github.com/nothings/stb)
  
 ## Download
 ```txt
 $ git clone https://github.com/ZaOniRinku/ONIEngine.git
+```
+
+## Build
+```txt
+$ mkdir build
+$ cd build
+$ cmake ..
 ```
