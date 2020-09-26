@@ -92,24 +92,24 @@ int main() {
 	scene.addPointLight(&point5);
 	scene.addSpotLight(&spot);
 
-	// Meshes
-	Mesh groundMesh = Mesh("models/ground.obj");
-	Mesh tableMesh = Mesh("models/table.obj");
-	Mesh swordMesh = Mesh("models/Big_Sword_OBJ.obj");
-	Mesh sphereMesh = Mesh("models/uvsphere.obj");
-	Mesh diceMesh = Mesh("models/dice.obj");
-	Mesh arrowMesh = Mesh("models/arrow.obj");
-	Mesh houseMesh = Mesh("models/maison.obj");
-	Mesh roomMesh = Mesh("models/viking_room.obj");
-	Mesh sponzaMesh = Mesh("models/sponza.obj");
+	// Modeles
+	Model groundModel = Model("models/ground.obj");
+	Model tableModel = Model("models/table.obj");
+	Model swordModel = Model("models/Big_Sword_OBJ.obj");
+	Model sphereModel = Model("models/uvsphere.obj");
+	Model diceModel = Model("models/dice.obj");
+	Model arrowModel = Model("models/arrow.obj");
+	Model houseModel = Model("models/maison.obj");
+	Model roomModel = Model("models/viking_room.obj");
+	Model sponzaModel = Model("models/sponza.obj");
 
-	Mesh triangleMesh = Mesh();
-	triangleMesh.addParametricMeshVertex(0.0f, 0.0f, 1.0f);
-	triangleMesh.addParametricMeshIndex(0);
-	triangleMesh.addParametricMeshVertex(0.0f, 1.0f, 0.0f);
-	triangleMesh.addParametricMeshIndex(1);
-	triangleMesh.addParametricMeshVertex(0.0f, 0.0f, -1.0f);
-	triangleMesh.addParametricMeshIndex(2);
+	Model triangleModel = Model();
+	triangleModel.addParametricMeshVertex(0.0f, 0.0f, 1.0f);
+	triangleModel.addParametricMeshIndex(0);
+	triangleModel.addParametricMeshVertex(0.0f, 1.0f, 0.0f);
+	triangleModel.addParametricMeshIndex(1);
+	triangleModel.addParametricMeshVertex(0.0f, 0.0f, -1.0f);
+	triangleModel.addParametricMeshIndex(2);
 
 	// Materials
 	Material emptyMaterial = Material("", "", "", "", "");
@@ -141,49 +141,49 @@ int main() {
 
 	Object triangle = Object(2.0f, 1.5f, 1.0f, 1.0f);
 	SGNode triangleNode = SGNode(&triangle);
-	triangle.setMesh(&triangleMesh);
+	triangle.setModel(&triangleModel);
 	triangle.setMaterial(&emptyMaterial);
 	scene.getRoot()->addChild(&triangleNode);
 
 	// Spheres
 	Object sphere1 = Object(2.0f, 1.0f, 2.0f, 0.3f);
 	SGNode sphere1Node = SGNode(&sphere1);
-	sphere1.setMesh(&sphereMesh);
+	sphere1.setModel(&sphereModel);
 	sphere1.setMaterial(&marbleMaterial);
 	scene.getRoot()->addChild(&sphere1Node);
 	sphere1.frameEvent = objectControls;
 
 	Object sphere2 = Object(2.0f, 1.0f, 1.0f, 0.3f);
 	SGNode sphere2Node = SGNode(&sphere2);
-	sphere2.setMesh(&sphereMesh);
+	sphere2.setModel(&sphereModel);
 	sphere2.setMaterial(&metal1Material);
 	scene.getRoot()->addChild(&sphere2Node);
 	sphere2.frameEvent = objectControls;
 
 	Object sphere3 = Object(2.0f, 1.0f, 0.0f, 0.3f);
 	SGNode sphere3Node = SGNode(&sphere3);
-	sphere3.setMesh(&sphereMesh);
+	sphere3.setModel(&sphereModel);
 	sphere3.setMaterial(&metal3Material);
 	scene.getRoot()->addChild(&sphere3Node);
 	sphere3.frameEvent = objectControls;
 
 	Object sphere4 = Object(2.0f, 1.0f, -1.0f, 0.3f);
 	SGNode sphere4Node = SGNode(&sphere4);
-	sphere4.setMesh(&sphereMesh);
+	sphere4.setModel(&sphereModel);
 	sphere4.setMaterial(&carbonMaterial);
 	scene.getRoot()->addChild(&sphere4Node);
 	sphere4.frameEvent = objectControls;
 
 	Object sphere5 = Object(2.0f, 1.0f, -2.0f, 0.3f);
 	SGNode sphere5Node = SGNode(&sphere5);
-	sphere5.setMesh(&sphereMesh);
+	sphere5.setModel(&sphereModel);
 	sphere5.setMaterial(&metal4Material);
 	scene.getRoot()->addChild(&sphere5Node);
 	sphere5.frameEvent = objectControls;
 
 	Object sphere6 = Object(2.0f, 1.0f, -3.0f, 0.3f);
 	SGNode sphere6Node = SGNode(&sphere6);
-	sphere6.setMesh(&sphereMesh);
+	sphere6.setModel(&sphereModel);
 	sphere6.setMaterial(&metal5Material);
 	scene.getRoot()->addChild(&sphere6Node);
 	sphere6.frameEvent = objectControls;
@@ -191,13 +191,13 @@ int main() {
 	// House
 	Object house = Object(5.0f, -0.11f, 3.0f, 1.0f);
 	SGNode houseNode = SGNode(&house);
-	house.setMesh(&houseMesh);
+	house.setModel(&houseModel);
 	house.setMaterial(&marbleMaterial);
 	scene.getRoot()->addChild(&houseNode);
 
 	Object room = Object(-7.0f, 0.0f, -3.0f, 1.5f, 270.0f, 0.0f, 90.0f);
 	SGNode roomNode = SGNode(&room);
-	room.setMesh(&roomMesh);
+	room.setModel(&roomModel);
 	room.setMaterial(&roomMaterial);
 	scene.getRoot()->addChild(&roomNode);
 
@@ -205,13 +205,13 @@ int main() {
 	Object ground = Object(0.0, -0.1f, 0.0, 10.0f);
 	SGNode groundNode = SGNode(&ground);
 	scene.getRoot()->addChild(&groundNode);
-	ground.setMesh(&groundMesh);
+	ground.setModel(&groundModel);
 	ground.setMaterial(&groundMaterial);
 
 	// Table
 	Object table = Object(0.0f, 0.0f, 0.0f, 0.5f);
 	SGNode tableNode = SGNode(&table);
-	table.setMesh(&tableMesh);
+	table.setModel(&tableModel);
 	table.setMaterial(&simpleWaterMaterial);
 	scene.getRoot()->addChild(&tableNode);
 

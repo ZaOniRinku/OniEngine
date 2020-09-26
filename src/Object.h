@@ -2,11 +2,7 @@
 #include "../external/glfw/include/GLFW/glfw3.h"
 #include "SGNode.h"
 #include "Material.h"
-#include "Mesh.h"
-
-struct ObjectBufferObject {
-	alignas(16) glm::mat4 model;
-};
+#include "Model.h"
 
 class SGNode;
 
@@ -28,8 +24,8 @@ public:
 	void setNode(SGNode* newNode);
 	std::string getName();
 	void setName(std::string newName);
-	Mesh* getMesh();
-	void setMesh(Mesh *newMesh);
+	Model* getModel();
+	void setModel(Model *newModel);
 	Material* getMaterial();
 	void setMaterial(Material* newMaterial);
 	std::vector<VkDescriptorSet>* getDescriptorSets();
@@ -41,7 +37,7 @@ public:
 
 	void (*frameEvent)(Object *obj, GLFWwindow* window, double deltaTime);
 private:
-	Mesh* mesh;
+	Model* model;
 	Material* material;
 
 	std::string name = "";

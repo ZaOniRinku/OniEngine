@@ -913,14 +913,14 @@ void Renderer::createModels() {
 
 	// Create models for all elements
 	for (Object* obj : scene->getElements()) {
-		Mesh* mesh = obj->getMesh();
-		if (!mesh->isConstructed()) {
-			mesh->constructedTrue();
-			if (mesh->getModelPath() != "") {
-				loadModelFromFile(mesh);
+		Model* model = obj->getModel();
+		if (!model->isConstructed()) {
+			model->constructedTrue();
+			if (model->getModelPath() != "") {
+				loadModelFromFile(model);
 			}
 			else {
-				loadModelFromList(mesh);
+				loadModelFromList(model);
 			}
 		}
 	}
@@ -1137,8 +1137,11 @@ void Renderer::createCommandBuffers() {
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offset);
 			vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			for (Object* obj : scene->getElements()) {
+				Model* model = obj->getModel();
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], 0, 1, &obj->getShadowsDescriptorSets()->at(i), 0, nullptr);
-				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndexSize()), 1, obj->getMesh()->getIndexOffset(), obj->getMesh()->getVertexOffset(), 0);
+				for (Mesh mesh : model->getMeshes()) {
+					vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh.getIndexSize()), 1, mesh.getIndexOffset(), model->getVertexOffset(), 0);
+				}
 			}
 
 			vkCmdEndRenderPass(commandBuffers[i]);
@@ -1151,9 +1154,12 @@ void Renderer::createCommandBuffers() {
 		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		for (Object* obj : scene->getElements()) {
+			Model* model = obj->getModel();
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[obj->getGraphicsPipelineIndex()]);
 			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[obj->getGraphicsPipelineIndex()], 0, 1, &obj->getDescriptorSets()->at(i), 0, nullptr);
-			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(obj->getMesh()->getIndexSize()), 1, obj->getMesh()->getIndexOffset(), obj->getMesh()->getVertexOffset(), 0);
+			for (Mesh mesh : model->getMeshes()) {
+				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh.getIndexSize()), 1, mesh.getIndexOffset(), model->getVertexOffset(), 0);
+			}
 		}
 
 		// Skybox is drawn last
@@ -2230,21 +2236,21 @@ void Renderer::createSkyboxTextureSampler() {
 	}
 }
 
-void Renderer::loadModelFromFile(Mesh* mesh) {
+void Renderer::loadModelFromFile(Model* model) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 	std::string warn, err;
 
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, mesh->getModelPath().c_str())) {
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, model->getModelPath().c_str())) {
 		throw std::runtime_error(warn + err);
 	}
 
 	std::vector<Vertex> meshVertex;
-	std::vector<uint32_t> meshIndex;
 	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
 
 	for (const auto& shape : shapes) {
+		std::vector<uint32_t> meshIndex;
 		for (const auto& index : shape.mesh.indices) {
 			Vertex vertex = {};
 			vertex.pos = {
@@ -2283,31 +2289,36 @@ void Renderer::loadModelFromFile(Mesh* mesh) {
 			}
 			meshIndex.push_back(uniqueVertices[vertex]);
 		}
-	}
 
-	// Tangents and bitangents for normal mapping
-	for (int i = 0; i < meshIndex.size(); i += 3) {
-		Vertex* vertex0 = &meshVertex[meshIndex[(uint64_t)i + 0]];
-		Vertex* vertex1 = &meshVertex[meshIndex[(uint64_t)i + 1]];
-		Vertex* vertex2 = &meshVertex[meshIndex[(uint64_t)i + 2]];
-		
-		glm::vec3 dPos1 = vertex1->pos - vertex0->pos;
-		glm::vec3 dPos2 = vertex2->pos - vertex0->pos;
+		// Tangents and bitangents for normal mapping
+		for (int i = 0; i < meshIndex.size(); i += 3) {
+			Vertex* vertex0 = &meshVertex[meshIndex[(uint64_t)i + 0]];
+			Vertex* vertex1 = &meshVertex[meshIndex[(uint64_t)i + 1]];
+			Vertex* vertex2 = &meshVertex[meshIndex[(uint64_t)i + 2]];
 
-		glm::vec2 dUV1 = vertex1->texCoords - vertex0->texCoords;
-		glm::vec2 dUV2 = vertex2->texCoords - vertex0->texCoords;
+			glm::vec3 dPos1 = vertex1->pos - vertex0->pos;
+			glm::vec3 dPos2 = vertex2->pos - vertex0->pos;
 
-		float r = 1.0f / (dUV1.x * dUV2.y - dUV1.y * dUV2.x);
-		glm::vec3 tangent = (dPos1 * dUV2.y - dPos2 * dUV1.y) * r;
-		glm::vec3 bitangent = (dPos2 * dUV1.x - dPos1 * dUV2.x) * r;
+			glm::vec2 dUV1 = vertex1->texCoords - vertex0->texCoords;
+			glm::vec2 dUV2 = vertex2->texCoords - vertex0->texCoords;
 
-		vertex0->tangent += tangent;
-		vertex1->tangent += tangent;
-		vertex2->tangent += tangent;
+			float r = 1.0f / (dUV1.x * dUV2.y - dUV1.y * dUV2.x);
+			glm::vec3 tangent = (dPos1 * dUV2.y - dPos2 * dUV1.y) * r;
+			glm::vec3 bitangent = (dPos2 * dUV1.x - dPos1 * dUV2.x) * r;
 
-		vertex0->bitangent += bitangent;
-		vertex1->bitangent += bitangent;
-		vertex2->bitangent += bitangent;
+			vertex0->tangent += tangent;
+			vertex1->tangent += tangent;
+			vertex2->tangent += tangent;
+
+			vertex0->bitangent += bitangent;
+			vertex1->bitangent += bitangent;
+			vertex2->bitangent += bitangent;
+		}
+
+		indices.insert(std::end(indices), std::begin(meshIndex), std::end(meshIndex));
+		model->addMesh(indexSize, meshIndex.size());
+
+		indexSize += meshIndex.size();
 	}
 
 	// Average tangents and bitangents
@@ -2318,23 +2329,18 @@ void Renderer::loadModelFromFile(Mesh* mesh) {
 	}
 
 	vertices.insert(std::end(vertices), std::begin(meshVertex), std::end(meshVertex));
-	indices.insert(std::end(indices), std::begin(meshIndex), std::end(meshIndex));
-
-	mesh->setVertexOffset(vertexSize);
-	mesh->setIndexOffset(indexSize);
-	mesh->setIndexSize(meshIndex.size());
+	model->setVertexOffset(vertexSize);
 
 	vertexSize += meshVertex.size();
-	indexSize += meshIndex.size();
 }
 
-void Renderer::loadModelFromList(Mesh* mesh) {
+void Renderer::loadModelFromList(Model* model) {
 	std::vector<Vertex> meshVertex;
 	std::vector<uint32_t> meshIndex;
 	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
 
-	std::vector<double> parametricMeshVertices = mesh->getParametricMeshVertices();
-	std::vector<uint32_t> parametricMeshIndices = mesh->getParametricMeshIndices();
+	std::vector<double> parametricMeshVertices = model->getParametricMeshVertices();
+	std::vector<uint32_t> parametricMeshIndices = model->getParametricMeshIndices();
 	meshIndex.insert(std::begin(meshIndex), std::begin(parametricMeshIndices), std::end(parametricMeshIndices));
 
 	for (int i = 0; i < parametricMeshVertices.size(); i += 3) {
@@ -2372,12 +2378,11 @@ void Renderer::loadModelFromList(Mesh* mesh) {
 		meshVertex.push_back(vertex);
 	}
 
-	vertices.insert(std::end(vertices), std::begin(meshVertex), std::end(meshVertex));
 	indices.insert(std::end(indices), std::begin(meshIndex), std::end(meshIndex));
+	model->addMesh(indexSize, meshIndex.size());
 
-	mesh->setVertexOffset(vertexSize);
-	mesh->setIndexOffset(indexSize);
-	mesh->setIndexSize(meshIndex.size());
+	vertices.insert(std::end(vertices), std::begin(meshVertex), std::end(meshVertex));
+	model->setVertexOffset(vertexSize);
 
 	vertexSize += meshVertex.size();
 	indexSize += meshIndex.size();

@@ -9,7 +9,7 @@ Object::Object(float x, float y, float z, float mScale) {
 	rotY = 0.0f;
 	rotZ = 0.0f;
 	node = nullptr;
-	mesh = nullptr;
+	model = nullptr;
 	material = nullptr;
 	frameEvent = nullptr;
 }
@@ -23,7 +23,7 @@ Object::Object(float x, float y, float z, float mScale, float xRot, float yRot, 
 	rotY = yRot;
 	rotZ = zRot;
 	node = nullptr;
-	mesh = nullptr;
+	model = nullptr;
 	material = nullptr;
 	frameEvent = nullptr;
 }
@@ -87,12 +87,12 @@ void Object::setNode(SGNode* newNode) {
 	node = newNode;
 }
 
-Mesh* Object::getMesh() {
-	return mesh;
+Model* Object::getModel() {
+	return model;
 }
 
-void Object::setMesh(Mesh *newMesh) {
-	mesh = newMesh;
+void Object::setModel(Model *newModel) {
+	model = newModel;
 }
 
 Material* Object::getMaterial() {

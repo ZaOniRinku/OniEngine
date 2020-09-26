@@ -34,7 +34,7 @@ ENDIF()
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-SET(SOURCES src/Camera.cpp src/DirectionalLight.cpp src/Material.cpp src/MemoryAllocator.cpp src/Mesh.cpp src/Object.cpp src/PointLight.cpp src/Renderer.cpp src/Scene.cpp src/SGNode.cpp src/Skybox.cpp src/SpotLight.cpp)
-SET(HEADERS src/Camera.h src/DirectionalLight.h src/Material.h src/MemoryAllocator.h src/Mesh.h src/Object.h src/PointLight.h src/Renderer.h src/Scene.h src/SGNode.h src/Skybox.h src/SpotLight.h)
+SET(SOURCES src/Camera.cpp src/DirectionalLight.cpp src/Material.cpp src/MemoryAllocator.cpp src/Mesh.cpp src/Model.cpp src/Object.cpp src/PointLight.cpp src/Renderer.cpp src/Scene.cpp src/SGNode.cpp src/Skybox.cpp src/SpotLight.cpp)
+SET(HEADERS src/Camera.h src/DirectionalLight.h src/Material.h src/MemoryAllocator.h src/Mesh.h src/Model.h src/Object.h src/PointLight.h src/Renderer.h src/Scene.h src/SGNode.h src/Skybox.h src/SpotLight.h)
 
 add_executable(${PROJECT_NAME} main.cpp ${SOURCES} ${HEADERS})
