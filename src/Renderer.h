@@ -13,7 +13,7 @@
 #include <set>
 #include <algorithm>
 #include <fstream>
-#include "../external/glm/gtc/matrix_transform.hpp"
+#include "../external/glm/glm/gtc/matrix_transform.hpp"
 #include <chrono>
 #include <array>
 #include <unordered_map>

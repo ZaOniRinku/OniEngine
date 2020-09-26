@@ -1,6 +1,6 @@
 #pragma once
 #include "../external/glfw/include/GLFW/glfw3.h"
-#include "../external/glm/glm.hpp"
+#include "../external/glm/glm/glm.hpp"
 
 class PointLight {
 public:

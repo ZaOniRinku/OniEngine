@@ -1,6 +1,5 @@
 #pragma once
 #include "../external/glfw/include/GLFW/glfw3.h"
-#include "../external/glm/glm.hpp"
 
 class Camera {
 public:

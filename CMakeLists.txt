@@ -3,7 +3,7 @@ SET(NAME ONIEngine)
 PROJECT(${NAME} VERSION 1.0.0 LANGUAGES CXX)
 
 include_directories(external/glm)
-include_directories(external/tiny_obj_loader)
+include_directories(external/tinyobjloader)
 include_directories(external/stb)
 
 SET(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
