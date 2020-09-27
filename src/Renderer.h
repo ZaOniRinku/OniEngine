@@ -3,6 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
 
 #include "../external/glfw/include/GLFW/glfw3.h"
 #include <stdexcept>
@@ -14,6 +15,8 @@
 #include <algorithm>
 #include <fstream>
 #include "../external/glm/glm/gtc/matrix_transform.hpp"
+#include "../external/glm/glm/glm.hpp"
+#include "../external/glm/glm/gtx/hash.hpp"
 #include <chrono>
 #include <array>
 #include <unordered_map>

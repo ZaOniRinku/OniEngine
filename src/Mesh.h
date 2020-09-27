@@ -1,8 +1,5 @@
 #pragma once
-#include "../external/glm/glm/glm.hpp"
-#include "../external/glm/glm/gtx/hash.hpp"
-#include <vulkan/vulkan.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
+#include <cstdint>
 
 class Mesh {
 public:
