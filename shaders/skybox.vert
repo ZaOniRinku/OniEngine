@@ -16,5 +16,6 @@ layout(location = 0) out vec3 fragTexCoords;
 
 void main() {
 	fragTexCoords = inPosition;
+	fragTexCoords.x *= -1;
 	gl_Position = cbo.proj * vec4(mat3(cbo.view) * inPosition, 1.0);
 }
