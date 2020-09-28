@@ -18,7 +18,7 @@ This version is extended.
  
 ## Download
 ```txt
-$ git clone https://github.com/ZaOniRinku/ONIEngine.git
+$ git clone --recurse-submodules https://github.com/ZaOniRinku/ONIEngine.git
 ```
 
 ## Build
