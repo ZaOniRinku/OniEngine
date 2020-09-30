@@ -166,7 +166,7 @@ void Renderer::initVulkan() {
 	createRenderPass();
 	createDescriptorSetLayout();
 	createGraphicsPipeline();
-	createCommandPool();
+	createCommandPools();
 	createColorResources();
 	createDepthResources();
 	createFramebuffers();
@@ -395,7 +395,7 @@ void Renderer::cleanupSwapChain() {
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
 	}
 
-	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	vkFreeCommandBuffers(device, renderingCommandPool, static_cast<uint32_t>(renderingCommandBuffers.size()), renderingCommandBuffers.data());
 
 	// Destroy pipelines
 	for (VkPipeline pipeline : graphicsPipelines) {
@@ -829,16 +829,21 @@ void Renderer::createFramebuffers() {
 	}
 }
 
-void Renderer::createCommandPool() {
+void Renderer::createCommandPools() {
 	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-	poolInfo.flags = 0;
+	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-	if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create command pool!");
+	if (vkCreateCommandPool(device, &poolInfo, nullptr, &renderingCommandPool) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create rendering command pool!");
+	}
+
+	poolInfo.flags = 0;
+	if (vkCreateCommandPool(device, &poolInfo, nullptr, &singleTimeCommandPool) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create single time command pool!");
 	}
 }
 
@@ -1081,103 +1086,21 @@ void Renderer::createDescriptorSets() {
 }
 
 void Renderer::createCommandBuffers() {
-	commandBuffers.resize(swapChainFramebuffers.size());
+	renderingCommandBuffers.resize(swapChainImages.size());
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool;
+	allocInfo.commandPool = renderingCommandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+	allocInfo.commandBufferCount = (uint32_t)renderingCommandBuffers.size();
 
-	if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(device, &allocInfo, renderingCommandBuffers.data()) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate command buffers!");
-	}
-
-	for (size_t i = 0; i < commandBuffers.size(); i++) {
-		VkCommandBufferBeginInfo beginInfo = {};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to begin recording command buffer!");
-		}
-
-		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0.f, 0.f, 0.f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-
-		VkRenderPassBeginInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = renderPass;
-		renderPassInfo.framebuffer = swapChainFramebuffers[i];
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = swapChainExtent;
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
-
-		VkRenderPassBeginInfo shadowsRenderPassInfo = {};
-		shadowsRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		shadowsRenderPassInfo.renderPass = shadowsRenderPass;
-		shadowsRenderPassInfo.renderArea.offset = { 0, 0 };
-		shadowsRenderPassInfo.renderArea.extent.width = SHADOWMAP_WIDTH;
-		shadowsRenderPassInfo.renderArea.extent.height = SHADOWMAP_HEIGHT;
-		shadowsRenderPassInfo.clearValueCount = 1;
-		shadowsRenderPassInfo.pClearValues = &clearValues[1];
-
-		VkBuffer vertexCmdBuffers[] = { vertexBuffer };
-		VkDeviceSize offset[] = { 0 };
-
-		// First passes : Shadows
-		for (int j = 0; j < scene->getDirectionalLights().size() + scene->getSpotLights().size(); j++) {
-			shadowsRenderPassInfo.framebuffer = shadowsFramebuffers[i][j];
-			vkCmdBeginRenderPass(commandBuffers[i], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[shadowsGraphicsPipelineIndex]);
-			vkCmdPushConstants(commandBuffers[i], graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
-
-			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offset);
-			vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-			for (Object* obj : scene->getElements()) {
-				Model* model = obj->getModel();
-				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], 0, 1, &obj->getShadowsDescriptorSets()->at(i), 0, nullptr);
-				for (Mesh mesh : model->getMeshes()) {
-					vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh.getIndexSize()), 1, mesh.getIndexOffset(), model->getVertexOffset(), 0);
-				}
-			}
-
-			vkCmdEndRenderPass(commandBuffers[i]);
-		}
-
-		// Second pass : Objects
-		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexCmdBuffers, offset);
-		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-		for (Object* obj : scene->getElements()) {
-			Model* model = obj->getModel();
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[obj->getGraphicsPipelineIndex()]);
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[obj->getGraphicsPipelineIndex()], 0, 1, &obj->getDescriptorSets()->at(i), 0, nullptr);
-			for (Mesh mesh : model->getMeshes()) {
-				vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mesh.getIndexSize()), 1, mesh.getIndexOffset(), model->getVertexOffset(), 0);
-			}
-		}
-
-		// Skybox is drawn last
-		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[skyboxGraphicsPipelineIndex]);
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[skyboxGraphicsPipelineIndex], 0, 1, &skyboxDescriptorSets[i], 0, nullptr);
-		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(skyboxIndexSize), 1, 0, skyboxIndexOffset, skyboxVertexOffset);
-
-		vkCmdEndRenderPass(commandBuffers[i]);
-
-		if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to record command buffer!");
-		}
 	}
 }
 
 void Renderer::createSyncObjects() {
 	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	renderFinishedSemaphores.resize(swapChainImages.size());
 	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
 	VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -1189,10 +1112,97 @@ void Renderer::createSyncObjects() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS
-			|| vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS
 			|| vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create semaphores!");
 		}
+	}
+
+	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to created render finished semaphores!");
+		}
+	}
+}
+
+void Renderer::recordRenderingCommandBuffer(uint32_t imageIndex) {
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.pInheritanceInfo = nullptr;
+
+	if (vkBeginCommandBuffer(renderingCommandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to begin recording command buffer!");
+	}
+
+	std::array<VkClearValue, 2> clearValues = {};
+	clearValues[0].color = { 0.f, 0.f, 0.f, 1.0f };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	VkRenderPassBeginInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = renderPass;
+	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = swapChainExtent;
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+
+	VkRenderPassBeginInfo shadowsRenderPassInfo = {};
+	shadowsRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	shadowsRenderPassInfo.renderPass = shadowsRenderPass;
+	shadowsRenderPassInfo.renderArea.offset = { 0, 0 };
+	shadowsRenderPassInfo.renderArea.extent.width = SHADOWMAP_WIDTH;
+	shadowsRenderPassInfo.renderArea.extent.height = SHADOWMAP_HEIGHT;
+	shadowsRenderPassInfo.clearValueCount = 1;
+	shadowsRenderPassInfo.pClearValues = &clearValues[1];
+
+	VkBuffer vertexCmdBuffers[] = { vertexBuffer };
+	VkDeviceSize offset[] = { 0 };
+
+	// First passes : Shadows
+	for (int j = 0; j < scene->getDirectionalLights().size() + scene->getSpotLights().size(); j++) {
+		shadowsRenderPassInfo.framebuffer = shadowsFramebuffers[imageIndex][j];
+		vkCmdBeginRenderPass(renderingCommandBuffers[imageIndex], &shadowsRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[shadowsGraphicsPipelineIndex]);
+		vkCmdPushConstants(renderingCommandBuffers[imageIndex], graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(int), &j);
+
+		vkCmdBindVertexBuffers(renderingCommandBuffers[imageIndex], 0, 1, vertexCmdBuffers, offset);
+		vkCmdBindIndexBuffer(renderingCommandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		for (Object* obj : scene->getElements()) {
+			Model* model = obj->getModel();
+			vkCmdBindDescriptorSets(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], 0, 1, &obj->getShadowsDescriptorSets()->at(imageIndex), 0, nullptr);
+			for (Mesh mesh : model->getMeshes()) {
+				vkCmdDrawIndexed(renderingCommandBuffers[imageIndex], static_cast<uint32_t>(mesh.getIndexSize()), 1, (uint32_t)mesh.getIndexOffset(), (int32_t)model->getVertexOffset(), 0);
+			}
+		}
+
+		vkCmdEndRenderPass(renderingCommandBuffers[imageIndex]);
+	}
+
+	// Second pass : Objects
+	vkCmdBeginRenderPass(renderingCommandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindVertexBuffers(renderingCommandBuffers[imageIndex], 0, 1, vertexCmdBuffers, offset);
+	vkCmdBindIndexBuffer(renderingCommandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+	for (Object* obj : scene->getElements()) {
+		Model* model = obj->getModel();
+		vkCmdBindPipeline(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[obj->getGraphicsPipelineIndex()]);
+		vkCmdBindDescriptorSets(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[obj->getGraphicsPipelineIndex()], 0, 1, &obj->getDescriptorSets()->at(imageIndex), 0, nullptr);
+		for (Mesh mesh : model->getMeshes()) {
+			vkCmdDrawIndexed(renderingCommandBuffers[imageIndex], static_cast<uint32_t>(mesh.getIndexSize()), 1, (int32_t)mesh.getIndexOffset(), (uint32_t)model->getVertexOffset(), 0);
+		}
+	}
+
+	// Skybox is drawn last
+	vkCmdBindPipeline(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[skyboxGraphicsPipelineIndex]);
+	vkCmdBindDescriptorSets(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[skyboxGraphicsPipelineIndex], 0, 1, &skyboxDescriptorSets[imageIndex], 0, nullptr);
+	vkCmdDrawIndexed(renderingCommandBuffers[imageIndex], static_cast<uint32_t>(skyboxIndexSize), 1, 0, (int32_t)skyboxIndexOffset, (uint32_t)skyboxVertexOffset);
+
+	vkCmdEndRenderPass(renderingCommandBuffers[imageIndex]);
+
+	if (vkEndCommandBuffer(renderingCommandBuffers[imageIndex]) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to record command buffer!");
 	}
 }
 
@@ -1438,7 +1448,7 @@ VkCommandBuffer Renderer::beginSingleTimeCommands() {
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = commandPool;
+	allocInfo.commandPool = singleTimeCommandPool;
 	allocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer commandBuffer;
@@ -1464,7 +1474,7 @@ void Renderer::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(graphicsQueue);
 
-	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+	vkFreeCommandBuffers(device, singleTimeCommandPool, 1, &commandBuffer);
 }
 
 void Renderer::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t layers) {
@@ -1700,10 +1710,10 @@ void Renderer::createTextureImage(Material* mat) {
 		mat->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
 		diffuseImageSize = (uint64_t)diffuseTexWidth * diffuseTexHeight * 4;
 	} else {
-		unsigned char dRVal = round(255.0f * mat->getDiffuseRValue());
-		unsigned char dGVal = round(255.0f * mat->getDiffuseGValue());
-		unsigned char dBVal = round(255.0f * mat->getDiffuseBValue());
-		unsigned char dAVal = round(255.0f * mat->getDiffuseAValue());
+		unsigned char dRVal = (unsigned char)round(255.0f * (float)mat->getDiffuseRValue());
+		unsigned char dGVal = (unsigned char)round(255.0f * (float)mat->getDiffuseGValue());
+		unsigned char dBVal = (unsigned char)round(255.0f * (float)mat->getDiffuseBValue());
+		unsigned char dAVal = (unsigned char)round(255.0f * (float)mat->getDiffuseAValue());
 		std::array<unsigned char, 4> dArray = { dRVal, dGVal, dBVal, dAVal };
 		dPixels = dArray.data();
 		mat->setDiffuseMipLevel(1);
@@ -1740,9 +1750,9 @@ void Renderer::createTextureImage(Material* mat) {
 		mat->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
 		normalImageSize = (uint64_t)normalTexWidth * normalTexHeight * 4;
 	} else {
-		unsigned char nXVal = round(255.0f * mat->getNormalXValue());
-		unsigned char nYVal = round(255.0f * mat->getNormalYValue());
-		unsigned char nZVal = round(255.0f * mat->getNormalZValue());
+		unsigned char nXVal = (unsigned char)round(255.0f * (float)mat->getNormalXValue());
+		unsigned char nYVal = (unsigned char)round(255.0f * (float)mat->getNormalYValue());
+		unsigned char nZVal = (unsigned char)round(255.0f * (float)mat->getNormalZValue());
 		std::array<unsigned char, 4> nArray = { nXVal, nYVal, nZVal, 255 };
 		nPixels = nArray.data();
 		mat->setNormalMipLevel(1);
@@ -1779,7 +1789,7 @@ void Renderer::createTextureImage(Material* mat) {
 		mat->setMetallicMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(metallicTexWidth, metallicTexHeight)))) + 1);
 		metallicImageSize = (uint64_t)metallicTexWidth * metallicTexHeight * 4;
 	} else {
-		unsigned char mVal = round(255.0f * mat->getMetallicValue());
+		unsigned char mVal = (unsigned char)round(255.0f * (float)mat->getMetallicValue());
 		std::array<unsigned char, 4> mArray = { mVal, mVal, mVal, 255 };
 		mPixels = mArray.data();
 		mat->setMetallicMipLevel(1);
@@ -1816,7 +1826,7 @@ void Renderer::createTextureImage(Material* mat) {
 		mat->setRoughnessMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(roughnessTexWidth, roughnessTexHeight)))) + 1);
 		roughnessImageSize = (uint64_t)roughnessTexWidth * roughnessTexHeight * 4;
 	} else {
-		unsigned char rVal = round(255.0f * mat->getRoughnessValue());
+		unsigned char rVal = (unsigned char)round(255.0f * (float)mat->getRoughnessValue());
 		std::array<unsigned char, 4> rArray = { rVal, rVal, rVal, 255 };
 		rPixels = rArray.data();
 		mat->setRoughnessMipLevel(1);
@@ -1853,7 +1863,7 @@ void Renderer::createTextureImage(Material* mat) {
 		mat->setAOMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(AOTexWidth, AOTexHeight)))) + 1);
 		AOImageSize = (uint64_t)AOTexWidth * AOTexHeight * 4;
 	} else {
-		unsigned char aVal = round(255.0f * mat->getAOValue());
+		unsigned char aVal = (unsigned char)round(255.0f * (float)mat->getAOValue());
 		std::array<unsigned char, 4> aArray = { aVal, aVal, aVal, 255 };
 		aPixels = aArray.data();
 		mat->setAOMipLevel(1);
@@ -2005,9 +2015,9 @@ void Renderer::createSkyboxTextureImage() {
 		skyboxImageSize = (uint64_t)skyboxTexWidth * skyboxTexHeight * 4;
 	}
 	else {
-		unsigned char rVal = round(255.0f * skybox->getRightFaceRValue());
-		unsigned char gVal = round(255.0f * skybox->getRightFaceGValue());
-		unsigned char bVal = round(255.0f * skybox->getRightFaceBValue());
+		unsigned char rVal = (unsigned char)round(255.0f * (float)skybox->getRightFaceRValue());
+		unsigned char gVal = (unsigned char)round(255.0f * (float)skybox->getRightFaceGValue());
+		unsigned char bVal = (unsigned char)round(255.0f * (float)skybox->getRightFaceBValue());
 		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 		skyboxTexWidth = 1;
@@ -2039,9 +2049,9 @@ void Renderer::createSkyboxTextureImage() {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
 			throw std::runtime_error("All skybox textures must have the same width and height (left face)!");
 		}
-		unsigned char rVal = round(255.0f * skybox->getLeftFaceRValue());
-		unsigned char gVal = round(255.0f * skybox->getLeftFaceGValue());
-		unsigned char bVal = round(255.0f * skybox->getLeftFaceBValue());
+		unsigned char rVal = (unsigned char)round(255.0f * (float)skybox->getLeftFaceRValue());
+		unsigned char gVal = (unsigned char)round(255.0f * (float)skybox->getLeftFaceGValue());
+		unsigned char bVal = (unsigned char)round(255.0f * (float)skybox->getLeftFaceBValue());
 		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
@@ -2065,9 +2075,9 @@ void Renderer::createSkyboxTextureImage() {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
 			throw std::runtime_error("All skybox textures must have the same width and height (top face)!");
 		}
-		unsigned char rVal = round(255.0f * skybox->getTopFaceRValue());
-		unsigned char gVal = round(255.0f * skybox->getTopFaceGValue());
-		unsigned char bVal = round(255.0f * skybox->getTopFaceBValue());
+		unsigned char rVal = (unsigned char)round(255.0f * (float)skybox->getTopFaceRValue());
+		unsigned char gVal = (unsigned char)round(255.0f * (float)skybox->getTopFaceGValue());
+		unsigned char bVal = (unsigned char)round(255.0f * (float)skybox->getTopFaceBValue());
 		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
@@ -2091,9 +2101,9 @@ void Renderer::createSkyboxTextureImage() {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
 			throw std::runtime_error("All skybox textures must have the same width and height (bottom face)!");
 		}
-		unsigned char rVal = round(255.0f * skybox->getBottomFaceRValue());
-		unsigned char gVal = round(255.0f * skybox->getBottomFaceGValue());
-		unsigned char bVal = round(255.0f * skybox->getBottomFaceBValue());
+		unsigned char rVal = (unsigned char)round(255.0f * (float)skybox->getBottomFaceRValue());
+		unsigned char gVal = (unsigned char)round(255.0f * (float)skybox->getBottomFaceGValue());
+		unsigned char bVal = (unsigned char)round(255.0f * (float)skybox->getBottomFaceBValue());
 		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
@@ -2117,9 +2127,9 @@ void Renderer::createSkyboxTextureImage() {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
 			throw std::runtime_error("All skybox textures must have the same width and height (back face)!");
 		}
-		unsigned char rVal = round(255.0f * skybox->getBackFaceRValue());
-		unsigned char gVal = round(255.0f * skybox->getBackFaceGValue());
-		unsigned char bVal = round(255.0f * skybox->getBackFaceBValue());
+		unsigned char rVal = (unsigned char)round(255.0f * (float)skybox->getBackFaceRValue());
+		unsigned char gVal = (unsigned char)round(255.0f * (float)skybox->getBackFaceGValue());
+		unsigned char bVal = (unsigned char)round(255.0f * (float)skybox->getBackFaceBValue());
 		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
@@ -2143,9 +2153,9 @@ void Renderer::createSkyboxTextureImage() {
 		if (skyboxTexWidth != 1 || skyboxTexHeight != 1) {
 			throw std::runtime_error("All skybox textures must have the same width and height (front face)!");
 		}
-		unsigned char rVal = round(255.0f * skybox->getFrontFaceRValue());
-		unsigned char gVal = round(255.0f * skybox->getFrontFaceGValue());
-		unsigned char bVal = round(255.0f * skybox->getFrontFaceBValue());
+		unsigned char rVal = (unsigned char)round(255.0f * skybox->getFrontFaceRValue());
+		unsigned char gVal = (unsigned char)round(255.0f * skybox->getFrontFaceGValue());
+		unsigned char bVal = (unsigned char)round(255.0f * skybox->getFrontFaceBValue());
 		std::array<unsigned char, 4> sArray = { rVal, gVal, bVal, 255 };
 		sPixels = sArray.data();
 	}
@@ -2389,47 +2399,47 @@ void Renderer::loadSkyboxModel() {
 	std::vector<uint32_t> meshIndex;
 	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
 
-	std::array<float, 108> cubeData = { -500.0f,  500.0f, -500.0f,
-	-500.0f, -500.0f, -500.0f,
-	 500.0f, -500.0f, -500.0f,
-	 500.0f, -500.0f, -500.0f,
-	 500.0f,  500.0f, -500.0f,
-	-500.0f,  500.0f, -500.0f,
+	std::array<float, 108> cubeData = { -1.0f,  1.0f, -1.0f,
+	-1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
 
-	-500.0f, -500.0f,  500.0f,
-	-500.0f, -500.0f, -500.0f,
-	-500.0f,  500.0f, -500.0f,
-	-500.0f,  500.0f, -500.0f,
-	-500.0f,  500.0f,  500.0f,
-	-500.0f, -500.0f,  500.0f,
+	-1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
 
-	 500.0f, -500.0f, -500.0f,
-	 500.0f, -500.0f,  500.0f,
-	 500.0f,  500.0f,  500.0f,
-	 500.0f,  500.0f,  500.0f,
-	 500.0f,  500.0f, -500.0f,
-	 500.0f, -500.0f, -500.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
 
-	-500.0f, -500.0f,  500.0f,
-	-500.0f,  500.0f,  500.0f,
-	 500.0f,  500.0f,  500.0f,
-	 500.0f,  500.0f,  500.0f,
-	 500.0f, -500.0f,  500.0f,
-	-500.0f, -500.0f,  500.0f,
+	-1.0f, -1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
 
-	-500.0f,  500.0f, -500.0f,
-	 500.0f,  500.0f, -500.0f,
-	 500.0f,  500.0f,  500.0f,
-	 500.0f,  500.0f,  500.0f,
-	-500.0f,  500.0f,  500.0f,
-	-500.0f,  500.0f, -500.0f,
+	-1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f, -1.0f,
 
-	-500.0f, -500.0f, -500.0f,
-	-500.0f, -500.0f,  500.0f,
-	 500.0f, -500.0f, -500.0f,
-	 500.0f, -500.0f, -500.0f,
-	-500.0f, -500.0f,  500.0f,
-	 500.0f, -500.0f,  500.0f };
+	-1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f };
 
 	for (int i = 0; i < cubeData.size() / 3; i++) {
 		Vertex vertex = {};
@@ -2724,7 +2734,7 @@ void Renderer::createSkyboxGraphicsPipeline() {
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthStencil.depthTestEnable = VK_TRUE;
 	depthStencil.depthWriteEnable = VK_TRUE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.minDepthBounds = 0.0f;
 	depthStencil.maxDepthBounds = 1.0f;
@@ -3203,6 +3213,8 @@ void Renderer::drawFrame() {
 		throw std::runtime_error("Failed to acquire swap chain image!");
 	}
 
+	recordRenderingCommandBuffer(imageIndex);
+
 	for (Object* obj : scene->getElements()) {
 		updateUniformBuffer(obj, imageIndex);
 	}
@@ -3213,7 +3225,7 @@ void Renderer::drawFrame() {
 	Camera *camera = scene->getCamera();
 	CameraBufferObject cbo = {};
 	cbo.view = glm::lookAt(glm::vec3(camera->getPositionX(), camera->getPositionY(), camera->getPositionZ()), glm::vec3(camera->getPositionX() + camera->getFrontX(), camera->getPositionY() + camera->getFrontY(), camera->getPositionZ() + camera->getFrontZ()), glm::vec3(camera->getUpX(), camera->getUpY(), camera->getUpZ()));
-	cbo.proj = glm::infinitePerspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f);
+	cbo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
 	cbo.proj[1][1] *= -1;
 	cbo.pos = glm::vec3(camera->getPositionX(), camera->getPositionY(), camera->getPositionZ());
 
@@ -3284,8 +3296,8 @@ void Renderer::drawFrame() {
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
-	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+	submitInfo.pCommandBuffers = &renderingCommandBuffers[imageIndex];
+	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[imageIndex] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -3366,12 +3378,16 @@ void Renderer::cleanup() {
 	vkDestroyBuffer(device, indexBuffer, nullptr);
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
 		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
 		vkDestroyFence(device, inFlightFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(device, commandPool, nullptr);
+	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+	}
+
+	vkDestroyCommandPool(device, renderingCommandPool, nullptr);
+	vkDestroyCommandPool(device, singleTimeCommandPool, nullptr);
 	vkDestroyDevice(device, nullptr);
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyInstance(instance, nullptr);

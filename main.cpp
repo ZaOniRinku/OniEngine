@@ -39,7 +39,7 @@ void cameraControls(Camera* camera, GLFWwindow* window, double deltaTime) {
 }
 
 void objectControls(Object* obj, GLFWwindow* window, double deltaTime) {
-	float movementObject = 1.0 * (float)deltaTime;
+	float movementObject = 1.0f * (float)deltaTime;
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		obj->move(movementObject, 0.0f, 0.0f);

@@ -256,7 +256,7 @@ private:
 	void createDescriptorSetLayout();
 	void createGraphicsPipeline();
 	void createFramebuffers();
-	void createCommandPool();
+	void createCommandPools();
 	void createColorResources();
 	void createDepthResources();
 	void createTextures();
@@ -266,6 +266,7 @@ private:
 	void createDescriptorSets();
 	void createCommandBuffers();
 	void createSyncObjects();
+	void recordRenderingCommandBuffer(uint32_t imageIndex);
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
@@ -335,8 +336,9 @@ private:
 	std::vector<VkPipelineLayout> graphicsPipelineLayouts;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<std::vector<VkFramebuffer>> shadowsFramebuffers;
-	VkCommandPool commandPool;
-	std::vector<VkCommandBuffer> commandBuffers;
+	VkCommandPool renderingCommandPool;
+	VkCommandPool singleTimeCommandPool;
+	std::vector<VkCommandBuffer> renderingCommandBuffers;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
