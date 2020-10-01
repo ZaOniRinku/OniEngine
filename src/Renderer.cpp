@@ -734,12 +734,12 @@ void Renderer::createDescriptorSetLayout() {
 	}
 
 	// Shadows
-	VkDescriptorSetLayoutBinding shadowsUboLayoutBinding = {};
-	shadowsUboLayoutBinding.binding = 0;
-	shadowsUboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	shadowsUboLayoutBinding.descriptorCount = 1;
-	shadowsUboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	shadowsUboLayoutBinding.pImmutableSamplers = nullptr;
+	VkDescriptorSetLayoutBinding shadowsOboLayoutBinding = {};
+	shadowsOboLayoutBinding.binding = 0;
+	shadowsOboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	shadowsOboLayoutBinding.descriptorCount = 1;
+	shadowsOboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	shadowsOboLayoutBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutBinding shadowsSboLayoutBinding = {};
 	shadowsSboLayoutBinding.binding = 1;
@@ -748,7 +748,7 @@ void Renderer::createDescriptorSetLayout() {
 	shadowsSboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	shadowsSboLayoutBinding.pImmutableSamplers = nullptr;
 
-	std::array<VkDescriptorSetLayoutBinding, 2> shadowsBindings = { shadowsUboLayoutBinding, shadowsSboLayoutBinding };
+	std::array<VkDescriptorSetLayoutBinding, 2> shadowsBindings = { shadowsOboLayoutBinding, shadowsSboLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo shadowsLayoutInfo = {};
 	shadowsLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1133,7 +1133,7 @@ void Renderer::recordRenderingCommandBuffer(uint32_t imageIndex) {
 
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 	beginInfo.pInheritanceInfo = nullptr;
 
 	if (vkBeginCommandBuffer(renderingCommandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
