@@ -175,7 +175,7 @@ void Renderer::initVulkan() {
 	createUniformBuffers();
 	createDescriptorPool();
 	createDescriptorSets();
-	createCommandBuffers();
+	createRenderingCommandBuffers();
 	createSyncObjects();
 }
 
@@ -373,7 +373,7 @@ void Renderer::recreateSwapChain() {
 	createUniformBuffers();
 	createDescriptorPool();
 	createDescriptorSets();
-	createCommandBuffers();
+	createRenderingCommandBuffers();
 }
 
 void Renderer::cleanupSwapChain() {
@@ -394,8 +394,6 @@ void Renderer::cleanupSwapChain() {
 	for (VkFramebuffer framebuffer : swapChainFramebuffers) {
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
 	}
-
-	vkFreeCommandBuffers(device, renderingCommandPool, static_cast<uint32_t>(renderingCommandBuffers.size()), renderingCommandBuffers.data());
 
 	// Destroy pipelines
 	for (VkPipeline pipeline : graphicsPipelines) {
@@ -422,6 +420,8 @@ void Renderer::cleanupSwapChain() {
 	}
 	
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		vkFreeCommandBuffers(device, renderingCommandPools[i], 1, &renderingCommandBuffers[i]);
+
 		vkFreeMemory(device, skyboxBufferMemories[i], nullptr);
 		vkDestroyBuffer(device, skyboxBuffers[i], nullptr);
 		vkFreeMemory(device, cameraBuffersMemory[i], nullptr);
@@ -832,16 +832,18 @@ void Renderer::createFramebuffers() {
 void Renderer::createCommandPools() {
 	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
+	renderingCommandPools.resize(swapChainImages.size());
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	poolInfo.flags = 0;
 
-	if (vkCreateCommandPool(device, &poolInfo, nullptr, &renderingCommandPool) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create rendering command pool!");
+	for (int i = 0; i < swapChainImages.size(); i++) {
+		if (vkCreateCommandPool(device, &poolInfo, nullptr, &renderingCommandPools[i]) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create rendering command pool!");
+		}
 	}
 
-	poolInfo.flags = 0;
 	if (vkCreateCommandPool(device, &poolInfo, nullptr, &singleTimeCommandPool) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create single time command pool!");
 	}
@@ -1085,16 +1087,18 @@ void Renderer::createDescriptorSets() {
 	}
 }
 
-void Renderer::createCommandBuffers() {
+void Renderer::createRenderingCommandBuffers() {
 	renderingCommandBuffers.resize(swapChainImages.size());
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = renderingCommandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t)renderingCommandBuffers.size();
+	allocInfo.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(device, &allocInfo, renderingCommandBuffers.data()) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to allocate command buffers!");
+	for (int i = 0; i < swapChainImages.size(); i++) {
+		allocInfo.commandPool = renderingCommandPools[i];
+		if (vkAllocateCommandBuffers(device, &allocInfo, &renderingCommandBuffers[i]) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to allocate rendering command buffer!");
+		}
 	}
 }
 
@@ -1125,6 +1129,8 @@ void Renderer::createSyncObjects() {
 }
 
 void Renderer::recordRenderingCommandBuffer(uint32_t imageIndex) {
+	vkResetCommandPool(device, renderingCommandPools[imageIndex], 0);
+
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -3383,10 +3389,10 @@ void Renderer::cleanup() {
 	}
 
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		vkDestroyCommandPool(device, renderingCommandPools[i], nullptr);
 		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
 	}
 
-	vkDestroyCommandPool(device, renderingCommandPool, nullptr);
 	vkDestroyCommandPool(device, singleTimeCommandPool, nullptr);
 	vkDestroyDevice(device, nullptr);
 	vkDestroySurfaceKHR(instance, surface, nullptr);

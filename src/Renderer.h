@@ -264,7 +264,7 @@ private:
 	void createUniformBuffers();
 	void createDescriptorPool();
 	void createDescriptorSets();
-	void createCommandBuffers();
+	void createRenderingCommandBuffers();
 	void createSyncObjects();
 	void recordRenderingCommandBuffer(uint32_t imageIndex);
 	VkShaderModule createShaderModule(const std::vector<char>& code);
@@ -336,7 +336,7 @@ private:
 	std::vector<VkPipelineLayout> graphicsPipelineLayouts;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<std::vector<VkFramebuffer>> shadowsFramebuffers;
-	VkCommandPool renderingCommandPool;
+	std::vector<VkCommandPool> renderingCommandPools;
 	VkCommandPool singleTimeCommandPool;
 	std::vector<VkCommandBuffer> renderingCommandBuffers;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
