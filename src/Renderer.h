@@ -364,7 +364,7 @@ private:
 	VkBuffer indexBuffer;
 	VkDeviceSize vertexSize = 0;
 	VkDeviceSize indexSize = 0;
-	
+
 	// Skybox
 	std::vector<VkBuffer> skyboxBuffers;
 	std::vector<VkDeviceMemory> skyboxBufferMemories;

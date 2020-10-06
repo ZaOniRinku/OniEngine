@@ -36,7 +36,7 @@ void Renderer::setFullscreen(bool newIsFullscreen) {
 	isFullscreen = newIsFullscreen;
 }
 
-void Renderer::setResolution(int newWidth, int newHeight){
+void Renderer::setResolution(int newWidth, int newHeight) {
 	width = newWidth;
 	height = newHeight;
 }
@@ -88,7 +88,7 @@ void Renderer::frameEvents(GLFWwindow* window) {
 	for (Object* obj : scene->getElementsFE()) {
 		obj->frameEvent(obj, window, deltaTime);
 	}
-	
+
 	lastFrame = currentTime;
 }
 
@@ -129,7 +129,7 @@ std::vector<const char*> Renderer::getRequiredExtensions() {
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-	std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
 	if (enableValidationLayers) {
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -221,7 +221,7 @@ void Renderer::createInstance() {
 
 	// Check if all required extensions are included in the supported extensions list
 	std::vector<bool> extensionsAreSupported(createInfo.enabledExtensionCount);
-	const char ** requiredExtensions = glfwGetRequiredInstanceExtensions(&createInfo.enabledExtensionCount);
+	const char** requiredExtensions = glfwGetRequiredInstanceExtensions(&createInfo.enabledExtensionCount);
 	for (size_t i = 0; i < createInfo.enabledExtensionCount; i++) {
 		for (const auto& extension : extensions) {
 			if (strcmp(requiredExtensions[i], extension) == 0) {
@@ -418,7 +418,7 @@ void Renderer::cleanupSwapChain() {
 			vkDestroyBuffer(device, obj->getObjectBuffers()->at(i), nullptr);
 		}
 	}
-	
+
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
 		vkFreeCommandBuffers(device, renderingCommandPools[i], 1, &renderingCommandBuffers[i]);
 
@@ -431,7 +431,7 @@ void Renderer::cleanupSwapChain() {
 		vkFreeMemory(device, shadowsBuffersMemory[i], nullptr);
 		vkDestroyBuffer(device, shadowsBuffers[i], nullptr);
 	}
-	
+
 	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 	vkDestroyDescriptorPool(device, skyboxDescriptorPool, nullptr);
 	vkDestroyDescriptorPool(device, shadowsDescriptorPool, nullptr);
@@ -987,15 +987,15 @@ void Renderer::createDescriptorPool() {
 	int nbElems = scene->nbElements();
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = static_cast<uint32_t>(nbElems*swapChainImages.size()*4);
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(nbElems * swapChainImages.size() * 4);
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = static_cast<uint32_t>(nbElems*swapChainImages.size()*6);
+	poolSizes[1].descriptorCount = static_cast<uint32_t>(nbElems * swapChainImages.size() * 6);
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(nbElems*swapChainImages.size());
+	poolInfo.maxSets = static_cast<uint32_t>(nbElems * swapChainImages.size());
 
 	if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create descriptor pool!");
@@ -1021,13 +1021,13 @@ void Renderer::createDescriptorPool() {
 	// Shadows
 	VkDescriptorPoolSize shadowsPoolSize = {};
 	shadowsPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	shadowsPoolSize.descriptorCount = static_cast<uint32_t>(nbElems*swapChainImages.size()*2);
+	shadowsPoolSize.descriptorCount = static_cast<uint32_t>(nbElems * swapChainImages.size() * 2);
 
 	VkDescriptorPoolCreateInfo shadowsPoolInfo = {};
 	shadowsPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	shadowsPoolInfo.poolSizeCount = 1;
 	shadowsPoolInfo.pPoolSizes = &shadowsPoolSize;
-	shadowsPoolInfo.maxSets = static_cast<uint32_t>(nbElems*swapChainImages.size());
+	shadowsPoolInfo.maxSets = static_cast<uint32_t>(nbElems * swapChainImages.size());
 
 	if (vkCreateDescriptorPool(device, &shadowsPoolInfo, nullptr, &shadowsDescriptorPool) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create shadows descriptor pool!");
@@ -1178,7 +1178,7 @@ void Renderer::recordRenderingCommandBuffer(uint32_t imageIndex) {
 			Model* model = obj->getModel();
 			vkCmdBindDescriptorSets(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[shadowsGraphicsPipelineIndex], 0, 1, &obj->getShadowsDescriptorSets()->at(imageIndex), 0, nullptr);
 			for (Mesh mesh : model->getMeshes()) {
-				vkCmdDrawIndexed(renderingCommandBuffers[imageIndex], static_cast<uint32_t>(mesh.getIndexSize()), 1, (uint32_t)mesh.getIndexOffset(), (int32_t)model->getVertexOffset(), 0);
+				vkCmdDrawIndexed(renderingCommandBuffers[imageIndex], static_cast<uint32_t>(mesh.indexSize), 1, (uint32_t)mesh.indexOffset, (int32_t)model->getVertexOffset(), 0);
 			}
 		}
 
@@ -1196,7 +1196,7 @@ void Renderer::recordRenderingCommandBuffer(uint32_t imageIndex) {
 		vkCmdBindPipeline(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[obj->getGraphicsPipelineIndex()]);
 		vkCmdBindDescriptorSets(renderingCommandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayouts[obj->getGraphicsPipelineIndex()], 0, 1, &obj->getDescriptorSets()->at(imageIndex), 0, nullptr);
 		for (Mesh mesh : model->getMeshes()) {
-			vkCmdDrawIndexed(renderingCommandBuffers[imageIndex], static_cast<uint32_t>(mesh.getIndexSize()), 1, (int32_t)mesh.getIndexOffset(), (uint32_t)model->getVertexOffset(), 0);
+			vkCmdDrawIndexed(renderingCommandBuffers[imageIndex], static_cast<uint32_t>(mesh.indexSize), 1, (int32_t)mesh.indexOffset, (uint32_t)model->getVertexOffset(), 0);
 		}
 	}
 
@@ -1715,7 +1715,8 @@ void Renderer::createTextureImage(Material* mat) {
 		dPixels = stbi_load(mat->getDiffusePath().c_str(), &diffuseTexWidth, &diffuseTexHeight, &diffuseTexChannels, STBI_rgb_alpha);
 		mat->setDiffuseMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(diffuseTexWidth, diffuseTexHeight)))) + 1);
 		diffuseImageSize = (uint64_t)diffuseTexWidth * diffuseTexHeight * 4;
-	} else {
+	}
+	else {
 		unsigned char dRVal = (unsigned char)round(255.0f * (float)mat->getDiffuseRValue());
 		unsigned char dGVal = (unsigned char)round(255.0f * (float)mat->getDiffuseGValue());
 		unsigned char dBVal = (unsigned char)round(255.0f * (float)mat->getDiffuseBValue());
@@ -1734,7 +1735,7 @@ void Renderer::createTextureImage(Material* mat) {
 
 	createBuffer(diffuseImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, diffuseStagingBuffer, diffuseStagingBufferMemory);
-	void *ddata;
+	void* ddata;
 	vkMapMemory(device, diffuseStagingBufferMemory, 0, diffuseImageSize, 0, &ddata);
 	memcpy(ddata, dPixels, static_cast<size_t>(diffuseImageSize));
 	vkUnmapMemory(device, diffuseStagingBufferMemory);
@@ -1755,7 +1756,8 @@ void Renderer::createTextureImage(Material* mat) {
 		nPixels = stbi_load(mat->getNormalPath().c_str(), &normalTexWidth, &normalTexHeight, &normalTexChannels, STBI_rgb_alpha);
 		mat->setNormalMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(normalTexWidth, normalTexHeight)))) + 1);
 		normalImageSize = (uint64_t)normalTexWidth * normalTexHeight * 4;
-	} else {
+	}
+	else {
 		unsigned char nXVal = (unsigned char)round(255.0f * (float)mat->getNormalXValue());
 		unsigned char nYVal = (unsigned char)round(255.0f * (float)mat->getNormalYValue());
 		unsigned char nZVal = (unsigned char)round(255.0f * (float)mat->getNormalZValue());
@@ -1773,7 +1775,7 @@ void Renderer::createTextureImage(Material* mat) {
 
 	createBuffer(normalImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, normalStagingBuffer, normalStagingBufferMemory);
-	void *ndata;
+	void* ndata;
 	vkMapMemory(device, normalStagingBufferMemory, 0, normalImageSize, 0, &ndata);
 	memcpy(ndata, nPixels, static_cast<size_t>(normalImageSize));
 	vkUnmapMemory(device, normalStagingBufferMemory);
@@ -1794,7 +1796,8 @@ void Renderer::createTextureImage(Material* mat) {
 		mPixels = stbi_load(mat->getMetallicPath().c_str(), &metallicTexWidth, &metallicTexHeight, &metallicTexChannels, STBI_rgb_alpha);
 		mat->setMetallicMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(metallicTexWidth, metallicTexHeight)))) + 1);
 		metallicImageSize = (uint64_t)metallicTexWidth * metallicTexHeight * 4;
-	} else {
+	}
+	else {
 		unsigned char mVal = (unsigned char)round(255.0f * (float)mat->getMetallicValue());
 		std::array<unsigned char, 4> mArray = { mVal, mVal, mVal, 255 };
 		mPixels = mArray.data();
@@ -1810,7 +1813,7 @@ void Renderer::createTextureImage(Material* mat) {
 
 	createBuffer(metallicImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, metallicStagingBuffer, metallicStagingBufferMemory);
-	void *mdata;
+	void* mdata;
 	vkMapMemory(device, metallicStagingBufferMemory, 0, metallicImageSize, 0, &mdata);
 	memcpy(mdata, mPixels, static_cast<size_t>(metallicImageSize));
 	vkUnmapMemory(device, metallicStagingBufferMemory);
@@ -1831,7 +1834,8 @@ void Renderer::createTextureImage(Material* mat) {
 		rPixels = stbi_load(mat->getRoughnessPath().c_str(), &roughnessTexWidth, &roughnessTexHeight, &roughnessTexChannels, STBI_rgb_alpha);
 		mat->setRoughnessMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(roughnessTexWidth, roughnessTexHeight)))) + 1);
 		roughnessImageSize = (uint64_t)roughnessTexWidth * roughnessTexHeight * 4;
-	} else {
+	}
+	else {
 		unsigned char rVal = (unsigned char)round(255.0f * (float)mat->getRoughnessValue());
 		std::array<unsigned char, 4> rArray = { rVal, rVal, rVal, 255 };
 		rPixels = rArray.data();
@@ -1839,7 +1843,8 @@ void Renderer::createTextureImage(Material* mat) {
 		roughnessTexWidth = 1;
 		roughnessTexHeight = 1;
 		roughnessImageSize = 4;
-;	}
+		;
+	}
 
 	if (!rPixels) {
 		throw std::runtime_error("Failed to load roughness texture image!");
@@ -1847,7 +1852,7 @@ void Renderer::createTextureImage(Material* mat) {
 
 	createBuffer(roughnessImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, roughnessStagingBuffer, roughnessStagingBufferMemory);
-	void *rdata;
+	void* rdata;
 	vkMapMemory(device, roughnessStagingBufferMemory, 0, roughnessImageSize, 0, &rdata);
 	memcpy(rdata, rPixels, static_cast<size_t>(roughnessImageSize));
 	vkUnmapMemory(device, roughnessStagingBufferMemory);
@@ -1868,7 +1873,8 @@ void Renderer::createTextureImage(Material* mat) {
 		aPixels = stbi_load(mat->getAOPath().c_str(), &AOTexWidth, &AOTexHeight, &AOTexChannels, STBI_rgb_alpha);
 		mat->setAOMipLevel(static_cast<uint32_t> (std::floor(std::log2(std::max(AOTexWidth, AOTexHeight)))) + 1);
 		AOImageSize = (uint64_t)AOTexWidth * AOTexHeight * 4;
-	} else {
+	}
+	else {
 		unsigned char aVal = (unsigned char)round(255.0f * (float)mat->getAOValue());
 		std::array<unsigned char, 4> aArray = { aVal, aVal, aVal, 255 };
 		aPixels = aArray.data();
@@ -1884,7 +1890,7 @@ void Renderer::createTextureImage(Material* mat) {
 
 	createBuffer(AOImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, AOStagingBuffer, AOStagingBufferMemory);
-	void *adata;
+	void* adata;
 	vkMapMemory(device, AOStagingBufferMemory, 0, AOImageSize, 0, &adata);
 	memcpy(adata, aPixels, static_cast<size_t>(AOImageSize));
 	vkUnmapMemory(device, AOStagingBufferMemory);
@@ -2039,7 +2045,7 @@ void Renderer::createSkyboxTextureImage() {
 		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, skyboxStagingBuffer, skyboxStagingBufferMemory);
 
 	vkMapMemory(device, skyboxStagingBufferMemory, 0, skyboxImageSize * 6, 0, &ddata);
-	
+
 	offset = 0;
 	pOffset = ddata;
 	memcpy(pOffset, sPixels, static_cast<size_t>(skyboxImageSize));
@@ -2954,7 +2960,7 @@ void Renderer::createVertexBuffer() {
 	}
 
 	memoryAllocator.allocate(&vertexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	
+
 	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -3225,10 +3231,10 @@ void Renderer::drawFrame() {
 		updateUniformBuffer(obj, imageIndex);
 	}
 
-	void *data;
+	void* data;
 
 	// Camera
-	Camera *camera = scene->getCamera();
+	Camera* camera = scene->getCamera();
 	CameraBufferObject cbo = {};
 	cbo.view = glm::lookAt(glm::vec3(camera->getPositionX(), camera->getPositionY(), camera->getPositionZ()), glm::vec3(camera->getPositionX() + camera->getFrontX(), camera->getPositionY() + camera->getFrontY(), camera->getPositionZ() + camera->getFrontZ()), glm::vec3(camera->getUpX(), camera->getUpY(), camera->getUpZ()));
 	cbo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);

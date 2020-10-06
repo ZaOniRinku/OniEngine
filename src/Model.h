@@ -1,7 +1,11 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "Mesh.h"
+
+struct Mesh {
+	uint64_t indexOffset;
+	uint64_t indexSize;
+};
 
 class Model {
 public:

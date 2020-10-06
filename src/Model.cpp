@@ -37,7 +37,7 @@ std::vector<Mesh>& Model::getMeshes() {
 }
 
 void Model::addMesh(uint64_t indexOffset, uint64_t indexSize) {
-	meshes.push_back(Mesh(indexOffset, indexSize));
+	meshes.push_back({indexOffset, indexSize});
 }
 
 uint64_t Model::getVertexOffset() {
